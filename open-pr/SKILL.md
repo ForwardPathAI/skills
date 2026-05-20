@@ -30,6 +30,8 @@ Copy this checklist and track progress:
 
 ### Step 1: Analyze all local changes
 
+Resolve base branch first: default is the repo default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Use a user-specified base branch when they name one (e.g. `develop`). Fetch it before comparing committed work: `git fetch origin <base>`.
+
 Run in parallel:
 
 ```bash
@@ -37,15 +39,14 @@ git status
 git diff
 git diff --staged
 git log -5 --oneline
+git log origin/<base>..HEAD --oneline
 ```
 
 Review **both** staged and unstaged diffs. Also check untracked files.
 
-- **No changes** (clean tree, no untracked files): stop — nothing to PR.
+- **No changes** (clean tree, no untracked files, and no commits ahead of `origin/<base>`): stop — nothing to PR.
 - **Scope too large** for one issue (~4+ hours or multiple unrelated concerns): follow issue-writer [splitting rules](../issue-writer/SKILL.md#splitting-large-work); do not proceed with a single PR until the user picks one slice.
 - Note real file paths, patterns, and acceptance criteria — feed these into the Linear issue.
-
-Resolve base branch: default is the repo default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Use a user-specified base branch when they name one (e.g. `develop`).
 
 ### Step 2: Create Linear issue
 
@@ -63,12 +64,13 @@ From the repo root:
 
 ```bash
 # If currently on another branch with uncommitted work you are about to commit, stash only if checkout would fail
-git checkout -b <linear-branch-name>   # if branch does not exist locally
+git fetch origin <base>
+git checkout -b <linear-branch-name> origin/<base>   # if branch does not exist locally
 # OR
-git checkout <linear-branch-name>      # if it already exists
+git checkout <linear-branch-name>                    # if it already exists
 ```
 
-- Create the branch from the **base branch** tip when starting fresh: `git fetch origin <base> && git checkout -b <linear-branch-name> origin/<base>`
+- Create the branch from the **base branch** tip when starting fresh.
 - Do not force-checkout or discard unrelated user work without explicit approval.
 
 ### Step 4: Commit

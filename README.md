@@ -14,6 +14,7 @@ Or install a single skill by name:
 
 ```bash
 npx skills add forwardpathai/skills/issue-writer
+npx skills add forwardpathai/skills/open-pr
 ```
 
 ## Skills
@@ -21,6 +22,7 @@ npx skills add forwardpathai/skills/issue-writer
 | Skill | Description |
 |-------|-------------|
 | [issue-writer](./issue-writer) | Write Linear issues that an AI coding agent can execute without follow-up questions. |
+| [open-pr](./open-pr) | Open a GitHub PR from local changes via a Linear issue, Linear's git branch, commit, and `gh`. |
 
 ## Authoring
 

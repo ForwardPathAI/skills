@@ -74,8 +74,14 @@ git stash pop                  # only if you stashed
 
 ```bash
 git fetch origin <base>
+open_pr_ahead_commits="$(git rev-list --reverse origin/<base>..HEAD)"
 git checkout -b <linear-branch-name> origin/<base>
+if [ -n "$open_pr_ahead_commits" ]; then
+  git cherry-pick $open_pr_ahead_commits
+fi
 ```
+
+Record commits ahead of `origin/<base>` before checkout and cherry-pick them onto the Linear branch so committed local work is preserved.
 
 If the branch exists on the remote but not locally: `git fetch origin <linear-branch-name> && git checkout -b <linear-branch-name> origin/<linear-branch-name>`.
 

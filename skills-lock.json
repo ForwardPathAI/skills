@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "open-pr": {
+      "source": "ForwardPathAI/skills",
+      "sourceType": "github",
+      "skillPath": "open-pr/SKILL.md",
+      "computedHash": "f2ba203aa869c044c582c497ffe5388675978607e16faf3ae6ff25a5b0424461"
+    }
+  }
+}

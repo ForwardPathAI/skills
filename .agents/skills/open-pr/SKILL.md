@@ -45,12 +45,12 @@ git log origin/<base>..HEAD --oneline
 Review **both** staged and unstaged diffs. Also check untracked files.
 
 - **No changes** (clean tree, no untracked files, and no commits ahead of `origin/<base>`): stop — nothing to PR.
-- **Scope too large** for one issue (~4+ hours or multiple unrelated concerns): follow issue-writer [splitting rules](../issue-writer/SKILL.md#splitting-large-work); do not proceed with a single PR until the user picks one slice.
+- **Scope too large** for one issue (~4+ hours or multiple unrelated concerns): follow issue-writer [splitting rules](../../../issue-writer/SKILL.md#splitting-large-work); do not proceed with a single PR until the user picks one slice.
 - Note real file paths, patterns, and acceptance criteria — feed these into the Linear issue.
 
 ### Step 2: Create Linear issue
 
-1. **Read** [issue-writer/SKILL.md](../issue-writer/SKILL.md) and follow its workflow (project, priority, labels from MCP, description template, required fields).
+1. **Read** [issue-writer/SKILL.md](../../../issue-writer/SKILL.md) and follow its workflow (project, priority, labels from MCP, description template, required fields).
 2. If issue-writer is not installed, apply the same rules inline: use the description template, fetch labels/projects via Linear MCP, never invent label names.
 3. Derive issue content from Step 1 diffs — title in imperative mood, file paths and acceptance criteria from actual changes.
 4. **Create** the issue via Linear MCP `save_issue` (pass `team`, `title`, `description`, `project`, `priority`, `labels`; use literal newlines in markdown, not `\n` escapes).
@@ -70,18 +70,20 @@ git checkout <linear-branch-name>
 git stash pop                  # only if you stashed
 ```
 
-**Branch does not exist locally** — create it from the **base branch** tip, not current HEAD:
+**Branch does not exist locally** — create it from the **base branch** tip, not current HEAD (stash first only if checkout would fail):
 
 ```bash
 git fetch origin <base>
 open_pr_ahead_commits="$(git rev-list --reverse origin/<base>..HEAD)"
+git stash push -m "open-pr"    # only when dirty tree blocks checkout
 git checkout -b <linear-branch-name> origin/<base>
 if [ -n "$open_pr_ahead_commits" ]; then
   git cherry-pick $open_pr_ahead_commits
 fi
+git stash pop                  # only if you stashed
 ```
 
-Record commits ahead of `origin/<base>` before checkout and cherry-pick them onto the Linear branch so committed local work is preserved.
+Record commits ahead of `origin/<base>` before checkout and cherry-pick them onto the Linear branch so committed local work is preserved. If you stashed dirty work, pop it after the cherry-pick so uncommitted changes are restored on top of the preserved commits.
 
 If the branch exists on the remote but not locally: `git fetch origin <linear-branch-name> && git checkout -b <linear-branch-name> origin/<linear-branch-name>`.
 
@@ -155,5 +157,5 @@ Return the PR URL to the user.
 
 ## Additional resources
 
-- Linear issue quality: [issue-writer/SKILL.md](../issue-writer/SKILL.md)
+- Linear issue quality: [issue-writer/SKILL.md](../../../issue-writer/SKILL.md)
 - Linear MCP: `save_issue`, `get_issue`, `list_projects`, `list_issue_labels`

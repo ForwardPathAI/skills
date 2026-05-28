@@ -70,18 +70,20 @@ git checkout <linear-branch-name>
 git stash pop                  # only if you stashed
 ```
 
-**Branch does not exist locally** — create it from the **base branch** tip, not current HEAD:
+**Branch does not exist locally** — create it from the **base branch** tip, not current HEAD (stash first only if checkout would fail):
 
 ```bash
 git fetch origin <base>
 open_pr_ahead_commits="$(git rev-list --reverse origin/<base>..HEAD)"
+git stash push -m "open-pr"    # only when dirty tree blocks checkout
 git checkout -b <linear-branch-name> origin/<base>
 if [ -n "$open_pr_ahead_commits" ]; then
   git cherry-pick $open_pr_ahead_commits
 fi
+git stash pop                  # only if you stashed
 ```
 
-Record commits ahead of `origin/<base>` before checkout and cherry-pick them onto the Linear branch so committed local work is preserved.
+Record commits ahead of `origin/<base>` before checkout and cherry-pick them onto the Linear branch so committed local work is preserved. If you stashed dirty work, pop it after the cherry-pick so uncommitted changes are restored on top of the preserved commits.
 
 If the branch exists on the remote but not locally: `git fetch origin <linear-branch-name> && git checkout -b <linear-branch-name> origin/<linear-branch-name>`.
 

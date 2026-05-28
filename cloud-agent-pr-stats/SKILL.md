@@ -101,6 +101,7 @@ jq -s --arg start "$START" --arg end "$END" --argjson prefixes "$PREFIXES" '
             agent: [.[] | select(.headRefName as $b | $prefixes | any(. as $p | $b | startswith($p)))] | length,
             total: length
           })
+        | map(select(.agent > 0))
         | sort_by(-.agent))
     }
 ' "$SCRATCH"/*.json

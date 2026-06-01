@@ -24,6 +24,7 @@ Report what percentage of active ForwardPath Engineering projects are **on track
 
 - Linear MCP (`plugin-linear-linear`) authenticated for the ForwardPath workspace.
 - Stop and tell the user to connect Linear if MCP calls fail with auth errors.
+- Stop if the root team lookup does not return a usable team with both `id` and `name`.
 
 ## Workflow
 
@@ -37,7 +38,7 @@ Report what percentage of active ForwardPath Engineering projects are **on track
 
 ### Team scope
 
-1. **Root team** — `get_team` with query `ForwardPath Engineering`. Record `id` and `name`.
+1. **Root team** — Use the user-named root team when provided; otherwise use `ForwardPath Engineering`. Call `get_team` with that query, confirm it returned a usable team with both `id` and `name`, then record both values.
 2. **Sub-teams** — `list_teams` (paginate with `cursor` until `hasNextPage` is false). Include every team where `parent.id` equals the root team `id` (or `parent.name` equals the root name) when the response exposes `parent`.
 3. **Fallback** — if team objects have no `parent` field, or parent matching returns no sub-teams, treat as sub-teams every team from `list_teams` that is an engineering pod under the root in Linear (in this workspace: `Pod 1`, `Pod 2`). **Exclude** sibling top-level teams that are not under Engineering (e.g. `ForwardPath Sales`).
 4. **Teams in scope** = root + sub-teams. State the final list in the report (e.g. `ForwardPath Engineering, Pod 1, Pod 2`).

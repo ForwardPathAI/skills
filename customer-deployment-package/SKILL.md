@@ -58,7 +58,7 @@ Find the internal infra (commonly `infra/`, `infrastructure/`, `terraform/`, or 
 
 ### Step 3: Build the external infra variant
 
-Create an external infra set the **customer** can run in their tenant. Keep it in a working folder (e.g. `dist/customer-package/infra/`), not mixed into the repo's internal infra.
+Create an external infra set the **customer** can run in their tenant. Keep it in the package assembly working folder under `infra/terraform/` and `infra/bicep/` (e.g. `dist/customer-package/<Sanitized-Customer>-<Sanitized-App>-Deployment-<YYYY-MM-DD>/infra/`), not mixed into the repo's internal infra.
 
 Include **both Terraform and Bicep** (unless the user scopes to one). Apply [azure-infra-setup](../azure-infra-setup/SKILL.md) conventions for Azure targets.
 

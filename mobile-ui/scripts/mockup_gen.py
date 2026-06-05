@@ -2,38 +2,63 @@
 """
 ForwardPath Mobile UI — mockup generator (self-contained).
 
-Generates, analyzes, and modifies high-fidelity MOBILE APP UI mockups using
-Google Gemini native image generation. Forces PORTRAIT phone framing so screens
-render upright, and persists the Gemini API key on this machine so it is asked
-for only once.
+Generates, analyzes, and modifies high-fidelity MOBILE APP UI mockups using a
+Gemini image model, via one of two interchangeable backends:
 
-No external skill dependencies. Requires: google-genai, Pillow.
+  - gemini      Google Gemini API directly (google-genai SDK)
+  - openrouter  OpenRouter's OpenAI-compatible API (stdlib HTTP, no extra deps)
+
+All prompt construction, portrait enforcement, and JSON handling are shared
+across backends — only the transport differs. Forces PORTRAIT phone framing so
+screens render upright, and persists API keys per provider on this machine so
+they are asked for only once.
+
+Requires: Pillow (always). google-genai only for the gemini backend.
 
 Commands:
-  setup        Store the Gemini API key (and optional model overrides)
+  setup        Store the API key for a provider (and optional model overrides)
   check        Report whether an API key is configured (never prints the key)
   generate     Generate a new portrait mobile mockup from a prompt
   analyze      Analyze a mockup image into a JSON design spec
   modify-json  Apply natural-language changes to a JSON design spec
   regenerate   Re-render a mockup from a (modified) JSON spec
+
+Select the backend with --provider (gemini|openrouter), the MOBILE_UI_PROVIDER
+env var, or the stored default. Default: gemini.
 """
 
 import argparse
+import base64
 import getpass
+import io
 import json
 import os
 import sys
 from pathlib import Path
 
 CONFIG_PATH = Path.home() / ".config" / "mobile-ui" / "config.json"
-ENV_KEYS = ("GEMINI_API_KEY", "GOOGLE_API_KEY")
+DEFAULT_PROVIDER = "gemini"
 
-DEFAULTS = {
-    "generation_model": "gemini-3-pro-image-preview",
-    "analysis_model": "gemini-2.5-flash",
-    "aspect_ratio": "9:16",
-    "image_size": "2K",
+# Per-provider metadata: env vars, default models, where to get a key.
+PROVIDERS = {
+    "gemini": {
+        "env_keys": ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+        "generation_model": "gemini-3-pro-image-preview",
+        "analysis_model": "gemini-2.5-flash",
+        "key_url": "https://aistudio.google.com/apikey",
+    },
+    "openrouter": {
+        "env_keys": ("OPENROUTER_API_KEY",),
+        "generation_model": "google/gemini-3.1-flash-image-preview",
+        "analysis_model": "google/gemini-2.5-flash",
+        "key_url": "https://openrouter.ai/keys",
+    },
 }
+
+# Provider-independent render defaults.
+RENDER_DEFAULTS = {"aspect_ratio": "9:16", "image_size": "2K"}
+
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 MIME_MAP = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -60,7 +85,7 @@ FRAME_INSTRUCTIONS = {
 }
 
 
-# ── Config / client ───────────────────────────────────────────────────────────
+# ── Config / provider resolution ───────────────────────────────────────────────
 def load_config():
     if CONFIG_PATH.exists():
         try:
@@ -75,63 +100,57 @@ def save_config(config):
     CONFIG_PATH.write_text(json.dumps(config, indent=2))
 
 
-def find_api_key():
+def resolve_provider(args):
+    if getattr(args, "provider", None):
+        return args.provider
+    if os.environ.get("MOBILE_UI_PROVIDER"):
+        return os.environ["MOBILE_UI_PROVIDER"]
+    return load_config().get("provider", DEFAULT_PROVIDER)
+
+
+def provider_config(provider):
+    """Per-provider settings block, tolerating the legacy flat config schema
+    (top-level api_key/models) which only ever stored gemini credentials."""
     cfg = load_config()
-    if cfg.get("api_key"):
-        return cfg["api_key"]
-    for k in ENV_KEYS:
+    pc = dict((cfg.get("providers") or {}).get(provider, {}))
+    if provider == "gemini" and not pc.get("api_key") and cfg.get("api_key"):
+        pc.setdefault("api_key", cfg["api_key"])
+        for k in ("generation_model", "analysis_model"):
+            if cfg.get(k):
+                pc.setdefault(k, cfg[k])
+    return pc
+
+
+def find_api_key(provider):
+    pc = provider_config(provider)
+    if pc.get("api_key"):
+        return pc["api_key"]
+    for k in PROVIDERS[provider]["env_keys"]:
         if os.environ.get(k):
             return os.environ[k]
     return None
 
 
-def get_client():
-    try:
-        from google import genai
-    except ImportError:
-        print("ERROR: google-genai not installed. Run: pip install google-genai Pillow",
-              file=sys.stderr)
-        sys.exit(2)
-    api_key = find_api_key()
-    if not api_key:
-        # Stable, greppable sentinel so the calling agent knows to ask the user.
-        print("NO_API_KEY: No Gemini API key configured. Ask the user for a key "
-              "(https://aistudio.google.com/apikey), then store it by piping it via "
-              "stdin: printf '%s' THE_KEY | python mockup_gen.py setup "
-              "(or set GEMINI_API_KEY).", file=sys.stderr)
-        sys.exit(3)
-    return genai.Client(api_key=api_key)
+def resolve_model(args_model, provider, kind):
+    if args_model:
+        return args_model
+    return provider_config(provider).get(kind) or PROVIDERS[provider][kind]
 
 
-def resolve(args_value, config_key):
+def resolve_setting(args_value, key):
     if args_value:
         return args_value
-    return load_config().get(config_key, DEFAULTS[config_key])
+    return load_config().get(key, RENDER_DEFAULTS[key])
 
 
-def load_image_part(image_path):
-    from google.genai import types
-    path = Path(image_path)
-    if not path.exists():
-        print(f"ERROR: reference image not found: {image_path}", file=sys.stderr)
-        sys.exit(2)
-    mime = MIME_MAP.get(path.suffix.lower(), "image/png")
-    return types.Part.from_bytes(data=path.read_bytes(), mime_type=mime)
+def check_paths(paths):
+    for p in paths:
+        if not Path(p).exists():
+            print(f"ERROR: image not found: {p}", file=sys.stderr)
+            sys.exit(2)
 
 
-def image_gen_config(types, temperature, aspect, size):
-    """Build a GenerateContentConfig that forces aspect ratio + size when the
-    installed google-genai supports it, falling back gracefully otherwise."""
-    base = dict(response_modalities=["TEXT", "IMAGE"], temperature=temperature)
-    try:
-        return types.GenerateContentConfig(
-            image_config=types.ImageConfig(aspect_ratio=aspect, image_size=size),
-            **base,
-        )
-    except Exception:
-        return types.GenerateContentConfig(**base)
-
-
+# ── Shared image helpers ────────────────────────────────────────────────────────
 def aspect_is_portrait(aspect):
     """True when a "W:H" aspect ratio is portrait (taller than wide). Unknown or
     unparseable values default to portrait, the skill's intended orientation."""
@@ -142,57 +161,28 @@ def aspect_is_portrait(aspect):
         return True
 
 
-def save_image_from_response(response, output_path, expect_portrait=True):
+def save_image_bytes(data, output_path, expect_portrait=True):
     from PIL import Image
-    import io
-    texts = []
-    for cand in response.candidates or []:
-        for part in (cand.content.parts if cand.content else []) or []:
-            data = getattr(getattr(part, "inline_data", None), "data", None)
-            if data:
-                img = Image.open(io.BytesIO(data))
-                w, h = img.size
-                is_portrait = h >= w
-                if expect_portrait and not is_portrait:
-                    # Portrait was requested but the model returned a landscape
-                    # asset — fail loudly instead of saving a wrong-orientation
-                    # mockup that looks like success.
-                    print(f"ERROR: model returned a LANDSCAPE image ({w}x{h}); "
-                          "expected portrait. Not saving. Retry, or lower "
-                          "--temperature / simplify the prompt.", file=sys.stderr)
-                    return False
-                Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-                img.save(output_path)
-                kb = Path(output_path).stat().st_size / 1024
-                orient = "portrait" if is_portrait else "landscape"
-                print(f"OK: {output_path} ({w}x{h}, {orient}, {kb:.0f} KB)")
-                return True
-            if getattr(part, "text", None):
-                texts.append(part.text)
-    print("ERROR: no image in response." + (" Model said:" if texts else ""), file=sys.stderr)
-    if texts:
-        print("\n".join(texts)[:800], file=sys.stderr)
-    return False
-
-
-def response_text(response):
-    """Concatenate any text parts from a Gemini response, or return None.
-
-    Guards against safety blocks / empty candidates / non-text modalities where
-    `response.text` raises or is absent, mirroring how image extraction fails soft.
-    """
-    parts = []
-    for cand in getattr(response, "candidates", None) or []:
-        content = getattr(cand, "content", None)
-        for part in (getattr(content, "parts", None) or []):
-            if getattr(part, "text", None):
-                parts.append(part.text)
-    if parts:
-        return "".join(parts)
     try:
-        return response.text
-    except Exception:
-        return None
+        img = Image.open(io.BytesIO(data))
+    except Exception as e:  # noqa: BLE001 - surface any decode failure cleanly
+        print(f"ERROR: could not decode returned image data: {e}", file=sys.stderr)
+        return False
+    w, h = img.size
+    is_portrait = h >= w
+    if expect_portrait and not is_portrait:
+        # Portrait was requested but the model returned a landscape asset — fail
+        # loudly instead of saving a wrong-orientation mockup that looks like success.
+        print(f"ERROR: model returned a LANDSCAPE image ({w}x{h}); expected portrait. "
+              "Not saving. Retry, or lower --temperature / simplify the prompt.",
+              file=sys.stderr)
+        return False
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    img.save(output_path)
+    kb = Path(output_path).stat().st_size / 1024
+    orient = "portrait" if is_portrait else "landscape"
+    print(f"OK: {output_path} ({w}x{h}, {orient}, {kb:.0f} KB)")
+    return True
 
 
 def extract_json(text):
@@ -208,71 +198,176 @@ def extract_json(text):
     return text.strip()
 
 
-# ── Commands ──────────────────────────────────────────────────────────────────
-def read_api_key(args):
-    """Resolve the key without exposing it via process args when possible.
+# ── Backends ────────────────────────────────────────────────────────────────────
+class GeminiBackend:
+    """Talks to the Google Gemini API via the google-genai SDK."""
 
-    Order: --api-key (legacy) → GEMINI/GOOGLE env → stdin (getpass on a TTY,
-    otherwise a piped line). Prefer stdin/env so the secret never lands in
-    `ps`/`/proc` or shell history via a visible --api-key argument.
-    """
-    if args.api_key:
-        return args.api_key.strip()
-    for k in ENV_KEYS:
-        if os.environ.get(k):
-            return os.environ[k].strip()
-    try:
-        if sys.stdin.isatty():
-            return getpass.getpass("Gemini API key (input hidden): ").strip()
-        return sys.stdin.readline().strip()
-    except (EOFError, KeyboardInterrupt):
-        return ""
+    def __init__(self, api_key):
+        from google import genai  # raises ImportError if not installed
+        self._genai = genai
+        self._client = genai.Client(api_key=api_key)
+
+    def _image_part(self, path):
+        from google.genai import types
+        mime = MIME_MAP.get(Path(path).suffix.lower(), "image/png")
+        return types.Part.from_bytes(data=Path(path).read_bytes(), mime_type=mime)
+
+    def _image_config(self, types, temperature, aspect, size):
+        base = dict(response_modalities=["TEXT", "IMAGE"], temperature=temperature)
+        try:
+            return types.GenerateContentConfig(
+                image_config=types.ImageConfig(aspect_ratio=aspect, image_size=size),
+                **base,
+            )
+        except Exception:  # noqa: BLE001 - older SDKs lack image_config
+            return types.GenerateContentConfig(**base)
+
+    def generate_image(self, model, prompt, image_paths, temperature, aspect, size):
+        from google.genai import types
+        contents = [self._image_part(p) for p in image_paths]
+        contents.append(prompt)
+        resp = self._client.models.generate_content(
+            model=model, contents=contents,
+            config=self._image_config(types, temperature, aspect, size))
+        texts = []
+        for cand in resp.candidates or []:
+            for part in (cand.content.parts if cand.content else []) or []:
+                data = getattr(getattr(part, "inline_data", None), "data", None)
+                if data:
+                    return data, texts
+                if getattr(part, "text", None):
+                    texts.append(part.text)
+        return None, texts
+
+    def generate_text(self, model, prompt, image_paths, temperature):
+        from google.genai import types
+        contents = [self._image_part(p) for p in (image_paths or [])]
+        contents.append(prompt)
+        resp = self._client.models.generate_content(
+            model=model, contents=contents,
+            config=types.GenerateContentConfig(temperature=temperature))
+        parts = []
+        for cand in getattr(resp, "candidates", None) or []:
+            content = getattr(cand, "content", None)
+            for part in (getattr(content, "parts", None) or []):
+                if getattr(part, "text", None):
+                    parts.append(part.text)
+        if parts:
+            return "".join(parts), None
+        try:
+            return resp.text, None
+        except Exception:  # noqa: BLE001 - no text part (safety block / image only)
+            return None, None
 
 
-def cmd_setup(args):
-    key = read_api_key(args)
-    if not key:
-        print("ERROR: no API key provided. Pipe it via stdin "
-              "(printf '%s' THE_KEY | python mockup_gen.py setup), set "
-              "GEMINI_API_KEY, or pass --api-key.", file=sys.stderr)
-        sys.exit(2)
-    cfg = load_config()
-    cfg["api_key"] = key
-    if args.generation_model:
-        cfg["generation_model"] = args.generation_model
-    if args.analysis_model:
-        cfg["analysis_model"] = args.analysis_model
-    save_config(cfg)
-    try:
-        CONFIG_PATH.chmod(0o600)
-    except OSError:
-        pass
-    print(f"Saved Gemini API key to {CONFIG_PATH}")
-    print(f"  Generation model: {cfg.get('generation_model', DEFAULTS['generation_model'])}")
-    print(f"  Analysis model:   {cfg.get('analysis_model', DEFAULTS['analysis_model'])}")
+class OpenRouterBackend:
+    """Talks to OpenRouter's OpenAI-compatible chat/completions API over stdlib
+    HTTP (no third-party client needed)."""
+
+    def __init__(self, api_key):
+        self._api_key = api_key
+
+    def _headers(self):
+        return {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://forwardpath.ai",
+            "X-Title": "ForwardPath Mobile UI",
+        }
+
+    def _image_content(self, path):
+        mime = MIME_MAP.get(Path(path).suffix.lower(), "image/png")
+        b64 = base64.b64encode(Path(path).read_bytes()).decode("ascii")
+        return {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+
+    def _message(self, prompt, image_paths):
+        content = [self._image_content(p) for p in (image_paths or [])]
+        content.append({"type": "text", "text": prompt})
+        return {"role": "user", "content": content}
+
+    def _post(self, body):
+        import urllib.error
+        import urllib.request
+        req = urllib.request.Request(
+            OPENROUTER_URL, data=json.dumps(body).encode("utf-8"),
+            headers=self._headers(), method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                return json.loads(r.read().decode("utf-8")), None
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")[:800]
+            return None, f"HTTP {e.code} from OpenRouter: {detail}"
+        except urllib.error.URLError as e:
+            return None, f"network error reaching OpenRouter: {e.reason}"
+
+    def generate_image(self, model, prompt, image_paths, temperature, aspect, size):
+        body = {
+            "model": model,
+            "modalities": ["image", "text"],
+            "messages": [self._message(prompt, image_paths)],
+            "temperature": temperature,
+            "image_config": {"aspect_ratio": aspect, "image_size": size},
+        }
+        payload, err = self._post(body)
+        if err:
+            return None, [err]
+        texts = []
+        for choice in payload.get("choices", []) or []:
+            msg = choice.get("message") or {}
+            for img in msg.get("images") or []:
+                url = (img.get("image_url") or {}).get("url", "")
+                if url.startswith("data:") and "," in url:
+                    return base64.b64decode(url.split(",", 1)[1]), texts
+            content = msg.get("content")
+            if isinstance(content, str) and content:
+                texts.append(content)
+        return None, texts
+
+    def generate_text(self, model, prompt, image_paths, temperature):
+        body = {
+            "model": model,
+            "messages": [self._message(prompt, image_paths)],
+            "temperature": temperature,
+        }
+        payload, err = self._post(body)
+        if err:
+            return None, err
+        parts = []
+        for choice in payload.get("choices", []) or []:
+            content = (choice.get("message") or {}).get("content")
+            if isinstance(content, str) and content:
+                parts.append(content)
+            elif isinstance(content, list):
+                for c in content:
+                    if isinstance(c, dict) and c.get("type") == "text" and c.get("text"):
+                        parts.append(c["text"])
+        return ("".join(parts) if parts else None), None
 
 
-def cmd_check(args):
-    cfg = load_config()
-    if cfg.get("api_key"):
-        print(f"CONFIGURED: key stored at {CONFIG_PATH}")
-    elif any(os.environ.get(k) for k in ENV_KEYS):
-        present = next(k for k in ENV_KEYS if os.environ.get(k))
-        print(f"CONFIGURED: key from environment variable {present}")
-    else:
-        print("NOT_CONFIGURED: pipe key via stdin (printf '%s' THE_KEY | "
-              "python mockup_gen.py setup) or set GEMINI_API_KEY")
+def get_backend(provider):
+    api_key = find_api_key(provider)
+    if not api_key:
+        meta = PROVIDERS[provider]
+        keys = " / ".join(meta["env_keys"])
+        # Stable, greppable sentinel so the calling agent knows to ask the user.
+        print(f"NO_API_KEY: No {provider} API key configured. Ask the user for a key "
+              f"({meta['key_url']}), then store it by piping it via stdin: "
+              f"printf '%s' THE_KEY | python mockup_gen.py setup --provider {provider} "
+              f"(or set {keys}).", file=sys.stderr)
+        sys.exit(3)
+    if provider == "gemini":
+        try:
+            return GeminiBackend(api_key)
+        except ImportError:
+            print("ERROR: google-genai not installed (needed for --provider gemini). "
+                  "Run: pip install google-genai Pillow — or use --provider openrouter.",
+                  file=sys.stderr)
+            sys.exit(2)
+    return OpenRouterBackend(api_key)
 
 
-def cmd_generate(args):
-    from google.genai import types
-    client = get_client()
-    model = resolve(args.model, "generation_model")
-    aspect = resolve(args.aspect, "aspect_ratio")
-    size = resolve(args.size, "image_size")
-    frame = FRAME_INSTRUCTIONS.get(args.frame, FRAME_INSTRUCTIONS["iphone"])
-
-    contents = [load_image_part(p) for p in (args.refs or [])]
+# ── Prompt builders (shared across backends) ────────────────────────────────────
+def build_generate_prompt(args, frame):
     lines = [
         "Generate ONE high-fidelity MOBILE APP UI mockup image.",
         f"STRICT: PORTRAIT orientation, taller than wide. {frame} "
@@ -293,94 +388,10 @@ def cmd_generate(args):
             "\nUse the attached reference image(s) ONLY for brand consistency — match the "
             "same color palette, typography, component style, corner radii, iconography and "
             "overall premium aesthetic. This is a DIFFERENT screen of the SAME app.")
-    contents.append("\n".join(lines))
-
-    print(f"Generating {args.output} ({aspect}, {size}) with {model}...")
-    resp = client.models.generate_content(
-        model=model, contents=contents,
-        config=image_gen_config(types, args.temperature, aspect, size))
-    if not save_image_from_response(resp, args.output, aspect_is_portrait(aspect)):
-        sys.exit(1)
+    return "\n".join(lines)
 
 
-def cmd_analyze(args):
-    from google.genai import types
-    client = get_client()
-    model = resolve(args.model, "analysis_model")
-    contents = [
-        load_image_part(args.image),
-        ("Analyze this MOBILE APP UI screenshot in extreme detail. Return ONE JSON "
-         "object describing: screen_name, theme (light/dark), layout (status bar, header, "
-         "body sections top→bottom, tab bar), colors (with hex), typography, every visible "
-         "component (type, text, position, style), spacing, visual_effects, and the single "
-         "primary action. Return ONLY valid JSON, no commentary."),
-    ]
-    print(f"Analyzing with {model}...")
-    resp = client.models.generate_content(
-        model=model, contents=contents,
-        config=types.GenerateContentConfig(temperature=0.1))
-    raw = response_text(resp)
-    if not raw:
-        print("ERROR: model returned no text (possible safety block or empty "
-              "response). Try again or adjust the image.", file=sys.stderr)
-        sys.exit(1)
-    out_text = extract_json(raw)
-    try:
-        out_text = json.dumps(json.loads(out_text), indent=2)
-    except json.JSONDecodeError:
-        print("ERROR: model response was not valid JSON; not writing output.",
-              file=sys.stderr)
-        print(out_text[:800], file=sys.stderr)
-        sys.exit(1)
-    output = args.output or (Path(args.image).stem + "_analysis.json")
-    Path(output).write_text(out_text)
-    print(f"Saved {output}")
-
-
-def cmd_modify_json(args):
-    from google.genai import types
-    client = get_client()
-    model = resolve(args.model, "analysis_model")
-    spec = Path(args.json_file).read_text()
-    prompt = (f"Here is a JSON spec of a mobile app screen:\n\n{spec}\n\n"
-              f"Apply these modifications: {args.changes}\n\n"
-              "Return the COMPLETE modified JSON, keeping all unmentioned fields exactly. "
-              "Return ONLY valid JSON.")
-    print(f"Modifying JSON with {model}...")
-    resp = client.models.generate_content(
-        model=model, contents=[prompt],
-        config=types.GenerateContentConfig(temperature=0.1))
-    raw = response_text(resp)
-    if not raw:
-        print("ERROR: model returned no text (possible safety block or empty "
-              "response). Try again or simplify the changes.", file=sys.stderr)
-        sys.exit(1)
-    out_text = extract_json(raw)
-    try:
-        out_text = json.dumps(json.loads(out_text), indent=2)
-    except json.JSONDecodeError:
-        print("ERROR: model response was not valid JSON; not writing output.",
-              file=sys.stderr)
-        print(out_text[:800], file=sys.stderr)
-        sys.exit(1)
-    output = args.output or (Path(args.json_file).stem + "_modified.json")
-    Path(output).write_text(out_text)
-    print(f"Saved {output}")
-
-
-def cmd_regenerate(args):
-    from google.genai import types
-    client = get_client()
-    model = resolve(args.model, "generation_model")
-    aspect = resolve(args.aspect, "aspect_ratio")
-    size = resolve(args.size, "image_size")
-    frame = FRAME_INSTRUCTIONS.get(args.frame, FRAME_INSTRUCTIONS["iphone"])
-    spec = Path(args.json_spec).read_text()
-
-    contents = []
-    if args.original:
-        contents.append(load_image_part(args.original))
-    contents += [load_image_part(p) for p in (args.refs or [])]
+def build_regenerate_prompt(args, frame, spec):
     lines = [
         "Generate ONE high-fidelity MOBILE APP UI mockup image that PRECISELY matches this "
         "design specification and looks like a real screenshot.",
@@ -394,32 +405,198 @@ def cmd_regenerate(args):
         lines.append("\nUse the other attached image(s) for brand consistency (same app).")
     if args.extra_instructions:
         lines.append(f"\nAdditional instructions: {args.extra_instructions}")
-    contents.append("\n".join(lines))
+    return "\n".join(lines)
 
-    print(f"Regenerating {args.output} ({aspect}, {size}) with {model}...")
-    resp = client.models.generate_content(
-        model=model, contents=contents,
-        config=image_gen_config(types, args.temperature, aspect, size))
-    if not save_image_from_response(resp, args.output, aspect_is_portrait(aspect)):
+
+ANALYZE_PROMPT = (
+    "Analyze this MOBILE APP UI screenshot in extreme detail. Return ONE JSON "
+    "object describing: screen_name, theme (light/dark), layout (status bar, header, "
+    "body sections top→bottom, tab bar), colors (with hex), typography, every visible "
+    "component (type, text, position, style), spacing, visual_effects, and the single "
+    "primary action. Return ONLY valid JSON, no commentary.")
+
+
+# ── Commands ──────────────────────────────────────────────────────────────────
+def read_api_key(args, provider):
+    """Resolve the key without exposing it via process args when possible.
+
+    Order: --api-key (legacy) → provider env vars → stdin (getpass on a TTY,
+    otherwise a piped line). Prefer stdin/env so the secret never lands in
+    `ps`/`/proc` or shell history via a visible --api-key argument.
+    """
+    if args.api_key:
+        return args.api_key.strip()
+    for k in PROVIDERS[provider]["env_keys"]:
+        if os.environ.get(k):
+            return os.environ[k].strip()
+    try:
+        if sys.stdin.isatty():
+            return getpass.getpass(f"{provider} API key (input hidden): ").strip()
+        return sys.stdin.readline().strip()
+    except (EOFError, KeyboardInterrupt):
+        return ""
+
+
+def cmd_setup(args):
+    provider = resolve_provider(args)
+    key = read_api_key(args, provider)
+    if not key:
+        keys = " / ".join(PROVIDERS[provider]["env_keys"])
+        print(f"ERROR: no API key provided. Pipe it via stdin (printf '%s' THE_KEY | "
+              f"python mockup_gen.py setup --provider {provider}), set {keys}, or pass "
+              "--api-key.", file=sys.stderr)
+        sys.exit(2)
+    cfg = load_config()
+    cfg["provider"] = provider
+    pc = cfg.setdefault("providers", {}).setdefault(provider, {})
+    pc["api_key"] = key
+    if args.generation_model:
+        pc["generation_model"] = args.generation_model
+    if args.analysis_model:
+        pc["analysis_model"] = args.analysis_model
+    save_config(cfg)
+    try:
+        CONFIG_PATH.chmod(0o600)
+    except OSError:
+        pass
+    print(f"Saved {provider} API key to {CONFIG_PATH}")
+    print(f"  Default provider: {provider}")
+    print(f"  Generation model: {resolve_model(None, provider, 'generation_model')}")
+    print(f"  Analysis model:   {resolve_model(None, provider, 'analysis_model')}")
+
+
+def cmd_check(args):
+    provider = resolve_provider(args)
+    meta = PROVIDERS[provider]
+    if provider_config(provider).get("api_key"):
+        print(f"CONFIGURED: {provider} key stored at {CONFIG_PATH}")
+        return
+    env_present = next((k for k in meta["env_keys"] if os.environ.get(k)), None)
+    if env_present:
+        print(f"CONFIGURED: {provider} key from environment variable {env_present}")
+    else:
+        keys = " or ".join(meta["env_keys"])
+        print(f"NOT_CONFIGURED ({provider}): pipe key via stdin (printf '%s' THE_KEY | "
+              f"python mockup_gen.py setup --provider {provider}) or set {keys}")
+
+
+def cmd_generate(args):
+    provider = resolve_provider(args)
+    check_paths(args.refs or [])
+    backend = get_backend(provider)
+    model = resolve_model(args.model, provider, "generation_model")
+    aspect = resolve_setting(args.aspect, "aspect_ratio")
+    size = resolve_setting(args.size, "image_size")
+    frame = FRAME_INSTRUCTIONS.get(args.frame, FRAME_INSTRUCTIONS["iphone"])
+    prompt = build_generate_prompt(args, frame)
+
+    print(f"Generating {args.output} ({aspect}, {size}) with {model} [{provider}]...")
+    data, texts = backend.generate_image(
+        model, prompt, args.refs or [], args.temperature, aspect, size)
+    if data is None:
+        print("ERROR: no image in response." + (" Model said:" if texts else ""),
+              file=sys.stderr)
+        if texts:
+            print("\n".join(texts)[:800], file=sys.stderr)
+        sys.exit(1)
+    if not save_image_bytes(data, args.output, aspect_is_portrait(aspect)):
+        sys.exit(1)
+
+
+def _write_json_or_exit(raw, err, output_path, retry_hint):
+    if not raw:
+        detail = f": {err}" if err else " (possible safety block or empty response)"
+        print(f"ERROR: model returned no text{detail}. {retry_hint}", file=sys.stderr)
+        sys.exit(1)
+    out_text = extract_json(raw)
+    try:
+        out_text = json.dumps(json.loads(out_text), indent=2)
+    except json.JSONDecodeError:
+        print("ERROR: model response was not valid JSON; not writing output.",
+              file=sys.stderr)
+        print(out_text[:800], file=sys.stderr)
+        sys.exit(1)
+    Path(output_path).write_text(out_text)
+    print(f"Saved {output_path}")
+
+
+def cmd_analyze(args):
+    provider = resolve_provider(args)
+    check_paths([args.image])
+    backend = get_backend(provider)
+    model = resolve_model(args.model, provider, "analysis_model")
+    print(f"Analyzing with {model} [{provider}]...")
+    raw, err = backend.generate_text(model, ANALYZE_PROMPT, [args.image], 0.1)
+    output = args.output or (Path(args.image).stem + "_analysis.json")
+    _write_json_or_exit(raw, err, output, "Try again or adjust the image.")
+
+
+def cmd_modify_json(args):
+    provider = resolve_provider(args)
+    backend = get_backend(provider)
+    model = resolve_model(args.model, provider, "analysis_model")
+    spec = Path(args.json_file).read_text()
+    prompt = (f"Here is a JSON spec of a mobile app screen:\n\n{spec}\n\n"
+              f"Apply these modifications: {args.changes}\n\n"
+              "Return the COMPLETE modified JSON, keeping all unmentioned fields exactly. "
+              "Return ONLY valid JSON.")
+    print(f"Modifying JSON with {model} [{provider}]...")
+    raw, err = backend.generate_text(model, prompt, None, 0.1)
+    output = args.output or (Path(args.json_file).stem + "_modified.json")
+    _write_json_or_exit(raw, err, output, "Try again or simplify the changes.")
+
+
+def cmd_regenerate(args):
+    provider = resolve_provider(args)
+    image_paths = ([args.original] if args.original else []) + list(args.refs or [])
+    check_paths(image_paths)
+    backend = get_backend(provider)
+    model = resolve_model(args.model, provider, "generation_model")
+    aspect = resolve_setting(args.aspect, "aspect_ratio")
+    size = resolve_setting(args.size, "image_size")
+    frame = FRAME_INSTRUCTIONS.get(args.frame, FRAME_INSTRUCTIONS["iphone"])
+    spec = Path(args.json_spec).read_text()
+    prompt = build_regenerate_prompt(args, frame, spec)
+
+    print(f"Regenerating {args.output} ({aspect}, {size}) with {model} [{provider}]...")
+    data, texts = backend.generate_image(
+        model, prompt, image_paths, args.temperature, aspect, size)
+    if data is None:
+        print("ERROR: no image in response." + (" Model said:" if texts else ""),
+              file=sys.stderr)
+        if texts:
+            print("\n".join(texts)[:800], file=sys.stderr)
+        sys.exit(1)
+    if not save_image_bytes(data, args.output, aspect_is_portrait(aspect)):
         sys.exit(1)
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
+def add_provider_arg(sp):
+    sp.add_argument(
+        "--provider", choices=list(PROVIDERS),
+        help="Backend to use (default: MOBILE_UI_PROVIDER env, stored default, "
+             "then gemini)")
+
+
 def main():
     p = argparse.ArgumentParser(description="ForwardPath Mobile UI — mockup generator")
     sub = p.add_subparsers(dest="command", required=True)
 
     sp = sub.add_parser(
         "setup",
-        help="Store the Gemini API key on this machine. Prefer piping the key via "
-             "stdin or GEMINI_API_KEY over --api-key (which is visible in ps/proc).")
+        help="Store a provider's API key on this machine. Prefer piping the key via "
+             "stdin or an env var over --api-key (which is visible in ps/proc).")
+    add_provider_arg(sp)
     sp.add_argument("--api-key", help="Legacy: visible in process args; prefer stdin/env")
     sp.add_argument("--generation-model")
     sp.add_argument("--analysis-model")
 
-    sub.add_parser("check", help="Report whether an API key is configured")
+    sp = sub.add_parser("check", help="Report whether an API key is configured")
+    add_provider_arg(sp)
 
     sp = sub.add_parser("generate", help="Generate a new portrait mobile mockup")
+    add_provider_arg(sp)
     sp.add_argument("--prompt", required=True)
     sp.add_argument("--refs", nargs="*", default=[])
     sp.add_argument("--colors", default="")
@@ -434,17 +611,20 @@ def main():
     sp.add_argument("--model")
 
     sp = sub.add_parser("analyze", help="Analyze a mockup into a JSON spec")
+    add_provider_arg(sp)
     sp.add_argument("image")
     sp.add_argument("-o", "--output")
     sp.add_argument("--model")
 
     sp = sub.add_parser("modify-json", help="Apply changes to a JSON spec")
+    add_provider_arg(sp)
     sp.add_argument("--json-file", required=True)
     sp.add_argument("--changes", required=True)
     sp.add_argument("-o", "--output")
     sp.add_argument("--model")
 
     sp = sub.add_parser("regenerate", help="Re-render a mockup from a JSON spec")
+    add_provider_arg(sp)
     sp.add_argument("--json-spec", required=True)
     sp.add_argument("--original")
     sp.add_argument("--refs", nargs="*", default=[])

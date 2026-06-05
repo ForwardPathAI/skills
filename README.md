@@ -19,6 +19,7 @@ npx skills add forwardpathai/skills/stack-pr
 npx skills add forwardpathai/skills/cloud-agent-pr-stats
 npx skills add forwardpathai/skills/azure-infra-setup
 npx skills add forwardpathai/skills/engineering-projects-on-track
+npx skills add forwardpathai/skills/mobile-ui
 ```
 
 ## Skills
@@ -31,16 +32,21 @@ npx skills add forwardpathai/skills/engineering-projects-on-track
 | [cloud-agent-pr-stats](./cloud-agent-pr-stats) | Count PRs opened by cloud coding agents (Cursor, Codex, Devin, Claude, Copilot) across a GitHub org, by branch-name prefix. |
 | [engineering-projects-on-track](./engineering-projects-on-track) | On-track % for ForwardPath Engineering Linear projects in In Progress or UAT, from the latest project status update. |
 | [azure-infra-setup](./azure-infra-setup) | Author Forward Path Azure infrastructure (Terraform/Bicep) — shared ACR, OIDC/RBAC, environments, Key Vault, Container Apps. |
+| [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini). |
 
 ## Authoring
 
-Each skill lives in its own directory at the repo root and contains a single `SKILL.md` with YAML frontmatter:
+Each skill lives in its own directory at the repo root with a `SKILL.md` entry point that has YAML frontmatter. A skill may also bundle reference docs and utility scripts alongside it:
 
 ```
 skills/
 └── <skill-name>/
-    └── SKILL.md
+    ├── SKILL.md          # required entry point
+    ├── REFERENCE.md      # optional reference docs
+    └── scripts/          # optional utility scripts
 ```
+
+Reference files and scripts must be addressed relative to the skill's own directory (never hardcode an absolute install path), so the skill keeps working wherever `skills.sh` installs it.
 
 The `name` in frontmatter must match the directory name. The `description` is what agents match against to decide whether to invoke the skill — make it specific about *when* the skill should fire.
 

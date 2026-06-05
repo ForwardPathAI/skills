@@ -99,7 +99,7 @@ Set any database properties (customer, app, date/version) that the database defi
 
 ### Step 6: Export the Notion page and assemble the customer folder
 
-Use Notion's built-in **Export** on the saved page (Markdown & CSV, or PDF per customer preference) to get the customer-facing document, then assemble the package folder:
+Use Notion's built-in **Export** on the saved page (Markdown & CSV, or PDF per customer preference) to get the customer-facing document. If export is not available through the connected tools, ask the user to export the saved page manually, or retrieve the saved page content and assemble an equivalent `README.md` that preserves the template structure. Then assemble the package folder:
 
 ```
 <Customer>-<App>-Deployment-<YYYY-MM-DD>/

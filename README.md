@@ -20,6 +20,7 @@ npx skills add forwardpathai/skills/cloud-agent-pr-stats
 npx skills add forwardpathai/skills/azure-infra-setup
 npx skills add forwardpathai/skills/engineering-projects-on-track
 npx skills add forwardpathai/skills/mobile-ui
+npx skills add forwardpathai/skills/customer-deployment-package
 ```
 
 ## Skills
@@ -33,6 +34,7 @@ npx skills add forwardpathai/skills/mobile-ui
 | [engineering-projects-on-track](./engineering-projects-on-track) | On-track % for ForwardPath Engineering Linear projects in In Progress or UAT, from the latest project status update. |
 | [azure-infra-setup](./azure-infra-setup) | Author Forward Path Azure infrastructure (Terraform/Bicep) — shared ACR, OIDC/RBAC, environments, Key Vault, Container Apps. |
 | [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini). |
+| [customer-deployment-package](./customer-deployment-package) | Build a customer-facing deployment handoff — external Terraform/Bicep, setup instructions filled into the Notion template and saved to the deployments DB, then exported and zipped with a Windows-safe name. |
 
 ## Authoring
 

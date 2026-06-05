@@ -27,12 +27,13 @@ pip install google-genai Pillow
 
 Set `TOOL` to the absolute path of `scripts/mockup_gen.py` **inside this skill's own directory** (the folder this `SKILL.md` lives in — wherever the skill was installed, e.g. `.cursor/skills/`, `.claude/skills/`, or `.agents/skills/`). Reuse this `$TOOL` for every command below.
 
-API key — check, and if missing, **ask the user** (they get one at https://aistudio.google.com/apikey), then store it:
+API key — check, and if missing, **ask the user** (they get one at https://aistudio.google.com/apikey), then store it. Pass the key via **stdin** (not `--api-key`) so it never appears in `ps`/`/proc`:
 ```bash
 TOOL="<this skill dir>/scripts/mockup_gen.py"
 python "$TOOL" check
-# If NOT_CONFIGURED, ask the user for their Gemini API key, then:
-python "$TOOL" setup --api-key "USER_KEY_HERE"
+# If NOT_CONFIGURED, ask the user for their Gemini API key, then store it via stdin:
+printf '%s' "USER_KEY_HERE" | python "$TOOL" setup
+# Alternatively, skip setup entirely and export GEMINI_API_KEY for the session.
 ```
 The key persists at `~/.config/mobile-ui/config.json` (also honors `GEMINI_API_KEY` / `GOOGLE_API_KEY`). If any generate call prints `NO_API_KEY`, ask the user for a key and run `setup`, then retry. Never hardcode a key.
 
@@ -100,7 +101,7 @@ Use the 3-step flow: `analyze` → `modify-json` → `regenerate` (keeps layout,
 ## Command reference
 ```bash
 python "$TOOL" check
-python "$TOOL" setup --api-key KEY [--generation-model M] [--analysis-model M]
+printf '%s' KEY | python "$TOOL" setup [--generation-model M] [--analysis-model M]
 python "$TOOL" generate --prompt "..." -o out.png [--refs ...] [--colors ...] [--style ...] [--description ...] [--theme light|dark] [--frame iphone|android|none] [--aspect 9:16] [--size 1K|2K|4K] [--temperature 0.35]
 python "$TOOL" analyze image.png [-o spec.json]
 python "$TOOL" modify-json --json-file spec.json --changes "..." [-o spec2.json]

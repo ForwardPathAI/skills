@@ -19,6 +19,7 @@ Commands:
 """
 
 import argparse
+import getpass
 import json
 import os
 import sys
@@ -95,8 +96,9 @@ def get_client():
     if not api_key:
         # Stable, greppable sentinel so the calling agent knows to ask the user.
         print("NO_API_KEY: No Gemini API key configured. Ask the user for a key "
-              "(https://aistudio.google.com/apikey), then run: "
-              "python mockup_gen.py setup --api-key THE_KEY", file=sys.stderr)
+              "(https://aistudio.google.com/apikey), then store it by piping it via "
+              "stdin: printf '%s' THE_KEY | python mockup_gen.py setup "
+              "(or set GEMINI_API_KEY).", file=sys.stderr)
         sys.exit(3)
     return genai.Client(api_key=api_key)
 
@@ -154,6 +156,26 @@ def save_image_from_response(response, output_path):
     return False
 
 
+def response_text(response):
+    """Concatenate any text parts from a Gemini response, or return None.
+
+    Guards against safety blocks / empty candidates / non-text modalities where
+    `response.text` raises or is absent, mirroring how image extraction fails soft.
+    """
+    parts = []
+    for cand in getattr(response, "candidates", None) or []:
+        content = getattr(cand, "content", None)
+        for part in (getattr(content, "parts", None) or []):
+            if getattr(part, "text", None):
+                parts.append(part.text)
+    if parts:
+        return "".join(parts)
+    try:
+        return response.text
+    except Exception:
+        return None
+
+
 def extract_json(text):
     text = text.strip()
     if text.startswith("```"):
@@ -164,9 +186,35 @@ def extract_json(text):
 
 
 # ── Commands ──────────────────────────────────────────────────────────────────
+def read_api_key(args):
+    """Resolve the key without exposing it via process args when possible.
+
+    Order: --api-key (legacy) → GEMINI/GOOGLE env → stdin (getpass on a TTY,
+    otherwise a piped line). Prefer stdin/env so the secret never lands in
+    `ps`/`/proc` or shell history via a visible --api-key argument.
+    """
+    if args.api_key:
+        return args.api_key.strip()
+    for k in ENV_KEYS:
+        if os.environ.get(k):
+            return os.environ[k].strip()
+    try:
+        if sys.stdin.isatty():
+            return getpass.getpass("Gemini API key (input hidden): ").strip()
+        return sys.stdin.readline().strip()
+    except (EOFError, KeyboardInterrupt):
+        return ""
+
+
 def cmd_setup(args):
+    key = read_api_key(args)
+    if not key:
+        print("ERROR: no API key provided. Pipe it via stdin "
+              "(printf '%s' THE_KEY | python mockup_gen.py setup), set "
+              "GEMINI_API_KEY, or pass --api-key.", file=sys.stderr)
+        sys.exit(2)
     cfg = load_config()
-    cfg["api_key"] = args.api_key
+    cfg["api_key"] = key
     if args.generation_model:
         cfg["generation_model"] = args.generation_model
     if args.analysis_model:
@@ -189,7 +237,8 @@ def cmd_check(args):
         present = next(k for k in ENV_KEYS if os.environ.get(k))
         print(f"CONFIGURED: key from environment variable {present}")
     else:
-        print("NOT_CONFIGURED: run setup --api-key THE_KEY (or set GEMINI_API_KEY)")
+        print("NOT_CONFIGURED: pipe key via stdin (printf '%s' THE_KEY | "
+              "python mockup_gen.py setup) or set GEMINI_API_KEY")
 
 
 def cmd_generate(args):
@@ -247,11 +296,19 @@ def cmd_analyze(args):
     resp = client.models.generate_content(
         model=model, contents=contents,
         config=types.GenerateContentConfig(temperature=0.1))
-    out_text = extract_json(resp.text)
+    raw = response_text(resp)
+    if not raw:
+        print("ERROR: model returned no text (possible safety block or empty "
+              "response). Try again or adjust the image.", file=sys.stderr)
+        sys.exit(1)
+    out_text = extract_json(raw)
     try:
         out_text = json.dumps(json.loads(out_text), indent=2)
     except json.JSONDecodeError:
-        print("WARNING: response was not valid JSON; saving raw.", file=sys.stderr)
+        print("ERROR: model response was not valid JSON; not writing output.",
+              file=sys.stderr)
+        print(out_text[:800], file=sys.stderr)
+        sys.exit(1)
     output = args.output or (Path(args.image).stem + "_analysis.json")
     Path(output).write_text(out_text)
     print(f"Saved {output}")
@@ -270,11 +327,19 @@ def cmd_modify_json(args):
     resp = client.models.generate_content(
         model=model, contents=[prompt],
         config=types.GenerateContentConfig(temperature=0.1))
-    out_text = extract_json(resp.text)
+    raw = response_text(resp)
+    if not raw:
+        print("ERROR: model returned no text (possible safety block or empty "
+              "response). Try again or simplify the changes.", file=sys.stderr)
+        sys.exit(1)
+    out_text = extract_json(raw)
     try:
         out_text = json.dumps(json.loads(out_text), indent=2)
     except json.JSONDecodeError:
-        print("WARNING: response was not valid JSON; saving raw.", file=sys.stderr)
+        print("ERROR: model response was not valid JSON; not writing output.",
+              file=sys.stderr)
+        print(out_text[:800], file=sys.stderr)
+        sys.exit(1)
     output = args.output or (Path(args.json_file).stem + "_modified.json")
     Path(output).write_text(out_text)
     print(f"Saved {output}")
@@ -321,8 +386,11 @@ def main():
     p = argparse.ArgumentParser(description="ForwardPath Mobile UI — mockup generator")
     sub = p.add_subparsers(dest="command", required=True)
 
-    sp = sub.add_parser("setup", help="Store the Gemini API key on this machine")
-    sp.add_argument("--api-key", required=True)
+    sp = sub.add_parser(
+        "setup",
+        help="Store the Gemini API key on this machine. Prefer piping the key via "
+             "stdin or GEMINI_API_KEY over --api-key (which is visible in ps/proc).")
+    sp.add_argument("--api-key", help="Legacy: visible in process args; prefer stdin/env")
     sp.add_argument("--generation-model")
     sp.add_argument("--analysis-model")
 

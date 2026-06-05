@@ -132,7 +132,17 @@ def image_gen_config(types, temperature, aspect, size):
         return types.GenerateContentConfig(**base)
 
 
-def save_image_from_response(response, output_path):
+def aspect_is_portrait(aspect):
+    """True when a "W:H" aspect ratio is portrait (taller than wide). Unknown or
+    unparseable values default to portrait, the skill's intended orientation."""
+    try:
+        w, h = (float(x) for x in aspect.split(":"))
+        return h >= w
+    except (ValueError, AttributeError):
+        return True
+
+
+def save_image_from_response(response, output_path, expect_portrait=True):
     from PIL import Image
     import io
     texts = []
@@ -140,12 +150,21 @@ def save_image_from_response(response, output_path):
         for part in (cand.content.parts if cand.content else []) or []:
             data = getattr(getattr(part, "inline_data", None), "data", None)
             if data:
-                Path(output_path).parent.mkdir(parents=True, exist_ok=True)
                 img = Image.open(io.BytesIO(data))
-                img.save(output_path)
                 w, h = img.size
+                is_portrait = h >= w
+                if expect_portrait and not is_portrait:
+                    # Portrait was requested but the model returned a landscape
+                    # asset — fail loudly instead of saving a wrong-orientation
+                    # mockup that looks like success.
+                    print(f"ERROR: model returned a LANDSCAPE image ({w}x{h}); "
+                          "expected portrait. Not saving. Retry, or lower "
+                          "--temperature / simplify the prompt.", file=sys.stderr)
+                    return False
+                Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+                img.save(output_path)
                 kb = Path(output_path).stat().st_size / 1024
-                orient = "portrait" if h >= w else "LANDSCAPE(!)"
+                orient = "portrait" if is_portrait else "landscape"
                 print(f"OK: {output_path} ({w}x{h}, {orient}, {kb:.0f} KB)")
                 return True
             if getattr(part, "text", None):
@@ -179,7 +198,11 @@ def response_text(response):
 def extract_json(text):
     text = text.strip()
     if text.startswith("```"):
-        text = text[text.index("\n") + 1:]
+        newline = text.find("\n")
+        # Drop the opening fence line (e.g. ```json). If the whole payload is on
+        # one line with no newline, just strip the leading backticks instead of
+        # indexing a missing "\n".
+        text = text[newline + 1:] if newline != -1 else text.lstrip("`")
     if text.endswith("```"):
         text = text[: text.rfind("```")]
     return text.strip()
@@ -276,7 +299,7 @@ def cmd_generate(args):
     resp = client.models.generate_content(
         model=model, contents=contents,
         config=image_gen_config(types, args.temperature, aspect, size))
-    if not save_image_from_response(resp, args.output):
+    if not save_image_from_response(resp, args.output, aspect_is_portrait(aspect)):
         sys.exit(1)
 
 
@@ -377,7 +400,7 @@ def cmd_regenerate(args):
     resp = client.models.generate_content(
         model=model, contents=contents,
         config=image_gen_config(types, args.temperature, aspect, size))
-    if not save_image_from_response(resp, args.output):
+    if not save_image_from_response(resp, args.output, aspect_is_portrait(aspect)):
         sys.exit(1)
 
 

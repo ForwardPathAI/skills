@@ -85,7 +85,7 @@ Retrieve the sample template page (`36c92ad1579b81819801cfd3276fe396`) and use i
 - **Deploy steps** — how to run the included Terraform/Bicep, in order.
 - **Verification** — how to confirm a healthy deployment.
 
-Do not paste secret values into the page — reference the 1Password link instead.
+Treat the sample template page as **read-only**: copy its structure and draft the filled content for the new database page in Step 5, but never edit the sample template in place. Do not paste secret values into the page — reference the 1Password link instead.
 
 ### Step 5: Save the filled page into the Notion deployments database
 
@@ -99,10 +99,10 @@ Set any database properties (customer, app, date/version) that the database defi
 
 ### Step 6: Export the Notion page and assemble the customer folder
 
-Use Notion's built-in **Export** on the saved page (Markdown & CSV, or PDF per customer preference) to get the customer-facing document. If export is not available through the connected tools, ask the user to export the saved page manually, or retrieve the saved page content and assemble an equivalent `README.md` that preserves the template structure. Then assemble the package folder:
+Use Notion's built-in **Export** on the saved page (Markdown & CSV, or PDF per customer preference) to get the customer-facing document. If export is not available through the connected tools, ask the user to export the saved page manually, or retrieve the saved page content and assemble an equivalent `README.md` that preserves the template structure. Then assemble the package folder using the same Windows-safe sanitized `<Customer>` and `<App>` values required for the zip filename in Step 7:
 
 ```
-<Customer>-<App>-Deployment-<YYYY-MM-DD>/
+<Sanitized-Customer>-<Sanitized-App>-Deployment-<YYYY-MM-DD>/
 ├── README.(md|pdf)            # exported deployment instructions
 ├── infra/
 │   ├── terraform/             # external Terraform

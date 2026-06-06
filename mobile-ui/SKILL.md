@@ -22,20 +22,27 @@ This skill is self-contained: it does not depend on any other skill. PDF/report 
 
 Dependencies:
 ```bash
-pip install google-genai Pillow
+pip install Pillow              # always required
+pip install google-genai       # only for --provider gemini (default)
 ```
+The `openrouter` provider needs no extra package (it uses the Python stdlib).
+
+**Provider.** The tool renders Gemini image models through one of two backends, selected with `--provider` (or the `MOBILE_UI_PROVIDER` env var, or the stored default):
+- `gemini` (default) — Google Gemini API directly. Key from https://aistudio.google.com/apikey (`GEMINI_API_KEY` / `GOOGLE_API_KEY`).
+- `openrouter` — OpenRouter's OpenAI-compatible API. Key from https://openrouter.ai/keys (`OPENROUTER_API_KEY`). `image_config` (aspect ratio + size) is forwarded to Gemini image models, so portrait control is preserved. Pass `--provider openrouter` to **every** command below.
 
 Set `TOOL` to the absolute path of `scripts/mockup_gen.py` **inside this skill's own directory** (the folder this `SKILL.md` lives in — wherever the skill was installed, e.g. `.cursor/skills/`, `.claude/skills/`, or `.agents/skills/`). Reuse this `$TOOL` for every command below.
 
-API key — check, and if missing, **ask the user** (they get one at https://aistudio.google.com/apikey), then store it. Pass the key via **stdin** (not `--api-key`) so it never appears in `ps`/`/proc`:
+API key — check, and if missing, **ask the user** for the chosen provider's key, then store it. Pass the key via **stdin** (not `--api-key`) so it never appears in `ps`/`/proc`:
 ```bash
 TOOL="<this skill dir>/scripts/mockup_gen.py"
-python "$TOOL" check
-# If NOT_CONFIGURED, ask the user for their Gemini API key, then store it via stdin:
-printf '%s' "USER_KEY_HERE" | python "$TOOL" setup
-# Alternatively, skip setup entirely and export GEMINI_API_KEY for the session.
+python "$TOOL" check                               # add --provider openrouter to target that backend
+# If NOT_CONFIGURED, ask the user for the key, then store it via stdin:
+printf '%s' "USER_KEY_HERE" | python "$TOOL" setup            # gemini (default)
+printf '%s' "USER_KEY_HERE" | python "$TOOL" setup --provider openrouter
+# Alternatively, skip setup entirely and export GEMINI_API_KEY (or OPENROUTER_API_KEY).
 ```
-The key persists at `~/.config/mobile-ui/config.json` (also honors `GEMINI_API_KEY` / `GOOGLE_API_KEY`). If any generate call prints `NO_API_KEY`, ask the user for a key and run `setup`, then retry. Never hardcode a key.
+Keys persist per provider at `~/.config/mobile-ui/config.json`. If any call prints `NO_API_KEY`, ask the user for a key and run `setup`, then retry. Never hardcode a key.
 
 ---
 
@@ -99,13 +106,14 @@ Use the 3-step flow: `analyze` → `modify-json` → `regenerate` (keeps layout,
 ---
 
 ## Command reference
+Every command accepts `--provider gemini|openrouter` (default `gemini`).
 ```bash
-python "$TOOL" check
-printf '%s' KEY | python "$TOOL" setup [--generation-model M] [--analysis-model M]
-python "$TOOL" generate --prompt "..." -o out.png [--refs ...] [--colors ...] [--style ...] [--description ...] [--theme light|dark] [--frame iphone|android|none] [--aspect 9:16] [--size 1K|2K|4K] [--temperature 0.35]
-python "$TOOL" analyze image.png [-o spec.json]
-python "$TOOL" modify-json --json-file spec.json --changes "..." [-o spec2.json]
-python "$TOOL" regenerate --json-spec spec2.json [--original image.png] [--refs ...] -o out.png
+python "$TOOL" check [--provider gemini|openrouter]
+printf '%s' KEY | python "$TOOL" setup [--provider gemini|openrouter] [--generation-model M] [--analysis-model M]
+python "$TOOL" generate --prompt "..." -o out.png [--provider ...] [--refs ...] [--colors ...] [--style ...] [--description ...] [--theme light|dark] [--frame iphone|android|none] [--aspect 9:16] [--size 1K|2K|4K] [--temperature 0.35]
+python "$TOOL" analyze image.png [-o spec.json] [--provider ...]
+python "$TOOL" modify-json --json-file spec.json --changes "..." [-o spec2.json] [--provider ...]
+python "$TOOL" regenerate --json-spec spec2.json [--original image.png] [--refs ...] -o out.png [--provider ...]
 ```
 
 ## Resources

@@ -1,11 +1,11 @@
 ---
 name: customer-deployment-package
-description: Produce a customer-facing deployment handoff package for a Forward Path custom app — an external Terraform/Bicep variant of the repo's internal infra, customer setup instructions (env vars, app registrations, secrets via 1Password), filled into the Notion deployment-instructions template, saved to the Notion deployments database, then exported and zipped with a Windows-safe filename. Use when the user asks to create a customer deployment package, external infra, deployment handoff, customer install/setup instructions, or to export/zip deployment instructions for a client.
+description: Produce a customer-facing deployment handoff package for a Forward Path custom app — an external Terraform/Bicep variant of the repo's internal infra, customer setup instructions (env vars, app registrations, ACR image pull credentials via 1Password, and customer-provided third-party secrets), filled into the Notion deployment-instructions template, saved to the Notion deployments database, then exported and zipped with a Windows-safe filename. Use when the user asks to create a customer deployment package, external infra, deployment handoff, customer install/setup instructions, or to export/zip deployment instructions for a client.
 ---
 
 # Customer Deployment Package
 
-Forward Path builds custom AI software and hands customers a self-contained package to deploy it in **their own** cloud tenant. This skill turns a repo's **internal** infrastructure into an **external** customer deliverable: sanitized Terraform/Bicep, written setup instructions, and a 1Password link for credentials — captured in Notion, then exported and zipped for the customer.
+Forward Path builds custom AI software and hands customers a self-contained package to deploy it in **their own** cloud tenant. This skill turns a repo's **internal** infrastructure into an **external** customer deliverable: sanitized Terraform/Bicep, written setup instructions, a 1Password link for ACR image pull credentials, and placeholders for customer-owned third-party service secrets — captured in Notion, then exported and zipped for the customer.
 
 Customers are usually **Azure** customers and usually on **Windows**, so the final artifact must use a Windows-safe filename.
 
@@ -13,7 +13,7 @@ Customers are usually **Azure** customers and usually on **Windows**, so the fin
 
 - Run from the **application repo** (the one with the internal `infra/` or `infrastructure/` folder).
 - **Notion MCP** connected. Inspect available tools/params under the MCP descriptors before calling (search, retrieve page, create page in a database, etc.). Stop and tell the user if no Notion MCP is available.
-- **1Password** share link for the customer's image/registry credentials and any handoff secrets (created by a human — do not put secret values in the zip or in git).
+- **1Password** share link for the Forward Path-provided ACR image pull credentials only (username/password for pulling images). Do not put secret values in the zip or in git.
 - **azure-infra-setup** skill available — read [azure-infra-setup/SKILL.md](../azure-infra-setup/SKILL.md) for Forward Path Azure conventions (shared ACR, OIDC/RBAC, Key Vault, regions, Container Apps) when shaping the external infra.
 
 Stop and report anything missing before proceeding.
@@ -49,7 +49,8 @@ Gather:
 - **Customer name** and **App name** (used in titles and the zip filename).
 - Cloud + tenant/subscription expectations.
 - Which services ship as images (frontend, backend, workers, etc.) and their image references (e.g. `forwardpathai.azurecr.io/<app-image>`).
-- The **1Password share link** for credentials/secrets.
+- The **1Password share link** for the ACR image pull username/password.
+- Any customer-owned third-party services the app needs (for example OpenRouter, model providers, email/SMS providers, or payment processors). Document the required secret names and where the customer must create or provide those values; do **not** imply Forward Path provides them through 1Password.
 - App version, if using versioned naming.
 
 ### Step 2: Locate internal infra
@@ -58,7 +59,7 @@ Find the internal infra (commonly `infra/`, `infrastructure/`, `terraform/`, or 
 
 ### Step 3: Build the external infra variant
 
-Create an external infra set the **customer** can run in their tenant. Keep it in the package assembly working folder under `infra/terraform/` and `infra/bicep/` (e.g. `dist/customer-package/<Sanitized-Customer>-<Sanitized-App>-Deployment-<YYYY-MM-DD>/infra/`), not mixed into the repo's internal infra.
+Create an external infra set the **customer** can run in their tenant. Keep it in a checked-in deployment handoff folder under `docs/deployments/<Sanitized-Customer>-<Sanitized-App>-Deployment-<YYYY-MM-DD>/infra/`, not mixed into the repo's internal infra and not under ignored build output such as `dist/`.
 
 Include **both Terraform and Bicep** (unless the user scopes to one). Apply [azure-infra-setup](../azure-infra-setup/SKILL.md) conventions for Azure targets.
 
@@ -80,12 +81,12 @@ Retrieve the sample template page (`36c92ad1579b81819801cfd3276fe396`) and use i
 - **Prerequisites** — required cloud account, CLI tools, permissions/roles.
 - **App registrations / identities** — what to create, required API permissions, redirect URIs, OIDC/federated credentials.
 - **Environment variables** — every env var the services need, with description and whether it is a secret.
-- **Secrets** — names to create (e.g. in Key Vault), and a pointer to the **1Password share link** for the values Forward Path provides.
+- **Secrets** — names to create (e.g. in Key Vault), which values come from the **1Password share link** for ACR image pull credentials, and which values the customer must supply from their own third-party accounts (for example OpenRouter API keys).
 - **Images / services** — each service image, where to pull it from, and tags.
 - **Deploy steps** — how to run the included Terraform/Bicep, in order.
 - **Verification** — how to confirm a healthy deployment.
 
-Treat the sample template page as **read-only**: copy its structure and draft the filled content for the new database page in Step 5, but never edit the sample template in place. Do not paste secret values into the page — reference the 1Password link instead.
+Treat the sample template page as **read-only**: copy its structure and draft the filled content for the new database page in Step 5, but never edit the sample template in place. Do not paste secret values into the page. Reference the 1Password link only for ACR image pull credentials, and describe third-party service secrets as customer-supplied values.
 
 ### Step 5: Save the filled page into the Notion deployments database
 
@@ -99,22 +100,23 @@ Set any database properties (customer, app, date/version) that the database defi
 
 ### Step 6: Export the Notion page and assemble the customer folder
 
-Use Notion's built-in **Export** on the saved page (Markdown & CSV, or PDF per customer preference) to get the customer-facing document. If export is not available through the connected tools, ask the user to export the saved page manually, or retrieve the saved page content and assemble an equivalent `README.md` that preserves the template structure. Then assemble the package folder using the same Windows-safe sanitized `<Customer>` and `<App>` values required for the zip filename in Step 7:
+Use Notion's built-in **Export** on the saved page (Markdown & CSV, or PDF per customer preference) to get the customer-facing document. If export is not available through the connected tools, ask the user to export the saved page manually, or retrieve the saved page content and assemble an equivalent `README.md` that preserves the template structure. Then assemble the package folder under `docs/deployments/` using the same Windows-safe sanitized `<Customer>` and `<App>` values required for the zip filename in Step 7:
 
 ```
-<Sanitized-Customer>-<Sanitized-App>-Deployment-<YYYY-MM-DD>/
-├── README.(md|pdf)            # exported deployment instructions
-├── infra/
-│   ├── terraform/             # external Terraform
-│   └── bicep/                 # external Bicep
-└── (any supporting assets from the export, e.g. images/)
+docs/deployments/
+└── <Sanitized-Customer>-<Sanitized-App>-Deployment-<YYYY-MM-DD>/
+    ├── README.(md|pdf)        # exported deployment instructions
+    ├── infra/
+    │   ├── terraform/         # external Terraform
+    │   └── bicep/             # external Bicep
+    └── (any supporting assets from the export, e.g. images/)
 ```
 
-The exported instructions are the entry point — make sure they reference the `infra/` contents and the 1Password link.
+The exported instructions are the entry point — make sure they reference the `infra/` contents, the 1Password link for ACR image pull credentials, and the customer-supplied third-party secrets they must configure. Before zipping, verify the handoff folder is visible to git with `git status --short docs/deployments/<Sanitized-Customer>-<Sanitized-App>-Deployment-<YYYY-MM-DD>/`; if it is ignored, move it to a tracked location or ask before changing ignore rules.
 
 ### Step 7: Zip with a Windows-safe name and deliver
 
-Zip the assembled folder. The filename **must** be valid on Windows.
+Zip the checked-in handoff folder. The filename **must** be valid on Windows. The zip can be a generated delivery artifact, but the source deployment instructions and infra folder must remain in a git-tracked path.
 
 Naming convention:
 
@@ -125,10 +127,10 @@ Naming convention:
 Sanitize `<Customer>` and `<App>` to alphanumerics and hyphens (replace spaces and other separators with `-`). See [Windows-safe naming](#windows-safe-naming) below.
 
 ```bash
-zip -r "Acme-Insurance-PolicyBot-Deployment-2026-06-05.zip" "Acme-Insurance-PolicyBot-Deployment-2026-06-05/"
+zip -r "Acme-Insurance-PolicyBot-Deployment-2026-06-05.zip" "docs/deployments/Acme-Insurance-PolicyBot-Deployment-2026-06-05/"
 ```
 
-Deliver the zip and report: the zip path/filename, the Notion page URL, and a reminder that credentials are in the linked 1Password share.
+Deliver the zip and report: the zip path/filename, the Notion page URL, a reminder that only the ACR image pull username/password are in the linked 1Password share, and that third-party service secrets are customer-supplied.
 
 ## Windows-safe naming
 
@@ -148,11 +150,13 @@ Prefer `-` as the separator. Keep dates as `YYYY-MM-DD` (no `/`).
 ## Anti-patterns
 
 - Shipping the **internal** infra verbatim (leaking state config, internal subscription IDs, RBAC principals, or secret values).
-- Putting secret **values** in the zip or in Notion instead of the 1Password share link.
+- Putting secret **values** in the zip or in Notion instead of documenting where they come from.
+- Telling the customer that third-party service secrets (for example OpenRouter API keys) are in 1Password; 1Password is only for Forward Path-provided ACR image pull credentials.
 - Inventing a new instructions structure instead of copying the Notion template page.
 - Generating Azure infra without confirming the customer's actual target cloud.
 - Filenames containing `|`, `:`, `/`, or other Windows-forbidden characters.
 - Saving the page outside the target deployments database, or skipping the Notion record entirely.
+- Creating the source deployment instructions or external infra under `dist/`, `build/`, or another ignored/generated-output directory when the handoff must be checked into git.
 
 ## Additional resources
 

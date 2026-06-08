@@ -101,11 +101,19 @@ def save_config(config):
 
 
 def resolve_provider(args):
+    # --provider is argparse-validated; env var and stored config are not, so
+    # validate here to fail with a clear message instead of a later KeyError.
     if getattr(args, "provider", None):
         return args.provider
-    if os.environ.get("MOBILE_UI_PROVIDER"):
-        return os.environ["MOBILE_UI_PROVIDER"]
-    return load_config().get("provider", DEFAULT_PROVIDER)
+    provider = os.environ.get("MOBILE_UI_PROVIDER") or load_config().get("provider")
+    if provider is None:
+        return DEFAULT_PROVIDER
+    if provider not in PROVIDERS:
+        valid = ", ".join(PROVIDERS)
+        print(f"ERROR: unknown provider {provider!r} (from MOBILE_UI_PROVIDER or stored "
+              f"config). Valid providers: {valid}.", file=sys.stderr)
+        sys.exit(2)
+    return provider
 
 
 def provider_config(provider):
@@ -293,12 +301,16 @@ class OpenRouterBackend:
             headers=self._headers(), method="POST")
         try:
             with urllib.request.urlopen(req, timeout=300) as r:
-                return json.loads(r.read().decode("utf-8")), None
+                body = r.read().decode("utf-8", "replace")
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")[:800]
             return None, f"HTTP {e.code} from OpenRouter: {detail}"
         except urllib.error.URLError as e:
             return None, f"network error reaching OpenRouter: {e.reason}"
+        try:
+            return json.loads(body), None
+        except json.JSONDecodeError:
+            return None, f"non-JSON response from OpenRouter: {body[:800] or '(empty body)'}"
 
     def generate_image(self, model, prompt, image_paths, temperature, aspect, size):
         body = {

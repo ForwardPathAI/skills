@@ -23,7 +23,7 @@ If the Linear MCP is missing, say so and fall back to single-ticket evaluation o
 
 ## Suitability rubric
 
-Score every ticket against these dimensions. A ticket is **Ready for Cursor** only when the critical dimensions (scope, clarity, verifiability, risk) pass **and** it is unblocked. Full rubric with examples in [REFERENCE.md](REFERENCE.md#suitability-rubric).
+Score every ticket against these dimensions. A ticket is **Ready for Cursor** only when **every** dimension passes with no unresolved red flags — scope, clarity, codebase grounding, verifiability, risk, and environment self-containment — **and** it is unblocked. Full rubric with examples in [REFERENCE.md](REFERENCE.md#suitability-rubric).
 
 | Dimension | Good fit | Red flags |
 |-----------|----------|-----------|
@@ -37,7 +37,7 @@ Score every ticket against these dimensions. A ticket is **Ready for Cursor** on
 
 ### Verdict mapping
 
-- **Ready** — critical dimensions pass and unblocked. Eligible for handoff.
+- **Ready** — all rubric dimensions pass (no unresolved red flags, including codebase grounding and environment self-containment) and unblocked. Eligible for handoff.
 - **Needs refinement** — promising but missing acceptance criteria / file grounding, or too big. Suggest concrete edits first (optionally hand to [issue-writer/SKILL.md](../issue-writer/SKILL.md) to rewrite or split), then re-evaluate.
 - **Not a fit** — inherently ambiguous, exploratory, or high-risk. Keep human-led.
 - **Blocked** — otherwise Ready but has an open `blocked by` relation. Surface separately; not eligible for handoff until unblocked.
@@ -82,13 +82,13 @@ Infer the repo's Linear project from the git remote or folder name (as [issue-wr
 
 ### Step 2: List candidate issues
 
-Call `list_issues` filtered to the resolved `project` (and/or `team`), restricted to actionable backlog/unstarted `state`, with `assignee: null` (unassigned), and read `priority`. Paginate with `cursor` until `hasNextPage` is false.
+Call `list_issues` filtered to the resolved `project` (and/or `team`), restricted to actionable states via the `state` arg (which accepts a state **type**, name, or ID — prefer the **type** `backlog` or `unstarted` so the filter works across teams without per-team lookup), with `assignee: null` (unassigned), and read `priority`. Only resolve concrete per-team state names/IDs via `list_issue_statuses` if you need them. Paginate with `cursor` until `hasNextPage` is false.
 
 Skip issues already assigned/delegated to Cursor or to a human in progress unless the user asks to include them.
 
 ### Step 3: Resolve blocking dependencies
 
-For each candidate, call `get_issue` with `includeRelations: true` and read its `blocked by` relations. A blocker only counts if it is **still open** — call `list_issue_statuses` for the team to learn which status names are completed/canceled, and treat blockers in those statuses as resolved. Mark any candidate with an open blocker as **Blocked** (record which issue blocks it). Fetch in parallel when there are many candidates.
+For each candidate, call `get_issue` with `includeRelations: true` and read its `blocked by` relations. A blocker only counts if it is **still open** — a blocker is resolved when its status **type** (`statusType`) is `completed` or `canceled`, **not** when its display name happens to read "Done". Read `statusType` directly off the blocker; map a status name to its type with `list_issue_statuses` only when the type isn't already available. Mark any candidate with an open blocker as **Blocked** (record which issue blocks it). Fetch in parallel when there are many candidates.
 
 ### Step 4: Evaluate
 
@@ -141,7 +141,7 @@ Assigning or delegating a Linear issue to **Cursor** launches a cloud agent that
 | User pastes ticket text instead of an id | Evaluate the text directly; skip `get_issue`. |
 | Repo maps to no obvious Linear project | Ask the user to name the project/team before scanning. |
 | Candidate is Ready but `blocked by` an open issue | Group under Blocked; exclude from handoff; name the blocker. |
-| Blocker is already Done/Canceled | Do not treat as blocking — verify via `list_issue_statuses`. |
+| Blocker's status type is completed/canceled | Do not treat as blocking — check `statusType`, not the display name. |
 | Ticket is borderline (Needs refinement) | Suggest concrete edits or hand to issue-writer; re-evaluate after rewrite. |
 | User says "assign all ready ones" | Still surface the list and confirm via AskQuestion before any `save_issue`. |
 | Workspace has no "Cursor" agent user | Stop before writing; tell the user to connect the Cursor-Linear integration. |
@@ -151,7 +151,7 @@ Assigning or delegating a Linear issue to **Cursor** launches a cloud agent that
 - Handing off **Blocked** tickets — a cloud agent can't satisfy an unfinished prerequisite.
 - Calling `save_issue` (the only write) without explicit, per-ticket user confirmation.
 - Marking a ticket Ready on vibes — every Ready verdict must cite the rubric dimensions it passes.
-- Treating a Done/Canceled blocker as still blocking (always reconcile against `list_issue_statuses`).
+- Judging a blocker by its status display name instead of its `statusType` (`completed`/`canceled`).
 - Recommending high-risk work (auth, secrets, DB migrations, infra, prod data) for autonomous execution.
 - Inventing a "Cursor" assignee name instead of resolving it via `list_users`.
 - Skipping `list_issues` pagination when `hasNextPage` is true — candidates get missed.

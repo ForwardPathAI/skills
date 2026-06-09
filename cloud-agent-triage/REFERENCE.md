@@ -72,7 +72,7 @@ Not blocked by an unfinished issue, and free of manual prerequisites (a design d
 ## Dependency handling
 
 1. Read relations with `get_issue` (`includeRelations: true`) and look at `blocked by`.
-2. A blocker only counts if it is **still open**. Resolve the team's status set with `list_issue_statuses` and treat blockers whose status type is completed/canceled as resolved.
+2. A blocker only counts if it is **still open**. Judge by the blocker's status **type** (`statusType`): treat `completed` or `canceled` as resolved, never the display name (a custom "Done"-style name may not map to `completed`). Use `list_issue_statuses` only to map a status name to its type when the type isn't already on the issue.
 3. Mark any candidate with an unresolved blocker as **Blocked** and record the blocking identifier. Blocked tickets are excluded from handoff even if otherwise Ready.
 4. When a chain of issues exists, the earliest unblocked, Ready ticket is the best handoff candidate; downstream ones become eligible once their blockers close.
 

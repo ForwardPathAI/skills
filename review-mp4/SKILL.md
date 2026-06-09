@@ -50,13 +50,22 @@ flowchart TD
   Probe --> Ext["ffmpeg: extract candidates at fps*oversample"]
   Ext --> Score["score each = variance of Laplacian"]
   Score --> Win["per 1/fps window: keep the sharpest candidate"]
-  Win --> Dedup["dedup near-identical, cap to --max-frames"]
-  Dedup --> Man["write selected frames + manifest.json"]
-  Man --> Read["agent reads selected frames -> answers request"]
+  Win --> Seg["segment: collapse same-looking windows (dHash + tiled block-diff)"]
+  Seg --> Man["write 1 representative per segment + coverage; cap to --max-frames"]
+  Man --> Read["agent reads representatives, telling the model each frame's span"]
   Read --> Clean["delete temp dir (or TTL sweep)"]
 ```
 
-Extracting above the target rate (`--oversample`) and keeping the sharpest frame in each window is the "if the 1s frame is blurry, check its neighbors" behavior, generalized to the whole timeline.
+Extracting above the target rate (`--oversample`) and keeping the sharpest frame in each window is the "if the 1s frame is blurry, check its neighbors" behavior, generalized to the whole timeline. **Segmentation** then groups consecutive same-looking windows into one representative frame that covers a time span, so a static 30s intro becomes one image (with `represents`/`duration`) instead of 30 — saving tokens. Sensitivity is controlled by `--profile` (see [below](#choosing-a-profile)).
+
+## Choosing a profile
+
+`--profile` sets how sensitive segmentation is. **You pick it** from the recording type and how fine-grained the question is:
+
+- `screencast` (default): sensitive tiled diff — catches typing, dropdowns, badges, small UI changes on an otherwise-static screen. Use for screen/browser/app recordings, demos, slide walk-throughs, or any question about on-screen text/UI ("what did they type?", "which menu did they open?").
+- `video`: coarser — tolerates constant natural motion (camera, b-roll, gameplay) so it does not over-segment and blow the frame budget. Use for filmed/real-world footage where you want scene-level coverage.
+
+When unsure, default to `screencast`. Override individual knobs (`--diff-thresh`, `--min-blocks`, etc.) only for fine-tuning.
 
 ## Workflow
 
@@ -64,8 +73,8 @@ Copy this checklist and track progress:
 
 ```
 - [ ] Step 1: Resolve runtime + deps, sweep stale temp dirs
-- [ ] Step 2: Process the video into selected frames + manifest
-- [ ] Step 3: Read the selected frames and answer the request
+- [ ] Step 2: Pick --profile, process the video into representative frames + manifest
+- [ ] Step 3: Read the representatives and answer, telling the model each frame's span
 - [ ] Step 4: (optional) Drill down on a moment at higher fps
 - [ ] Step 5: Clean up the temp dir
 ```
@@ -81,18 +90,20 @@ $RUN clean --ttl 24h
 ### Step 2: Process the video
 
 ```bash
-$RUN process "<path-or-url>" --fps 1 --oversample 3 --max-frames 24 --json
+$RUN process "<path-or-url>" --profile screencast --fps 1 --max-frames 24 --json
 ```
 
-This downloads (if a URL), extracts candidates, scores sharpness, selects the sharpest frame per 1-second window, dedups, caps to `--max-frames`, and writes `manifest.json` + `frame-NNN-t<seconds>.jpg` into a fresh temp dir. The `--json` line gives you `manifest` and `outdir`.
+This downloads (if a URL), extracts candidates, scores sharpness, selects the sharpest frame per 1-second window, **collapses consecutive same-looking windows into segments**, caps to `--max-frames`, and writes `manifest.json` + `frame-NNN-t<seconds>.jpg` into a fresh temp dir. The `--json` line gives you `manifest`, `outdir`, and `profile`.
 
-Read `manifest.json` to get the ordered `selected[]` list (each has `t`, `path`, `sharpness`, `blurry`, and `range` — the index into the manifest's `ranges[]`).
+Read `manifest.json` to get the ordered `selected[]` list. Each representative has `t`, `path`, `sharpness`, `blurry`, `range`, plus **coverage**: `segment_start`, `segment_end`, `duration` (seconds the frame stands for), and `represents` (how many frames it collapsed).
 
 To restrict analysis to specific parts of the video, pass one or more `--range LO..HI` (see [Step 4](#step-4-focus-on-time-ranges)).
 
 ### Step 3: Read frames and answer
 
-Open each `selected[].path` **in timestamp order** with the Read tool (it renders images), then reason about the user's actual request — describe, summarize, find a moment, extract text/UI, etc. **Cite timestamps** (`t`) so the user can jump to them. If a frame is flagged `blurry: true`, treat it as lower-confidence.
+Open each `selected[].path` **in timestamp order** with the Read tool (it renders images), then reason about the user's actual request — describe, summarize, find a moment, extract text/UI, etc. **Cite timestamps** (`t`) so the user can jump to them.
+
+When a representative collapsed several frames (`represents > 1` / `duration` large), treat it as standing for its whole span and **say so** — e.g. "from 0:05 to 0:35 the screen shows the dashboard (one representative frame)". This is the token-saving win: one image answers for the entire static stretch. If a frame is `blurry: true`, treat it as lower-confidence.
 
 ### Step 4: Focus on time ranges (optional)
 
@@ -122,9 +133,16 @@ rm -rf "<outdir>"
 |--------|---------|---------|
 | `--fps` | `1` | Target selected frames per second (window size = 1/fps). |
 | `--oversample` | `3` | Extract this many candidates per target frame, so a blurry pick has neighbors. |
-| `--max-frames` | `24` | Hard cap on selected frames, evenly distributed across the timeline. |
+| `--max-frames` | `24` | Hard cap on representatives, evenly distributed across the timeline. |
 | `--threshold` | backend default | Absolute blur floor; a window's best below it is flagged `blurry`. |
 | `--skip-blurry` | off | Drop (don't just flag) windows whose best frame is below threshold. |
+| `--profile` | `screencast` | Segmentation sensitivity preset: `screencast` (sensitive) or `video` (coarse). Sets the knobs below. |
+| `--no-segment` | off | Disable segmentation; emit one frame per kept window (old behavior). |
+| `--diff-thresh` | per profile | Per-block diff threshold (0-1) for the tiled confirm; lower = more sensitive. |
+| `--min-blocks` | per profile | How many changed blocks count as a real change (cursor-jitter floor). |
+| `--hash-dist` | per profile | dHash Hamming threshold for the fast prefilter. Alias: `--dedup-dist`. |
+| `--block-grid` | per profile | NxN grid over a 64x64 thumbnail for the tiled diff. |
+| `--max-segment-seconds` | `0` | Force a fresh representative after this many seconds (0 = unbounded). |
 | `--range LO..HI` | whole video | Limit to a time range; **repeatable** for multiple windows. Bounds: seconds, `HH:MM:SS`, `start`, `end`, or end-relative (`end-10`). |
 | `--start` / `--end` | whole video | Single-range shorthand; same bound formats as `--range` (including `end-N`). |
 | `--keep-candidates` | off | Keep + record every candidate (debug/tuning). |
@@ -141,13 +159,19 @@ rm -rf "<outdir>"
 | "Last N seconds" / "N seconds before the end" | Use an end-relative bound: `--range end-N..end`. |
 | Need a precise moment | Re-run a single `--range` with higher `--fps`/`--oversample`. |
 | Everything comes back `blurry` | Lower `--threshold` (values differ per backend — see REFERENCE), or the source is genuinely soft. |
-| Too many near-identical frames | Raise `--dedup-dist`; lower `--fps`. |
+| Browser/app/screen recording | Use `--profile screencast` (default) so typing and menus each get a frame. |
+| Filmed/real-world footage over-segmenting | Use `--profile video` (coarser), or raise `--diff-thresh` / `--min-blocks`. |
+| Localized UI change (typing) being merged | Lower `--diff-thresh` or `--min-blocks`. |
+| Too many near-identical frames | Use `--profile video`, raise `--diff-thresh`/`--min-blocks`/`--hash-dist`, or lower `--fps`. |
+| Want every window, no collapsing | `--no-segment`. |
 | ffmpeg missing | Stop and ask the user to install ffmpeg. |
 | Neither python3 nor node | Stop and ask the user to install one. |
 
 ## Anti-patterns
 
-- Reading raw candidate frames or the whole temp dir instead of the manifest's `selected[]` — that defeats the blur filter and the frame cap.
+- Reading raw candidate frames or the whole temp dir instead of the manifest's `selected[]` — that defeats the blur filter, segmentation, and the frame cap.
+- Reading a collapsed representative but not telling the model it covers a span (`duration`/`represents`) — you lose the timeline context the model needs.
+- Using `--profile video` for a screen recording — small UI changes (typing, menus) get merged away.
 - Ignoring `--max-frames` and reading hundreds of frames — it's slow and adds little signal.
 - Comparing `sharpness` numbers across backends or videos — the metric is relative; only compare within one run.
 - Leaving temp dirs behind — always clean up (or trust the TTL sweep), never write frames into the user's repo.
@@ -156,9 +180,13 @@ rm -rf "<outdir>"
 
 ## Examples
 
-**Summarize a local screen recording:**
+**Summarize a local screen recording (segments collapse static stretches):**
 
-> `$RUN process ~/demo.mp4 --fps 1 --json` -> read the ~20 selected frames -> "0-4s: login screen; 5-9s: dashboard loads; 10-14s: user opens Settings..."
+> `$RUN process ~/demo.mp4 --profile screencast --fps 1 --json` -> read the representatives -> "0-5s: login screen (1 frame, ~5s); 5-35s: dashboard idle (1 frame covers 30s); 35-38s: Settings opens..."
+
+**Browsing session (localized changes each get a frame):**
+
+> `$RUN process ~/session.mp4 --profile screencast --json` -> "t=3s: empty search box; t=6s: typed 'invoices'; t=8s: results dropdown" — typing and the dropdown each became their own segment.
 
 **Answer a question about a URL clip:**
 

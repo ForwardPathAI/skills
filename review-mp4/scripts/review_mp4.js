@@ -422,6 +422,9 @@ async function cmdProcess(argv) {
   const fps = a.fps != null ? parseFloat(a.fps) : 1.0;
   const oversample = a.oversample != null ? parseInt(a.oversample, 10) : 3;
   const maxFrames = a["max-frames"] != null ? parseInt(a["max-frames"], 10) : 24;
+  if (!(fps > 0)) fail("--fps must be > 0");
+  if (!(oversample >= 1)) fail("--oversample must be >= 1");
+  if (!(maxFrames >= 1)) fail("--max-frames must be >= 1");
   const threshold = a.threshold != null ? parseFloat(a.threshold) : DEFAULT_THRESHOLD_NODE;
   const skipBlurry = !!a["skip-blurry"];
   const dedupDist = a["dedup-dist"] != null ? parseInt(a["dedup-dist"], 10) : 4;

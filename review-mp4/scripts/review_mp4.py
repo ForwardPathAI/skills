@@ -387,6 +387,12 @@ def select_frames(scored, fps, threshold, skip_blurry, max_frames, dedup_dist):
 def cmd_process(args):
     if not have("ffmpeg") or not have("ffprobe"):
         fail("ffmpeg and ffprobe are required (install ffmpeg)")
+    if args.fps <= 0:
+        fail("--fps must be > 0")
+    if args.oversample < 1:
+        fail("--oversample must be >= 1")
+    if args.max_frames < 1:
+        fail("--max-frames must be >= 1")
 
     sweep_ttl(parse_duration(args.ttl), base_tmpdir())
 
@@ -497,7 +503,7 @@ def cmd_process(args):
 
 
 def base_tmpdir():
-    return Path(os.environ.get("TMPDIR", "/tmp"))
+    return Path(os.environ.get("TMPDIR") or tempfile.gettempdir())
 
 
 def sweep_ttl(ttl_seconds, base):

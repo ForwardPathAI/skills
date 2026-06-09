@@ -50,8 +50,9 @@ Suitability verdicts (pick one):
 ## Mode A: Single-ticket evaluation
 
 1. Get the ticket: if the user named an id/URL and the **Linear MCP is available**, fetch it with `get_issue` (`id`, `includeRelations: true`) to read description, state, assignee, and `blocked by` relations. If they pasted text, use that directly — no MCP needed.
-2. Score against the [rubric](#suitability-rubric).
-3. Output in this format:
+2. Score against the [rubric](#suitability-rubric) for the suitability verdict.
+3. Apply the [Blocked overlay](#verdict-mapping): if any `blocked by` relation is still open (its `statusType` is not `completed`/`canceled` — see [Step 3](#step-3-resolve-blocking-dependencies)), the ticket is Blocked regardless of its suitability verdict. With pasted text and no MCP, you cannot confirm blocker state — note that the blocker check was skipped.
+4. Output in this format:
 
 ```
 Verdict: <Ready for Cursor | Needs refinement | Not a fit | Blocked>  (LIN-123 — <title>)

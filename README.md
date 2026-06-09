@@ -22,6 +22,7 @@ npx skills add forwardpathai/skills/azure-infra-setup
 npx skills add forwardpathai/skills/engineering-projects-on-track
 npx skills add forwardpathai/skills/mobile-ui
 npx skills add forwardpathai/skills/customer-deployment-package
+npx skills add forwardpathai/skills/review-mp4
 ```
 
 ## Skills
@@ -37,6 +38,7 @@ npx skills add forwardpathai/skills/customer-deployment-package
 | [azure-infra-setup](./azure-infra-setup) | Author Forward Path Azure infrastructure (Terraform/Bicep) — shared ACR, OIDC/RBAC, environments, Key Vault, Container Apps. |
 | [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini). |
 | [customer-deployment-package](./customer-deployment-package) | Build a customer-facing deployment handoff — external Terraform/Bicep, setup instructions filled into the Notion template and saved to the deployments DB, then exported and zipped with a Windows-safe name. |
+| [review-mp4](./review-mp4) | Understand an mp4 (local or URL): extract frames with ffmpeg, pick the sharpest in-focus frame per window via variance-of-Laplacian blur detection (Python or Node), then read them to answer questions. |
 
 ## Authoring
 

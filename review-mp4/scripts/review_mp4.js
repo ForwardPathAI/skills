@@ -31,6 +31,14 @@ const MARKER = ".review-mp4-created";
 const IMAGE_EXT = ".jpg";
 const DEFAULT_THRESHOLD_NODE = 4.0; // sharp/clamped-byte Laplacian variance floor
 
+// Segmentation similarity presets. The agent picks --profile per video (see SKILL.md).
+const PROFILES = {
+  screencast: { hash_dist: 6, diff_thresh: 0.06, block_grid: 8, min_blocks: 2 },
+  video: { hash_dist: 8, diff_thresh: 0.12, block_grid: 4, min_blocks: 1 },
+};
+const DEFAULT_PROFILE = "screencast";
+const THUMB_SIZE = 64; // grayscale thumbnail edge for the tiled block-diff
+
 // --------------------------------------------------------------------------- //
 // utilities
 // --------------------------------------------------------------------------- //
@@ -273,26 +281,36 @@ async function scoreSharpness(imgPath) {
   return varSum / buf.length;
 }
 
-async function ahash(imgPath) {
+// Compute { hash:{hi,lo}|null, thumb:Float64Array|null } once per frame.
+// dHash: 9x8 grayscale, 64 bits comparing horizontal neighbors (brightness-robust).
+// thumb: THUMB_SIZE x THUMB_SIZE grayscale normalized 0-1 for the tiled diff.
+async function frameFingerprint(imgPath) {
   const s = loadSharp();
-  let buf;
+  let dh;
+  let tb;
   try {
-    buf = await s(imgPath).greyscale().resize(8, 8, { fit: "fill" }).raw().toBuffer();
+    dh = await s(imgPath).greyscale().resize(9, 8, { fit: "fill" }).raw().toBuffer();
+    tb = await s(imgPath).greyscale().resize(THUMB_SIZE, THUMB_SIZE, { fit: "fill" }).raw().toBuffer();
   } catch (e) {
-    return null;
+    return { hash: null, thumb: null };
   }
-  let sum = 0;
-  for (let i = 0; i < buf.length; i++) sum += buf[i];
-  const mean = sum / buf.length;
   let hi = 0n;
   let lo = 0n;
-  for (let i = 0; i < 64; i++) {
-    const bit = buf[i] > mean ? 1n : 0n;
-    if (i < 32) hi = (hi << 1n) | bit;
-    else lo = (lo << 1n) | bit;
+  let bit = 0;
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const idx = row * 9 + col;
+      const b = dh[idx + 1] > dh[idx] ? 1n : 0n;
+      if (bit < 32) hi = (hi << 1n) | b;
+      else lo = (lo << 1n) | b;
+      bit++;
+    }
   }
-  return { hi, lo };
+  const thumb = new Float64Array(THUMB_SIZE * THUMB_SIZE);
+  for (let i = 0; i < thumb.length; i++) thumb[i] = tb[i] / 255.0;
+  return { hash: { hi, lo }, thumb };
 }
+
 function hamming(a, b) {
   if (!a || !b) return 64;
   const popc = (x) => {
@@ -306,10 +324,33 @@ function hamming(a, b) {
   return popc(a.hi ^ b.hi) + popc(a.lo ^ b.lo);
 }
 
+// Count NxN grid blocks whose normalized mean-abs-difference exceeds diffThresh.
+// A localized change saturates a few blocks even when the whole-frame average is ~0.
+function changedBlocks(thumbA, thumbB, grid, diffThresh) {
+  if (!thumbA || !thumbB) return grid * grid;
+  const step = Math.max(1, Math.floor(THUMB_SIZE / grid));
+  let changed = 0;
+  for (let by = 0; by < grid; by++) {
+    for (let bx = 0; bx < grid; bx++) {
+      let sum = 0;
+      let n = 0;
+      for (let y = by * step; y < by * step + step && y < THUMB_SIZE; y++) {
+        for (let x = bx * step; x < bx * step + step && x < THUMB_SIZE; x++) {
+          const idx = y * THUMB_SIZE + x;
+          sum += Math.abs(thumbA[idx] - thumbB[idx]);
+          n++;
+        }
+      }
+      if (n > 0 && sum / n > diffThresh) changed++;
+    }
+  }
+  return changed;
+}
+
 // --------------------------------------------------------------------------- //
 // selection (mirrors review_mp4.py)
 // --------------------------------------------------------------------------- //
-async function selectFrames(scored, fps, threshold, skipBlurry, maxFrames, dedupDist) {
+async function selectFrames(scored, fps, threshold, skipBlurry, maxFrames, seg) {
   const window = fps > 0 ? 1 / fps : 1;
   const buckets = new Map();
   for (const f of scored) {
@@ -328,47 +369,81 @@ async function selectFrames(scored, fps, threshold, skipBlurry, maxFrames, dedup
       cand.reason = "below-threshold-skipped";
       continue;
     }
-    cand.selected = true;
-    cand.reason = "sharpest-in-window" + (cand.blurry ? "-blurry" : "");
+    cand.selected = false; // decided during segmentation below
     chosen.push(cand);
   }
 
-  const deduped = [];
+  const grid = Math.max(1, Math.min(THUMB_SIZE, seg.block_grid));
+  for (const f of chosen) f._fp = await frameFingerprint(f.path);
+
+  // build segments of consecutive same-looking windows (within a range)
+  const segments = [];
+  let cur = null;
   for (const f of chosen) {
-    f._hash = await ahash(f.path);
-    if (deduped.length && hamming(deduped[deduped.length - 1]._hash, f._hash) <= dedupDist) {
-      const prev = deduped[deduped.length - 1];
-      if (f.sharpness > prev.sharpness) {
-        prev.selected = false;
-        prev.reason = "deduped";
-        deduped[deduped.length - 1] = f;
+    const winStart = f.window * window;
+    const winEnd = (f.window + 1) * window;
+    let startNew = cur === null || f.range !== cur.range;
+    if (!startNew) {
+      if (!seg.segment) {
+        startNew = true;
       } else {
-        f.selected = false;
-        f.reason = "deduped";
+        let same = hamming(cur.anchor.hash, f._fp.hash) <= seg.hash_dist;
+        if (same && changedBlocks(cur.anchor.thumb, f._fp.thumb, grid, seg.diff_thresh) >= seg.min_blocks) {
+          same = false;
+        }
+        if (!same) startNew = true;
+        else if (seg.max_segment_seconds && winEnd - cur.start > seg.max_segment_seconds) startNew = true;
       }
-      continue;
     }
-    deduped.push(f);
+    if (startNew) {
+      cur = { range: f.range, anchor: f._fp, start: winStart, end: winEnd, frames: [f], rep: f };
+      segments.push(cur);
+    } else {
+      cur.frames.push(f);
+      cur.end = winEnd;
+      if (f.sharpness > cur.rep.sharpness) cur.rep = f;
+    }
   }
 
-  if (deduped.length > maxFrames) {
+  // one representative (sharpest) per segment, annotated with coverage
+  let reps = [];
+  for (const s of segments) {
+    const rep = s.rep;
+    const start = Math.round(s.start * 1000) / 1000;
+    const end = Math.round((seg.duration != null ? Math.min(s.end, seg.duration) : s.end) * 1000) / 1000;
+    rep.selected = true;
+    rep.reason = "segment-representative";
+    rep.segment_start = start;
+    rep.segment_end = end;
+    rep.duration = Math.round(Math.max(0, end - start) * 1000) / 1000;
+    rep.represents = s.frames.length;
+    for (const f of s.frames) {
+      if (f !== rep) {
+        f.selected = false;
+        f.reason = "merged-into-segment";
+      }
+    }
+    reps.push(rep);
+  }
+
+  if (reps.length > maxFrames) {
     const keep = new Set();
     if (maxFrames <= 1) {
       keep.add(0);
     } else {
       for (let i = 0; i < maxFrames; i++) {
-        keep.add(Math.round((i * (deduped.length - 1)) / (maxFrames - 1)));
+        keep.add(Math.round((i * (reps.length - 1)) / (maxFrames - 1)));
       }
     }
-    deduped.forEach((f, i) => {
+    reps.forEach((rep, i) => {
       if (!keep.has(i)) {
-        f.selected = false;
-        f.reason = "over-max-frames";
+        rep.selected = false;
+        rep.reason = "over-max-frames";
       }
     });
   }
 
-  for (const f of scored) delete f._hash;
+  for (const f of scored) delete f._fp;
   return scored.filter((f) => f.selected);
 }
 
@@ -412,7 +487,7 @@ function sweepTtl(ttlSeconds, base) {
 // --------------------------------------------------------------------------- //
 async function cmdProcess(argv) {
   const a = parseArgs(argv, {
-    bools: ["skip-blurry", "keep-candidates", "json"],
+    bools: ["skip-blurry", "keep-candidates", "json", "no-segment"],
     multi: ["range"],
   });
   if (a._.length < 1) fail("process requires an input path or URL");
@@ -425,9 +500,26 @@ async function cmdProcess(argv) {
   if (!(fps > 0)) fail("--fps must be > 0");
   if (!(oversample >= 1)) fail("--oversample must be >= 1");
   if (!(maxFrames >= 1)) fail("--max-frames must be >= 1");
+
+  // Resolve segmentation knobs from the profile; explicit flags override.
+  const profile = a.profile != null ? a.profile : DEFAULT_PROFILE;
+  if (!PROFILES[profile]) fail(`--profile must be one of: ${Object.keys(PROFILES).join(", ")}`);
+  const preset = PROFILES[profile];
+  const hashArg = a["hash-dist"] != null ? a["hash-dist"] : a["dedup-dist"];
+  const hashDist = hashArg != null ? parseInt(hashArg, 10) : preset.hash_dist;
+  const diffThresh = a["diff-thresh"] != null ? parseFloat(a["diff-thresh"]) : preset.diff_thresh;
+  const blockGrid = a["block-grid"] != null ? parseInt(a["block-grid"], 10) : preset.block_grid;
+  const minBlocks = a["min-blocks"] != null ? parseInt(a["min-blocks"], 10) : preset.min_blocks;
+  const maxSegmentSeconds = a["max-segment-seconds"] != null ? parseFloat(a["max-segment-seconds"]) : 0.0;
+  if (!(hashDist >= 0)) fail("--hash-dist must be >= 0");
+  if (!(diffThresh >= 0 && diffThresh <= 1)) fail("--diff-thresh must be between 0 and 1");
+  if (!(blockGrid >= 1)) fail("--block-grid must be >= 1");
+  if (!(minBlocks >= 1)) fail("--min-blocks must be >= 1");
+  if (!(maxSegmentSeconds >= 0)) fail("--max-segment-seconds must be >= 0");
+  const noSegment = !!a["no-segment"];
+
   const threshold = a.threshold != null ? parseFloat(a.threshold) : DEFAULT_THRESHOLD_NODE;
   const skipBlurry = !!a["skip-blurry"];
-  const dedupDist = a["dedup-dist"] != null ? parseInt(a["dedup-dist"], 10) : 4;
   const start = a.start != null ? a.start : null;
   const end = a.end != null ? a.end : null;
   const ttl = a.ttl != null ? a.ttl : "24h";
@@ -461,7 +553,15 @@ async function cmdProcess(argv) {
     });
   }
 
-  const selected = await selectFrames(scored, fps, threshold, skipBlurry, maxFrames, dedupDist);
+  const selected = await selectFrames(scored, fps, threshold, skipBlurry, maxFrames, {
+    segment: !noSegment,
+    hash_dist: hashDist,
+    diff_thresh: diffThresh,
+    block_grid: blockGrid,
+    min_blocks: minBlocks,
+    max_segment_seconds: maxSegmentSeconds,
+    duration: info.duration,
+  });
 
   const final = [];
   selected.forEach((f, n) => {
@@ -504,6 +604,13 @@ async function cmdProcess(argv) {
     backend: "sharp",
     threshold,
     outdir: workdir,
+    profile,
+    segment: !noSegment,
+    hash_dist: hashDist,
+    diff_thresh: diffThresh,
+    block_grid: blockGrid,
+    min_blocks: minBlocks,
+    max_segment_seconds: maxSegmentSeconds,
     ranges: ranges.map(([s, e], i) => ({
       index: i,
       start: s != null ? Math.round(s * 1000) / 1000 : 0.0,
@@ -521,6 +628,10 @@ async function cmdProcess(argv) {
       blurry: f.blurry,
       window: f.window,
       reason: f.reason,
+      segment_start: f.segment_start,
+      segment_end: f.segment_end,
+      duration: f.duration,
+      represents: f.represents,
     })),
   };
   if (a["keep-candidates"]) manifest.candidates = scored;
@@ -534,6 +645,7 @@ async function cmdProcess(argv) {
         manifest: manifestPath,
         outdir: workdir,
         backend: "sharp",
+        profile,
         count_selected: final.length,
         count_candidates: scored.length,
         duration: info.duration,
@@ -541,16 +653,17 @@ async function cmdProcess(argv) {
     );
   } else {
     console.log(`outdir: ${workdir}`);
-    console.log(`backend: sharp  threshold: ${threshold}`);
+    console.log(`backend: sharp  threshold: ${threshold}  profile: ${profile}${noSegment ? "  (segmentation off)" : ""}`);
     const rngDesc = manifest.ranges
       .map((m) => `[${m.start.toFixed(1)}s-${m.end != null ? m.end.toFixed(1) + "s]" : "EOF]"}`)
       .join(", ");
     console.log(`ranges: ${rngDesc}`);
-    console.log(`selected ${final.length} of ${scored.length} candidates`);
+    console.log(`selected ${final.length} representative(s) of ${scored.length} candidates`);
     console.log(`manifest: ${manifestPath}`);
     for (const f of final) {
       const flag = f.blurry ? " (blurry)" : "";
-      console.log(`  r${f.range} t=${f.t.toFixed(2)}s  sharp=${f.sharpness.toFixed(2)}${flag}  ${path.basename(f.path)}`);
+      const covers = ` covers ${f.segment_start.toFixed(1)}-${f.segment_end.toFixed(1)}s (~${Math.round(f.duration)}s, ${f.represents} frames)`;
+      console.log(`  r${f.range} t=${f.t.toFixed(2)}s  sharp=${f.sharpness.toFixed(2)}${flag}${covers}`);
     }
   }
 }

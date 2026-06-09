@@ -82,7 +82,7 @@ Infer the repo's Linear project from the git remote or folder name (as [issue-wr
 
 ### Step 2: List candidate issues
 
-Call `list_issues` filtered to the resolved `project` (and/or `team`), restricted to actionable states via the `state` arg (which accepts a state **type**, name, or ID — prefer the **type** `backlog` or `unstarted` so the filter works across teams without per-team lookup), with `assignee: null` (unassigned), and read `priority`. Only resolve concrete per-team state names/IDs via `list_issue_statuses` if you need them. Paginate with `cursor` until `hasNextPage` is false.
+`list_issues` `state` takes a **single** value, so make **one call per actionable state type** — once for `backlog` and once for `unstarted` (the `state` arg accepts a type, name, or ID; prefer the **type** so the filter works across teams without per-team lookup). For each call, filter to the resolved `project` (and/or `team`) with `assignee: null` (unassigned), read `priority`, and paginate with `cursor` until `hasNextPage` is false. **Merge both result sets and dedupe by issue id.** Only resolve concrete per-team state names/IDs via `list_issue_statuses` if you need them.
 
 Skip issues already assigned/delegated to Cursor or to a human in progress unless the user asks to include them.
 
@@ -129,7 +129,7 @@ Assigning or delegating a Linear issue to **Cursor** launches a cloud agent that
 
 1. **Confirm the set.** Use `AskQuestion` to let the user pick exactly which Ready tickets to hand off (allow multiple). Do not write anything before this confirmation.
 2. **Resolve Cursor once.** Call `list_users` (or `get_user`) to find the workspace's Cursor agent/user and its exact name.
-3. **Delegate.** For each chosen ticket call `save_issue` with `id` and `delegate: "Cursor"` (Linear's agent-native path keeps a human owner). If the workspace exposes Cursor only as a plain user, fall back to `assignee: "Cursor"`.
+3. **Delegate.** Use the exact Cursor agent name/id resolved in step 2 — never hardcode the literal `"Cursor"`. For each chosen ticket call `save_issue` with `id` and `delegate: <resolved Cursor agent>` (Linear's agent-native path keeps a human owner). If the workspace exposes Cursor only as a plain user, fall back to `assignee: <resolved Cursor user>`.
 4. **Verify.** Read each issue back (`get_issue`) to confirm the delegation/assignment registered.
 5. **Report.** List what was handed off with issue links, and note any that failed so the user can retry.
 

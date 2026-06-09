@@ -92,12 +92,12 @@ Note: a **label alone does not trigger an agent** — labels only configure repo
 
 ### Doing it via the Linear MCP
 
-This skill uses `save_issue` to perform the handoff:
+This skill uses `save_issue` to perform the handoff. **Resolve the exact Cursor agent name/id first with `list_users` — do not hardcode the literal `"Cursor"`**, since the integration user may be named differently:
 
-- Preferred: `save_issue` with `id` + `delegate: "Cursor"` — the agent-native path; keeps a human owner.
-- Fallback: `save_issue` with `id` + `assignee: "Cursor"` — when the workspace exposes Cursor only as a plain user.
+- Preferred: `save_issue` with `id` + `delegate: <resolved Cursor agent>` — the agent-native path; keeps a human owner.
+- Fallback: `save_issue` with `id` + `assignee: <resolved Cursor user>` — when the workspace exposes Cursor only as a plain user.
 
-Resolve the exact "Cursor" name/id first with `list_users` (do not hardcode it). After writing, read the issue back with `get_issue` to confirm the change registered.
+After writing, read the issue back with `get_issue` to confirm the change registered.
 
 ### Setup prerequisites (tell the user if missing)
 

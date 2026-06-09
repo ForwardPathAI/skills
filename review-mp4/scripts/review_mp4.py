@@ -82,11 +82,74 @@ def parse_duration(s):
     return total
 
 
-def parse_timestamp(s):
-    """Parse a seek timestamp: seconds or HH:MM:SS(.ms). Return a string ffmpeg accepts."""
-    if s is None:
+def clock_to_seconds(s):
+    """Parse seconds ('12', '1.5') or clock ('HH:MM:SS(.ms)', 'MM:SS') -> float seconds."""
+    s = str(s).strip()
+    if ":" in s:
+        try:
+            parts = [float(p) for p in s.split(":")]
+        except ValueError:
+            fail(f"bad timestamp: {s!r}")
+        sec = 0.0
+        for p in parts:
+            sec = sec * 60 + p
+        return sec
+    try:
+        return float(s)
+    except ValueError:
+        fail(f"bad timestamp: {s!r}")
+
+
+def resolve_time(token, duration):
+    """Resolve a time token to absolute seconds.
+
+    Accepts: seconds, HH:MM:SS / MM:SS, 'start'/'begin', 'end'/'eof', and
+    end-relative 'end-10' / 'end+5' (the offset itself may be seconds or clock).
+    Returns None only for 'end' when duration is unknown (meaning "to EOF").
+    """
+    if token is None:
         return None
-    return str(s)
+    t = str(token).strip().lower()
+    if t in ("start", "begin", "beginning", ""):
+        return 0.0
+    if t in ("end", "eof"):
+        return duration  # None -> caller treats as EOF (no -t/-to)
+    if t.startswith("end-") or t.startswith("end+"):
+        if duration is None:
+            fail(f"end-relative timestamp {token!r} used but video duration is unknown")
+        sign = -1.0 if t[3] == "-" else 1.0
+        return max(0.0, duration + sign * clock_to_seconds(t[4:]))
+    return clock_to_seconds(t)
+
+
+def parse_ranges(range_args, start, end, duration):
+    """Build a sorted list of (start_sec, end_sec) ranges from --range / --start/--end.
+
+    --range accepts LO..HI (or LO,HI); each bound goes through resolve_time. A missing
+    bound defaults to start/end. With no ranges at all, returns the whole video.
+    """
+    raw = []
+    for r in range_args or []:
+        sep = ".." if ".." in r else ("," if "," in r else None)
+        if not sep:
+            fail(f"range must be LO..HI (got {r!r})")
+        lo, hi = r.split(sep, 1)
+        raw.append((lo.strip() or "start", hi.strip() or "end"))
+    if start is not None or end is not None:
+        raw.append((start if start is not None else "start",
+                    end if end is not None else "end"))
+    if not raw:
+        raw.append(("start", "end"))
+
+    resolved = []
+    for lo, hi in raw:
+        s = resolve_time(lo, duration)
+        e = resolve_time(hi, duration)
+        if s is not None and e is not None and e <= s:
+            fail(f"range end ({hi}) must be after start ({lo})")
+        resolved.append((s, e))
+    resolved.sort(key=lambda x: (x[0] if x[0] is not None else 0.0))
+    return resolved
 
 
 def is_url(s):
@@ -154,38 +217,37 @@ def ffprobe_info(path):
 # --------------------------------------------------------------------------- #
 # frame extraction
 # --------------------------------------------------------------------------- #
-def extract_frames(video, outdir, oversample, start, end, scene):
-    """Extract candidate frames at `oversample` fps into outdir/cand-%05d.jpg.
+def extract_ranges(video, outdir, oversample, ranges):
+    """Extract candidate frames at `oversample` fps for each (start_sec, end_sec) range.
 
-    Also emits ffprobe-style timestamps so each candidate maps back to a video time.
-    Returns a list of (path, t_seconds) sorted by time.
+    Each range gets its own subdir (r0, r1, ...). Candidate timestamps are absolute
+    (range_start + i/oversample). Returns a list of dicts {path, t, range} sorted by t.
     """
-    pattern = str(outdir / f"cand-%05d{IMAGE_EXT}")
-    cmd = ["ffmpeg", "-y"]
-    if start is not None:
-        cmd += ["-ss", str(start)]
-    if end is not None:
-        cmd += ["-to", str(end)]
-    cmd += ["-i", str(video)]
-    # vfr fps filter gives evenly spaced frames; -frame_pts keeps ordering stable.
-    vf = f"fps={oversample}"
-    cmd += ["-vf", vf, "-q:v", "3", pattern]
-    r = run(cmd)
-    if r.returncode != 0:
-        eprint(r.stderr.strip()[-2000:])
-        fail("ffmpeg frame extraction failed")
-
-    frames = sorted(outdir.glob(f"cand-*{IMAGE_EXT}"))
-    if not frames:
-        fail("no frames were extracted (empty or unreadable video)")
-
-    base = parse_duration(start) if start is not None else 0.0
     step = 1.0 / oversample
-    out = []
-    for i, fp in enumerate(frames):
-        t = (base or 0.0) + i * step
-        out.append((fp, t))
-    return out
+    frames = []
+    for ri, (s, e) in enumerate(ranges):
+        sub = outdir / f"r{ri}"
+        sub.mkdir(parents=True, exist_ok=True)
+        pattern = str(sub / f"cand-%05d{IMAGE_EXT}")
+        cmd = ["ffmpeg", "-y"]
+        # -ss before -i = fast seek; pair with -t (duration) so -to is unambiguous.
+        if s is not None and s > 0:
+            cmd += ["-ss", f"{s:.3f}"]
+        if e is not None:
+            cmd += ["-t", f"{max(0.0, e - (s or 0.0)):.3f}"]
+        cmd += ["-i", str(video), "-vf", f"fps={oversample}", "-q:v", "3", pattern]
+        r = run(cmd)
+        if r.returncode != 0:
+            eprint(r.stderr.strip()[-2000:])
+            fail("ffmpeg frame extraction failed")
+        base = s or 0.0
+        for i, fp in enumerate(sorted(sub.glob(f"cand-*{IMAGE_EXT}"))):
+            frames.append({"path": fp, "t": base + i * step, "range": ri})
+
+    if not frames:
+        fail("no frames were extracted (empty or unreadable video, or empty range)")
+    frames.sort(key=lambda f: f["t"])
+    return frames
 
 
 # --------------------------------------------------------------------------- #
@@ -337,15 +399,17 @@ def cmd_process(args):
     video = resolve_input(args.input, workdir)
     info = ffprobe_info(video)
 
-    frames = extract_frames(video, workdir, args.oversample, args.start, args.end, args.scene)
+    ranges = parse_ranges(args.ranges_arg, args.start, args.end, info["duration"])
+    frames = extract_ranges(video, workdir, args.oversample, ranges)
 
     scored = []
-    for i, (fp, t) in enumerate(frames):
+    for i, fr in enumerate(frames):
         scored.append({
             "index": i,
-            "t": round(t, 3),
-            "path": str(fp),
-            "sharpness": round(score_fn(fp), 4),
+            "t": round(fr["t"], 3),
+            "range": fr["range"],
+            "path": str(fr["path"]),
+            "sharpness": round(score_fn(fr["path"]), 4),
         })
 
     scored, selected = select_frames(
@@ -371,6 +435,13 @@ def cmd_process(args):
                         p.unlink(missing_ok=True)
                 except OSError:
                     pass
+    # drop now-empty per-range subdirs
+    for sub in workdir.glob("r*"):
+        if sub.is_dir():
+            try:
+                sub.rmdir()
+            except OSError:
+                pass
 
     manifest = {
         "video": str(video),
@@ -382,11 +453,17 @@ def cmd_process(args):
         "backend": backend_name,
         "threshold": threshold,
         "outdir": str(workdir),
+        "ranges": [
+            {"index": i,
+             "start": round(s, 3) if s is not None else 0.0,
+             "end": round(e, 3) if e is not None else info["duration"]}
+            for i, (s, e) in enumerate(ranges)
+        ],
         "count_candidates": len(scored),
         "count_selected": len(final),
         "created_at": time.time(),
         "selected": [
-            {k: f[k] for k in ("index", "t", "path", "sharpness", "blurry", "window", "reason")}
+            {k: f[k] for k in ("index", "t", "range", "path", "sharpness", "blurry", "window", "reason")}
             for f in final
         ],
     }
@@ -402,11 +479,16 @@ def cmd_process(args):
     else:
         print(f"outdir: {workdir}")
         print(f"backend: {backend_name}  threshold: {threshold}")
+        rng_desc = ", ".join(
+            f"[{m['start']:.1f}s-" + (f"{m['end']:.1f}s]" if m["end"] is not None else "EOF]")
+            for m in manifest["ranges"]
+        )
+        print(f"ranges: {rng_desc}")
         print(f"selected {len(final)} of {len(scored)} candidates")
         print(f"manifest: {manifest_path}")
         for f in final:
             flag = " (blurry)" if f["blurry"] else ""
-            print(f"  t={f['t']:.2f}s  sharp={f['sharpness']:.2f}{flag}  {Path(f['path']).name}")
+            print(f"  r{f['range']} t={f['t']:.2f}s  sharp={f['sharpness']:.2f}{flag}  {Path(f['path']).name}")
     return 0
 
 
@@ -460,8 +542,11 @@ def build_parser():
     pr.add_argument("--skip-blurry", action="store_true", dest="skip_blurry", help="drop windows whose best is below threshold")
     pr.add_argument("--scene", type=float, default=0.3, help="scene-change sensitivity hint (reserved; default 0.3)")
     pr.add_argument("--dedup-dist", type=int, default=4, dest="dedup_dist", help="avg-hash Hamming distance for dedup (default 4)")
-    pr.add_argument("--start", default=None, help="start timestamp (s or HH:MM:SS)")
-    pr.add_argument("--end", default=None, help="end timestamp (s or HH:MM:SS)")
+    pr.add_argument("--range", action="append", dest="ranges_arg", metavar="LO..HI",
+                    help="time range LO..HI (repeatable). Bounds accept seconds, HH:MM:SS, "
+                         "start, end, or end-relative like end-10. E.g. --range 0..10 --range end-10..end")
+    pr.add_argument("--start", default=None, help="single-range start (seconds, HH:MM:SS, or end-N)")
+    pr.add_argument("--end", default=None, help="single-range end (seconds, HH:MM:SS, end, or end-N)")
     pr.add_argument("--outdir", default=None, help="output dir (default: a fresh temp dir)")
     pr.add_argument("--keep-candidates", action="store_true", dest="keep_candidates", help="keep + record all candidate frames")
     pr.add_argument("--ttl", default="24h", help="TTL sweep window for stale temp dirs (default 24h)")

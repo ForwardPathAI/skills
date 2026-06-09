@@ -72,15 +72,73 @@ function parseDuration(s) {
   return total;
 }
 
-// minimal arg parser: flags with values, boolean flags, one positional
+function clockToSeconds(s) {
+  s = String(s).trim();
+  if (s.includes(":")) {
+    let sec = 0;
+    for (const p of s.split(":")) {
+      const v = parseFloat(p);
+      if (Number.isNaN(v)) fail(`bad timestamp: ${s}`);
+      sec = sec * 60 + v;
+    }
+    return sec;
+  }
+  const v = parseFloat(s);
+  if (Number.isNaN(v)) fail(`bad timestamp: ${s}`);
+  return v;
+}
+
+// Resolve a time token to absolute seconds. Supports seconds, HH:MM:SS / MM:SS,
+// 'start'/'begin', 'end'/'eof', and end-relative 'end-10' / 'end+5'.
+// Returns null only for 'end' when duration is unknown (meaning "to EOF").
+function resolveTime(token, duration) {
+  if (token == null) return null;
+  const t = String(token).trim().toLowerCase();
+  if (t === "start" || t === "begin" || t === "beginning" || t === "") return 0.0;
+  if (t === "end" || t === "eof") return duration; // null -> EOF
+  if (t.startsWith("end-") || t.startsWith("end+")) {
+    if (duration == null) fail(`end-relative timestamp '${token}' used but video duration is unknown`);
+    const sign = t[3] === "-" ? -1 : 1;
+    return Math.max(0.0, duration + sign * clockToSeconds(t.slice(4)));
+  }
+  return clockToSeconds(t);
+}
+
+// Build a sorted list of [startSec, endSec] ranges from --range / --start/--end.
+function parseRanges(rangeArgs, start, end, duration) {
+  const raw = [];
+  for (const r of rangeArgs || []) {
+    const sep = r.includes("..") ? ".." : r.includes(",") ? "," : null;
+    if (!sep) fail(`range must be LO..HI (got ${r})`);
+    const idx = r.indexOf(sep);
+    raw.push([r.slice(0, idx).trim() || "start", r.slice(idx + sep.length).trim() || "end"]);
+  }
+  if (start != null || end != null) raw.push([start != null ? start : "start", end != null ? end : "end"]);
+  if (raw.length === 0) raw.push(["start", "end"]);
+
+  const resolved = [];
+  for (const [lo, hi] of raw) {
+    const s = resolveTime(lo, duration);
+    const e = resolveTime(hi, duration);
+    if (s != null && e != null && e <= s) fail(`range end (${hi}) must be after start (${lo})`);
+    resolved.push([s, e]);
+  }
+  resolved.sort((a, b) => (a[0] == null ? 0 : a[0]) - (b[0] == null ? 0 : b[0]));
+  return resolved;
+}
+
+// minimal arg parser: flags with values, boolean flags, repeatable flags, one positional
 function parseArgs(argv, spec) {
   const out = { _: [] };
+  const multi = spec.multi || [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith("--")) {
       const key = a.slice(2);
       if (spec.bools.includes(key)) {
         out[key] = true;
+      } else if (multi.includes(key)) {
+        (out[key] = out[key] || []).push(argv[++i]);
       } else {
         out[key] = argv[++i];
       }
@@ -149,25 +207,32 @@ function ffprobeInfo(video) {
 // --------------------------------------------------------------------------- //
 // extraction
 // --------------------------------------------------------------------------- //
-function extractFrames(video, workdir, oversample, start, end) {
-  const pattern = path.join(workdir, `cand-%05d${IMAGE_EXT}`);
-  const cmd = ["-y"];
-  if (start != null) cmd.push("-ss", String(start));
-  if (end != null) cmd.push("-to", String(end));
-  cmd.push("-i", video, "-vf", `fps=${oversample}`, "-q:v", "3", pattern);
-  const r = run("ffmpeg", cmd);
-  if (r.status !== 0) {
-    eprint((r.stderr || "").slice(-2000));
-    fail("ffmpeg frame extraction failed");
-  }
-  const files = fs
-    .readdirSync(workdir)
-    .filter((f) => f.startsWith("cand-") && f.endsWith(IMAGE_EXT))
-    .sort();
-  if (files.length === 0) fail("no frames were extracted (empty or unreadable video)");
-  const base = start != null ? parseDuration(start) : 0;
+function extractRanges(video, workdir, oversample, ranges) {
   const step = 1 / oversample;
-  return files.map((f, i) => ({ path: path.join(workdir, f), t: (base || 0) + i * step }));
+  const frames = [];
+  ranges.forEach(([s, e], ri) => {
+    const sub = path.join(workdir, `r${ri}`);
+    fs.mkdirSync(sub, { recursive: true });
+    const pattern = path.join(sub, `cand-%05d${IMAGE_EXT}`);
+    const cmd = ["-y"];
+    // -ss before -i = fast seek; pair with -t (duration) so the range is unambiguous.
+    if (s != null && s > 0) cmd.push("-ss", s.toFixed(3));
+    if (e != null) cmd.push("-t", Math.max(0, e - (s || 0)).toFixed(3));
+    cmd.push("-i", video, "-vf", `fps=${oversample}`, "-q:v", "3", pattern);
+    const r = run("ffmpeg", cmd);
+    if (r.status !== 0) {
+      eprint((r.stderr || "").slice(-2000));
+      fail("ffmpeg frame extraction failed");
+    }
+    const base = s || 0;
+    fs.readdirSync(sub)
+      .filter((f) => f.startsWith("cand-") && f.endsWith(IMAGE_EXT))
+      .sort()
+      .forEach((f, i) => frames.push({ path: path.join(sub, f), t: base + i * step, range: ri }));
+  });
+  if (frames.length === 0) fail("no frames were extracted (empty or unreadable video, or empty range)");
+  frames.sort((a, b) => a.t - b.t);
+  return frames;
 }
 
 // --------------------------------------------------------------------------- //
@@ -340,6 +405,7 @@ function sweepTtl(ttlSeconds, base) {
 async function cmdProcess(argv) {
   const a = parseArgs(argv, {
     bools: ["skip-blurry", "keep-candidates", "json"],
+    multi: ["range"],
   });
   if (a._.length < 1) fail("process requires an input path or URL");
   if (!have("ffmpeg") || !have("ffprobe")) fail("ffmpeg and ffprobe are required (install ffmpeg)");
@@ -369,7 +435,8 @@ async function cmdProcess(argv) {
   loadSharp();
   const video = resolveInput(input, workdir);
   const info = ffprobeInfo(video);
-  const frames = extractFrames(video, workdir, oversample, start, end);
+  const ranges = parseRanges(a.range, start, end, info.duration);
+  const frames = extractRanges(video, workdir, oversample, ranges);
 
   const scored = [];
   for (let i = 0; i < frames.length; i++) {
@@ -377,6 +444,7 @@ async function cmdProcess(argv) {
     scored.push({
       index: i,
       t: Math.round(frames[i].t * 1000) / 1000,
+      range: frames[i].range,
       path: frames[i].path,
       sharpness: Math.round(sharpness * 10000) / 10000,
     });
@@ -406,6 +474,14 @@ async function cmdProcess(argv) {
       }
     }
   }
+  // drop now-empty per-range subdirs
+  for (let ri = 0; ri < ranges.length; ri++) {
+    try {
+      fs.rmdirSync(path.join(workdir, `r${ri}`));
+    } catch (e) {
+      /* not empty or missing */
+    }
+  }
 
   const manifest = {
     video,
@@ -417,12 +493,18 @@ async function cmdProcess(argv) {
     backend: "sharp",
     threshold,
     outdir: workdir,
+    ranges: ranges.map(([s, e], i) => ({
+      index: i,
+      start: s != null ? Math.round(s * 1000) / 1000 : 0.0,
+      end: e != null ? Math.round(e * 1000) / 1000 : info.duration,
+    })),
     count_candidates: scored.length,
     count_selected: final.length,
     created_at: Date.now() / 1000,
     selected: final.map((f) => ({
       index: f.index,
       t: f.t,
+      range: f.range,
       path: f.path,
       sharpness: f.sharpness,
       blurry: f.blurry,
@@ -449,11 +531,15 @@ async function cmdProcess(argv) {
   } else {
     console.log(`outdir: ${workdir}`);
     console.log(`backend: sharp  threshold: ${threshold}`);
+    const rngDesc = manifest.ranges
+      .map((m) => `[${m.start.toFixed(1)}s-${m.end != null ? m.end.toFixed(1) + "s]" : "EOF]"}`)
+      .join(", ");
+    console.log(`ranges: ${rngDesc}`);
     console.log(`selected ${final.length} of ${scored.length} candidates`);
     console.log(`manifest: ${manifestPath}`);
     for (const f of final) {
       const flag = f.blurry ? " (blurry)" : "";
-      console.log(`  t=${f.t.toFixed(2)}s  sharp=${f.sharpness.toFixed(2)}${flag}  ${path.basename(f.path)}`);
+      console.log(`  r${f.range} t=${f.t.toFixed(2)}s  sharp=${f.sharpness.toFixed(2)}${flag}  ${path.basename(f.path)}`);
     }
   }
 }

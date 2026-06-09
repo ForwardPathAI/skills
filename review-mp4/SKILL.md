@@ -86,19 +86,27 @@ $RUN process "<path-or-url>" --fps 1 --oversample 3 --max-frames 24 --json
 
 This downloads (if a URL), extracts candidates, scores sharpness, selects the sharpest frame per 1-second window, dedups, caps to `--max-frames`, and writes `manifest.json` + `frame-NNN-t<seconds>.jpg` into a fresh temp dir. The `--json` line gives you `manifest` and `outdir`.
 
-Read `manifest.json` to get the ordered `selected[]` list (each has `t`, `path`, `sharpness`, `blurry`).
+Read `manifest.json` to get the ordered `selected[]` list (each has `t`, `path`, `sharpness`, `blurry`, and `range` — the index into the manifest's `ranges[]`).
+
+To restrict analysis to specific parts of the video, pass one or more `--range LO..HI` (see [Step 4](#step-4-focus-on-time-ranges)).
 
 ### Step 3: Read frames and answer
 
 Open each `selected[].path` **in timestamp order** with the Read tool (it renders images), then reason about the user's actual request — describe, summarize, find a moment, extract text/UI, etc. **Cite timestamps** (`t`) so the user can jump to them. If a frame is flagged `blurry: true`, treat it as lower-confidence.
 
-### Step 4: Drill down (optional)
+### Step 4: Focus on time ranges (optional)
 
-For a specific moment or fast action, re-process a slice at a higher rate:
+Use `--range LO..HI` to analyze only specific parts of the video. It is **repeatable**, so you can target several disjoint windows in one run, and bounds accept end-relative tokens (`end`, `end-10`) as well as seconds and `HH:MM:SS`. Frames from every range are scored, selected, and capped together; each selected frame records which `range` it came from.
 
 ```bash
-$RUN process "<path-or-url>" --start 00:01:12 --end 00:01:20 --fps 4 --oversample 4 --json
+# First 10s AND last 10s in one run (e.g. "is our logo shown in the intro or outro?")
+$RUN process "<path-or-url>" --range 0..10 --range end-10..end --fps 1 --json
+
+# Drill down on one fast moment at a higher rate
+$RUN process "<path-or-url>" --range 00:01:12..00:01:20 --fps 4 --oversample 4 --json
 ```
+
+`--start`/`--end` still work for a single range and also accept end-relative tokens. The bound resolution needs the video duration (from `ffprobe`); if duration is unknown, `end`/`end-N` can't be computed.
 
 ### Step 5: Clean up
 
@@ -117,7 +125,8 @@ rm -rf "<outdir>"
 | `--max-frames` | `24` | Hard cap on selected frames, evenly distributed across the timeline. |
 | `--threshold` | backend default | Absolute blur floor; a window's best below it is flagged `blurry`. |
 | `--skip-blurry` | off | Drop (don't just flag) windows whose best frame is below threshold. |
-| `--start` / `--end` | whole video | Limit to a time range (seconds or `HH:MM:SS`). |
+| `--range LO..HI` | whole video | Limit to a time range; **repeatable** for multiple windows. Bounds: seconds, `HH:MM:SS`, `start`, `end`, or end-relative (`end-10`). |
+| `--start` / `--end` | whole video | Single-range shorthand; same bound formats as `--range` (including `end-N`). |
 | `--keep-candidates` | off | Keep + record every candidate (debug/tuning). |
 | `--backend` | `auto` | Python: `auto`/`opencv`/`numpy`. |
 | `--outdir` | fresh temp dir | Write somewhere specific instead of a temp dir. |
@@ -128,7 +137,9 @@ rm -rf "<outdir>"
 |-----------|--------|
 | Input is a URL | Pass it directly; the script downloads to the temp dir (`curl`, else ffmpeg). |
 | Long video (many minutes) | Keep `--max-frames` modest (e.g. 24-40); rely on even distribution, then drill down. |
-| Need a precise moment | Re-run `--start/--end` with higher `--fps`/`--oversample`. |
+| Question about specific parts (e.g. first & last 10s) | Pass multiple `--range`, e.g. `--range 0..10 --range end-10..end`. |
+| "Last N seconds" / "N seconds before the end" | Use an end-relative bound: `--range end-N..end`. |
+| Need a precise moment | Re-run a single `--range` with higher `--fps`/`--oversample`. |
 | Everything comes back `blurry` | Lower `--threshold` (values differ per backend — see REFERENCE), or the source is genuinely soft. |
 | Too many near-identical frames | Raise `--dedup-dist`; lower `--fps`. |
 | ffmpeg missing | Stop and ask the user to install ffmpeg. |
@@ -152,6 +163,10 @@ rm -rf "<outdir>"
 **Answer a question about a URL clip:**
 
 > `$RUN process https://example.com/clip.mp4 --json` -> read frames -> "The error toast appears at t=7.0s and reads 'Connection lost'."
+
+**Check the intro and outro only (multi-range + end-relative):**
+
+> `$RUN process ~/promo.mp4 --range 0..10 --range end-10..end --json` -> read the range-0 and range-1 frames -> "The codebase logo is visible in the first 10s (t=2-6s, range 0) but not in the last 10s (range 1)."
 
 ## Resources
 

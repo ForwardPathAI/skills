@@ -68,11 +68,30 @@ ffprobe -v error -select_streams v:0 \
   -of json "<video>"
 ```
 
-Extract candidates (optionally bounded by `-ss`/`-to`):
+Extract candidates per range (one ffmpeg call per range, into its own `rN/` subdir). `-ss` before `-i` is a fast seek; pair it with `-t DURATION` (not `-to`) so the window is unambiguous across ffmpeg versions:
 
 ```bash
-ffmpeg -y [-ss START] [-to END] -i "<video>" -vf fps=<oversample> -q:v 3 "$WORK/cand-%05d.jpg"
+ffmpeg -y [-ss START_SEC] [-t DURATION_SEC] -i "<video>" -vf fps=<oversample> -q:v 3 "$WORK/rN/cand-%05d.jpg"
 ```
+
+Each candidate's absolute timestamp is `range_start + i/oversample`.
+
+## Time ranges and end-relative tokens
+
+`--range LO..HI` (repeatable) and the `--start`/`--end` shorthand are resolved to absolute seconds **after** `ffprobe` reports the duration. Each bound accepts:
+
+| Token | Meaning |
+|-------|---------|
+| `12`, `1.5` | seconds |
+| `HH:MM:SS`, `MM:SS` (e.g. `00:01:12`) | clock time |
+| `start` / `begin` (or empty) | 0 |
+| `end` / `eof` (or empty HI) | the video duration |
+| `end-10`, `end+5` | duration minus/plus an offset (offset may itself be seconds or clock) |
+
+Notes:
+- The range separator is `..` (or `,`) so it never collides with the `:` in clock times.
+- `end` / `end-N` need a known duration; if `ffprobe` can't determine it, those tokens error out (a bare `end` for the whole video instead extracts to EOF with no `-t`).
+- Ranges are sorted by start; candidates from all ranges are scored, windowed, de-duplicated, and capped to `--max-frames` together, so `--max-frames` is a total across ranges.
 
 ## Manifest schema
 
@@ -89,6 +108,10 @@ ffmpeg -y [-ss START] [-to END] -i "<video>" -vf fps=<oversample> -q:v 3 "$WORK/
   "backend": "numpy | opencv | sharp",
   "threshold": 8.0,
   "outdir": "/tmp/review-mp4-XXXXXX",
+  "ranges": [
+    { "index": 0, "start": 0.0, "end": 10.0 },
+    { "index": 1, "start": 20.0, "end": 30.0 }
+  ],
   "count_candidates": 15,
   "count_selected": 5,
   "created_at": 1234567890.0,
@@ -96,6 +119,7 @@ ffmpeg -y [-ss START] [-to END] -i "<video>" -vf fps=<oversample> -q:v 3 "$WORK/
     {
       "index": 2,
       "t": 0.67,
+      "range": 0,
       "path": "/tmp/review-mp4-XXXXXX/frame-000-t0.67.jpg",
       "sharpness": 1814.02,
       "blurry": false,
@@ -105,6 +129,8 @@ ffmpeg -y [-ss START] [-to END] -i "<video>" -vf fps=<oversample> -q:v 3 "$WORK/
   ]
 }
 ```
+
+`ranges[]` lists the resolved time windows (always present; whole-video runs have a single range). Each `selected[]` entry's `range` is the index into `ranges[]` it came from.
 
 Read `selected[]` in array order (already timestamp-sorted). `reason` is one of `sharpest-in-window`, `sharpest-in-window-blurry`, `below-threshold-skipped`, `deduped`, `over-max-frames` (only selected entries appear in `selected[]`; the rest are dropped unless `--keep-candidates`, which adds a `candidates[]` array).
 
@@ -122,4 +148,4 @@ The script never calls an external vision model. It produces a handful of sharp,
 
 - Visual only — no audio/speech transcription.
 - Variance-of-Laplacian also reacts to noise and heavy texture; very grainy footage can read as "sharp". Tune `--threshold` or lower `--fps`.
-- Motion blur on fast pans may leave a whole window blurry; drill down with a higher `--oversample` over a `--start/--end` slice.
+- Motion blur on fast pans may leave a whole window blurry; drill down with a higher `--oversample` over a `--range` slice.

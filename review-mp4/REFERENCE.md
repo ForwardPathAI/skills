@@ -71,10 +71,10 @@ ffprobe -v error -select_streams v:0 \
 Extract candidates per range (one ffmpeg call per range, into its own `rN/` subdir). `-ss` before `-i` is a fast seek; pair it with `-t DURATION` (not `-to`) so the window is unambiguous across ffmpeg versions:
 
 ```bash
-ffmpeg -y [-ss START_SEC] [-t DURATION_SEC] -i "<video>" -vf fps=<oversample> -q:v 3 "$WORK/rN/cand-%05d.jpg"
+ffmpeg -y [-ss START_SEC] [-t DURATION_SEC] -i "<video>" -vf fps=<fps*oversample> -q:v 3 "$WORK/rN/cand-%05d.jpg"
 ```
 
-Each candidate's absolute timestamp is `range_start + i/oversample`.
+The candidate rate is `--fps * --oversample` frames/sec, so each `1/--fps` window holds `--oversample` candidates. Each candidate's absolute timestamp is `range_start + i/(fps*oversample)`.
 
 ## Time ranges and end-relative tokens
 

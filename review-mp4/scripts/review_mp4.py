@@ -217,13 +217,14 @@ def ffprobe_info(path):
 # --------------------------------------------------------------------------- #
 # frame extraction
 # --------------------------------------------------------------------------- #
-def extract_ranges(video, outdir, oversample, ranges):
-    """Extract candidate frames at `oversample` fps for each (start_sec, end_sec) range.
+def extract_ranges(video, outdir, cand_fps, ranges):
+    """Extract candidate frames at `cand_fps` frames/sec for each (start_sec, end_sec) range.
 
-    Each range gets its own subdir (r0, r1, ...). Candidate timestamps are absolute
-    (range_start + i/oversample). Returns a list of dicts {path, t, range} sorted by t.
+    `cand_fps` is the target rate (`--fps * --oversample`) so each `1/--fps` window holds
+    `--oversample` candidates. Each range gets its own subdir (r0, r1, ...). Candidate
+    timestamps are absolute (range_start + i/cand_fps). Returns dicts {path, t, range}.
     """
-    step = 1.0 / oversample
+    step = 1.0 / cand_fps
     frames = []
     for ri, (s, e) in enumerate(ranges):
         sub = outdir / f"r{ri}"
@@ -235,7 +236,7 @@ def extract_ranges(video, outdir, oversample, ranges):
             cmd += ["-ss", f"{s:.3f}"]
         if e is not None:
             cmd += ["-t", f"{max(0.0, e - (s or 0.0)):.3f}"]
-        cmd += ["-i", str(video), "-vf", f"fps={oversample}", "-q:v", "3", pattern]
+        cmd += ["-i", str(video), "-vf", f"fps={cand_fps:g}", "-q:v", "3", pattern]
         r = run(cmd)
         if r.returncode != 0:
             eprint(r.stderr.strip()[-2000:])
@@ -361,7 +362,10 @@ def select_frames(scored, fps, threshold, skip_blurry, max_frames, dedup_dist):
 
     # cap to max_frames, evenly distributed across the timeline
     if len(deduped) > max_frames:
-        keep_idx = {round(i * (len(deduped) - 1) / (max_frames - 1)) for i in range(max_frames)}
+        if max_frames <= 1:
+            keep_idx = {0}
+        else:
+            keep_idx = {round(i * (len(deduped) - 1) / (max_frames - 1)) for i in range(max_frames)}
         capped = []
         for i, f in enumerate(deduped):
             if i in keep_idx:
@@ -400,7 +404,7 @@ def cmd_process(args):
     info = ffprobe_info(video)
 
     ranges = parse_ranges(args.ranges_arg, args.start, args.end, info["duration"])
-    frames = extract_ranges(video, workdir, args.oversample, ranges)
+    frames = extract_ranges(video, workdir, args.fps * args.oversample, ranges)
 
     scored = []
     for i, fr in enumerate(frames):

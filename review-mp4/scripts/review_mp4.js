@@ -170,7 +170,9 @@ function resolveInput(inp, workdir) {
     }
     return dest;
   }
-  const p = inp.startsWith("~") ? path.join(os.homedir(), inp.slice(1)) : inp;
+  let p = inp;
+  if (inp === "~") p = os.homedir();
+  else if (inp.startsWith("~/")) p = path.join(os.homedir(), inp.slice(2));
   if (!fs.existsSync(p)) fail(`input not found: ${inp}`);
   return p;
 }
@@ -207,8 +209,10 @@ function ffprobeInfo(video) {
 // --------------------------------------------------------------------------- //
 // extraction
 // --------------------------------------------------------------------------- //
-function extractRanges(video, workdir, oversample, ranges) {
-  const step = 1 / oversample;
+function extractRanges(video, workdir, candFps, ranges) {
+  // candFps is the target rate (--fps * --oversample) so each 1/--fps window holds
+  // --oversample candidates. Candidate timestamps are absolute (range_start + i/candFps).
+  const step = 1 / candFps;
   const frames = [];
   ranges.forEach(([s, e], ri) => {
     const sub = path.join(workdir, `r${ri}`);
@@ -218,7 +222,7 @@ function extractRanges(video, workdir, oversample, ranges) {
     // -ss before -i = fast seek; pair with -t (duration) so the range is unambiguous.
     if (s != null && s > 0) cmd.push("-ss", s.toFixed(3));
     if (e != null) cmd.push("-t", Math.max(0, e - (s || 0)).toFixed(3));
-    cmd.push("-i", video, "-vf", `fps=${oversample}`, "-q:v", "3", pattern);
+    cmd.push("-i", video, "-vf", `fps=${candFps}`, "-q:v", "3", pattern);
     const r = run("ffmpeg", cmd);
     if (r.status !== 0) {
       eprint((r.stderr || "").slice(-2000));
@@ -349,8 +353,12 @@ async function selectFrames(scored, fps, threshold, skipBlurry, maxFrames, dedup
 
   if (deduped.length > maxFrames) {
     const keep = new Set();
-    for (let i = 0; i < maxFrames; i++) {
-      keep.add(Math.round((i * (deduped.length - 1)) / (maxFrames - 1)));
+    if (maxFrames <= 1) {
+      keep.add(0);
+    } else {
+      for (let i = 0; i < maxFrames; i++) {
+        keep.add(Math.round((i * (deduped.length - 1)) / (maxFrames - 1)));
+      }
     }
     deduped.forEach((f, i) => {
       if (!keep.has(i)) {
@@ -436,7 +444,7 @@ async function cmdProcess(argv) {
   const video = resolveInput(input, workdir);
   const info = ffprobeInfo(video);
   const ranges = parseRanges(a.range, start, end, info.duration);
-  const frames = extractRanges(video, workdir, oversample, ranges);
+  const frames = extractRanges(video, workdir, fps * oversample, ranges);
 
   const scored = [];
   for (let i = 0; i < frames.length; i++) {

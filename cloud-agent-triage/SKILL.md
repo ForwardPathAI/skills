@@ -23,7 +23,7 @@ If the Linear MCP is missing, say so and fall back to single-ticket evaluation o
 
 ## Suitability rubric
 
-Score every ticket against these dimensions. A ticket is **Ready for Cursor** only when **every** dimension passes with no unresolved red flags — scope, clarity, codebase grounding, verifiability, risk, and environment self-containment — **and** it is unblocked. Full rubric with examples in [REFERENCE.md](REFERENCE.md#suitability-rubric).
+Score every ticket against these dimensions. A ticket earns the **Ready** suitability verdict only when **every** dimension passes with no unresolved red flags — scope, clarity, codebase grounding, verifiability, risk, and environment self-containment. An open `blocked by` relation is handled separately by the [Blocked overlay](#verdict-mapping): a ticket that otherwise qualifies but has an open blocker is Blocked, not handoff-ready. Full rubric with examples in [REFERENCE.md](REFERENCE.md#suitability-rubric).
 
 | Dimension | Good fit | Red flags |
 |-----------|----------|-----------|
@@ -33,14 +33,19 @@ Score every ticket against these dimensions. A ticket is **Ready for Cursor** on
 | **Verifiability** | Validatable in an isolated VM via build/lint/tests; existing coverage is a strong plus | No way to prove it works without manual QA |
 | **Risk / blast radius** | Localized, reversible | Auth, security, payments, secrets, DB migration, infra, prod data |
 | **Environment self-containment** | Single repo, builds in a clean Ubuntu VM, GitHub/GitLab | Multi-repo coupling, special local state, Bitbucket |
-| **Dependencies** | Not blocked by open issues; no missing upstream decision | Blocked-by an unfinished ticket or a manual prerequisite |
+| **Readiness prerequisites** | All inputs exist; no pending decision or manual step | A missing upstream design decision, un-provisioned credential, or other prerequisite not tracked as a `blocked by` relation (tracked blockers are handled by the Blocked overlay) |
 
 ### Verdict mapping
 
-- **Ready** — all rubric dimensions pass (no unresolved red flags, including codebase grounding and environment self-containment) and unblocked. Eligible for handoff.
+Give each ticket one **suitability verdict** from the rubric, then apply the **Blocked** overlay from dependencies.
+
+Suitability verdicts (pick one):
+
+- **Ready** — all rubric dimensions pass (no unresolved red flags, including codebase grounding and environment self-containment). Eligible for handoff once confirmed unblocked.
 - **Needs refinement** — promising but missing acceptance criteria / file grounding, or too big. Suggest concrete edits first (optionally hand to [issue-writer/SKILL.md](../issue-writer/SKILL.md) to rewrite or split), then re-evaluate.
 - **Not a fit** — inherently ambiguous, exploratory, or high-risk. Keep human-led.
-- **Blocked** — otherwise Ready but has an open `blocked by` relation. Surface separately; not eligible for handoff until unblocked.
+
+**Blocked** is an overlay, not a fourth verdict: **any** candidate with an open `blocked by` relation is flagged Blocked **regardless of its suitability verdict**, grouped under Blocked in the proposal (noting both its underlying verdict and the blocking issue), and never eligible for handoff until the blocker resolves. Only a ticket whose suitability verdict is Ready **and** which is not Blocked counts as handoff-ready.
 
 ## Mode A: Single-ticket evaluation
 
@@ -92,7 +97,7 @@ For each candidate, call `get_issue` with `includeRelations: true` and read its 
 
 ### Step 4: Evaluate
 
-Score each candidate against the [rubric](#suitability-rubric) and assign a verdict. Blocked tickets keep their underlying verdict but are grouped under Blocked and excluded from handoff.
+Give each candidate one suitability verdict from the [rubric](#suitability-rubric), then apply the Blocked overlay: any candidate with an open blocker keeps its underlying verdict but is grouped under Blocked and excluded from handoff (see [Verdict mapping](#verdict-mapping)).
 
 ### Step 5: Present the proposal
 

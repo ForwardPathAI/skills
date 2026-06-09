@@ -53,9 +53,9 @@ These are "critical risk" regardless of how well-specified they are.
 - GitHub or GitLab (cloud agents do not support Bitbucket).
 - Secrets, if genuinely needed to build/test, must be configured in the Cursor Secrets settings — a ticket that needs ad-hoc local secrets is a poorer fit.
 
-### 7. Dependencies / readiness
+### 7. Readiness prerequisites
 
-Not blocked by an unfinished issue, and free of manual prerequisites (a design decision, an API key someone must provision, an upstream merge). See [Dependency handling](#dependency-handling).
+Free of prerequisites that aren't tracked as a `blocked by` relation — a pending design decision, an un-provisioned credential, an upstream merge someone still has to do. Tracked `blocked by` relations are handled separately by the **Blocked overlay** (see [Dependency handling](#dependency-handling)), not by this dimension.
 
 ## Verdict examples
 

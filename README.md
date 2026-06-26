@@ -23,6 +23,7 @@ npx skills add forwardpathai/skills/engineering-projects-on-track
 npx skills add forwardpathai/skills/mobile-ui
 npx skills add forwardpathai/skills/customer-deployment-package
 npx skills add forwardpathai/skills/review-mp4
+npx skills add forwardpathai/skills/azure-hibernate
 ```
 
 ## Skills
@@ -39,6 +40,7 @@ npx skills add forwardpathai/skills/review-mp4
 | [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini). |
 | [customer-deployment-package](./customer-deployment-package) | Build a customer-facing deployment handoff — external Terraform/Bicep, setup instructions filled into the Notion template and saved to the deployments DB, then exported and zipped with a Windows-safe name. |
 | [review-mp4](./review-mp4) | Understand an mp4 (local or URL): extract frames with ffmpeg, pick the sharpest in-focus frame per window via variance-of-Laplacian blur detection (Python or Node), then read them to answer questions. |
+| [azure-hibernate](./azure-hibernate) | Hibernate a live client project's Azure resource group to minimum cost (scale/stop App Service Plans, web apps, SQL, Redis, databases via the `az` CLI) and wake it for retesting — reversibly, recording state before every change. |
 
 ## Authoring
 

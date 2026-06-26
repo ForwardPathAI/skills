@@ -45,12 +45,12 @@ git log origin/<base>..HEAD --oneline
 Review **both** staged and unstaged diffs. Also check untracked files.
 
 - **No changes** (clean tree, no untracked files, and no commits ahead of `origin/<base>`): stop — nothing to PR.
-- **Scope too large** for one issue (~4+ hours or multiple unrelated concerns): follow issue-writer [splitting rules](../../../issue-writer/SKILL.md#splitting-large-work); do not proceed with a single PR until the user picks one slice.
+- **Scope too large** for one issue (~4+ hours or multiple unrelated concerns): follow issue-writer [splitting rules](../issue-writer/SKILL.md#splitting-large-work); do not proceed with a single PR until the user picks one slice.
 - Note real file paths, patterns, and acceptance criteria — feed these into the Linear issue.
 
 ### Step 2: Create Linear issue
 
-1. **Read** [issue-writer/SKILL.md](../../../issue-writer/SKILL.md) and follow its workflow (project, priority, labels from MCP, description template, required fields).
+1. **Read** [issue-writer/SKILL.md](../issue-writer/SKILL.md) and follow its workflow (project, priority, labels from MCP, description template, required fields).
 2. If issue-writer is not installed, apply the same rules inline: use the description template, fetch labels/projects via Linear MCP, never invent label names.
 3. Derive issue content from Step 1 diffs — title in imperative mood, file paths and acceptance criteria from actual changes.
 4. **Create** the issue via Linear MCP `save_issue` (pass `team`, `title`, `description`, `project`, `priority`, `labels`; use literal newlines in markdown, not `\n` escapes).
@@ -157,5 +157,5 @@ Return the PR URL to the user.
 
 ## Additional resources
 
-- Linear issue quality: [issue-writer/SKILL.md](../../../issue-writer/SKILL.md)
+- Linear issue quality: [issue-writer/SKILL.md](../issue-writer/SKILL.md)
 - Linear MCP: `save_issue`, `get_issue`, `list_projects`, `list_issue_labels`

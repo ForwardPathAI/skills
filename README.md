@@ -29,7 +29,7 @@ npx skills add forwardpathai/skills/review-mp4
 
 | Skill | Description |
 |-------|-------------|
-| [issue-writer](./issue-writer) | Write Linear issues that an AI coding agent can execute without follow-up questions. |
+| [issue-writer](./issue-writer) | Write Linear issues an AI coding agent can execute without follow-up questions. |
 | [open-pr](./open-pr) | Open a GitHub PR from local changes via a Linear issue, Linear's git branch, commit, and `gh`. |
 | [stack-pr](./stack-pr) | Open a stacked/dependent GitHub PR based on the current branch (sibling of open-pr) via a Linear issue, commit, and `gh`. |
 | [cloud-agent-pr-stats](./cloud-agent-pr-stats) | Count PRs opened by cloud coding agents (Cursor, Codex, Devin, Claude, Copilot) across a GitHub org, by branch-name prefix. |

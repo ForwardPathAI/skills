@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: Open a GitHub pull request from local changes by filing a Linear issue first, using Linear's git branch, committing, and creating the PR with gh. Use when the user asks to open a PR, create a pull request, ship changes, or submit work for review — including phrases like "open a PR", "create PR", or "put this up for review".
+description: Open a GitHub pull request from local changes by filing a Linear issue first, using Linear's git branch, committing, and creating the PR with gh. Use when the user asks to open a PR, ship changes, or put work up for review.
 ---
 
 # Open Pull Request
@@ -27,6 +27,8 @@ Copy this checklist and track progress:
 - [ ] Step 4: Commit with descriptive message
 - [ ] Step 5: Push and open PR with gh
 ```
+
+If the work is already committed on the correct Linear branch and the user only wants the PR, skip Steps 3–4 — but still create and link a Linear issue (Step 2) if one is missing.
 
 ### Step 1: Analyze all local changes
 
@@ -135,25 +137,6 @@ EOF
 ```
 
 Return the PR URL to the user.
-
-## Decision table
-
-| Situation | Action |
-|-----------|--------|
-| User names a base branch | Use it for checkout source and `--base` |
-| Linear branch already exists on remote only | `git fetch origin <linear-branch-name> && git checkout -b <linear-branch-name> origin/<linear-branch-name>` |
-| Dirty tree blocks checkout | Stash, checkout, commit, then `git stash pop` if needed |
-| Multiple unrelated change sets | Split per issue-writer; one PR per issue |
-| User only wants PR, already committed on correct branch | Skip Steps 3–4 commit; still create/link Linear issue if missing |
-
-## Anti-patterns
-
-- Opening a PR without reading **both** staged and unstaged diffs
-- Inventing Linear labels or skipping project/priority
-- Using a hand-rolled branch name instead of Linear's `get_issue` branch
-- `git checkout -b <branch>` without `origin/<base>` when creating a new branch
-- `git push --force` to main/master
-- Committing secret files
 
 ## Additional resources
 

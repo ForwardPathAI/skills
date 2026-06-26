@@ -27,11 +27,11 @@ This is the real App Service bill — the compute, not the apps on it.
 ## Azure SQL Database (`Microsoft.Sql/servers/databases`)
 
 - **Detect:** `az sql server list -g <rg> -o table`, then `az sql db list -g <rg> -s <server> -o table`.
-- **Snapshot:** record `edition`, `currentServiceObjectiveName`, `maxSizeBytes`, and whether it's serverless — `az sql db show -g <rg> -s <server> -n <db> --query "{edition:edition, slo:currentServiceObjectiveName, max:maxSizeBytes}"`.
+- **Snapshot:** record `edition`, `currentServiceObjectiveName`, `maxSizeBytes`, and for serverless also `computeModel`, `minCapacity`, and `capacity` — `az sql db show -g <rg> -s <server> -n <db> --query "{edition:edition, slo:currentServiceObjectiveName, max:maxSizeBytes, computeModel:computeModel, minCapacity:minCapacity, capacity:capacity}"`.
 - **Hibernate:**
   - Provisioned → `az sql db update -g <rg> -s <server> -n <db> --edition Basic --service-objective Basic` (Basic ≈ $5/mo, 2 GB cap).
   - Serverless → it auto-pauses when idle; optionally lower the floor: `az sql db update ... --min-capacity 0.5 --capacity 1`.
-- **Wake:** `az sql db update -g <rg> -s <server> -n <db> --edition <recorded> --service-objective <recorded>`
+- **Wake:** `az sql db update -g <rg> -s <server> -n <db> --edition <recorded> --service-objective <recorded>`; for serverless records that changed scale bounds, also restore `--min-capacity <recorded minCapacity> --capacity <recorded capacity>`.
 - **Saving / caveats:** Basic caps the DB at 2 GB — if the DB is larger, the downgrade fails; record the size and skip/flag it. A regular SQL DB **cannot be paused**, only scaled. Serverless auto-pause is the cheapest hands-off option.
 - **Elastic pool:** scale the pool instead — record `--capacity`, then `az sql elastic-pool update -g <rg> -s <server> -n <pool> --capacity <n>`.
 - **Synapse / SQL DW dedicated pool:** this one *can* pause — `az sql dw pause -g <rg> -s <server> -n <pool>` / `az sql dw resume`. Large saving, fully reversible.
@@ -51,7 +51,7 @@ The best database lever — compute billing actually stops.
 - **Detect:** `az postgres flexible-server list -g <rg> -o table` (and `az mysql flexible-server list ...`)
 - **Snapshot:** record `state`; if also scaling, record the `sku.name`.
 - **Hibernate:** `az postgres flexible-server stop -g <rg> -n <name>` (and `az mysql flexible-server stop ...`).
-- **Wake:** `az postgres flexible-server start -g <rg> -n <name>`
+- **Wake:** `az postgres flexible-server start -g <rg> -n <name>` (and `az mysql flexible-server start ...`).
 - **Saving / caveats:** stopping halts all compute billing and is fully reversible (storage still bills). Azure **auto-restarts a stopped flexible server after 7 days** — for long hibernation, re-stop periodically, or also scale the SKU down (`--sku-name Standard_B1ms`). Legacy single-server SKUs can't be stopped — scale tier/storage only.
 
 ## Container Apps (`Microsoft.App/containerApps`)
@@ -83,6 +83,7 @@ The best database lever — compute billing actually stops.
 - **Detect:** `az cosmosdb list -g <rg> -o table`
 - **Snapshot:** record provisioned throughput / autoscale max per container or database.
 - **Hibernate:** lower the autoscale max — `az cosmosdb sql container throughput update ... --max-throughput 1000`.
+- **Wake:** restore each recorded container or database throughput with the matching update command — `az cosmosdb sql container throughput update ... --throughput <recorded>` for manual throughput or `--max-throughput <recorded>` for autoscale; use `az cosmosdb sql database throughput update ...` for database-level throughput.
 - **Saving / caveats:** provisioned ↔ serverless cannot be switched after creation, so throughput is the only safe knob. Nuanced — confirm the per-container values with the user before changing.
 
 ## Leave alone (negligible cost)

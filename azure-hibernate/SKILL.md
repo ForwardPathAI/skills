@@ -34,9 +34,9 @@ The per-resource commands (detect, snapshot, hibernate, wake, and each lever's c
 
 1. **Set the target.** Confirm the subscription (`az account show`) and resource group; switch with `az account set --subscription <id>` if needed. Get the user's confirmation. _Done when:_ the user has confirmed the exact subscription + RG.
 2. **Inventory.** Run `az resource list -g <rg> -o table`, then query each cost-bearing resource for its current SKU/tier/running state per [REFERENCE.md](REFERENCE.md). _Done when:_ every cost-bearing resource is listed with its current state — none left unclassified.
-3. **Snapshot.** Write `azure-hibernate.<rg>.json` in the working directory recording, for every resource you intend to change, its current restorable state (SKU, tier, replica count, running state). Tag the group for portal visibility: `az group update -n <rg> --set tags.fp_hibernated=<date>` (use a real date from the user or system clock — never invent one). _Done when:_ the snapshot file holds an entry for every resource in the plan.
+3. **Snapshot.** Write `azure-hibernate.<rg>.json` in the working directory recording, for every resource you intend to change, its current restorable state (SKU, tier, replica count, running state). _Done when:_ the snapshot file holds an entry for every resource in the plan.
 4. **Plan & confirm.** Present a table — resource → lever → cheapest reversible target → estimated monthly saving → caveats (Terraform drift, recreate risk, feature loss). Get sign-off. _Done when:_ the user has approved the plan.
-5. **Apply.** Execute each approved lever via `az` (REFERENCE.md), then re-query each resource to verify it reached the target. _Done when:_ every approved resource reached its target state, or its failure is reported with the error.
+5. **Apply.** Execute each approved lever via `az` (REFERENCE.md), then re-query each resource to verify it reached the target. Tag the group for portal visibility: `az group update -n <rg> --set tags.fp_hibernated=<date>` (use a real date from the user or system clock — never invent one). _Done when:_ every approved resource reached its target state, or its failure is reported with the error.
 6. **Report.** Summarize what changed, total estimated saving, the snapshot file path (tell the user to commit it), and the Terraform-drift warning below.
 
 ## Wake

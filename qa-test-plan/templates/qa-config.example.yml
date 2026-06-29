@@ -1,0 +1,24 @@
+# Per-repo config for the qa-test-plan skill.
+# Copy to qa/qa-config.yml. The skill auto-detects the FP skeleton paths below;
+# override only when this app deviates from the standard layout.
+
+app_name: <AppName>
+customer: <Customer Name>
+
+# What the skill scans to build the live test surface (generate / update / audit).
+surfaces:
+  routes: src/ForwardPath.Web/src/router/index.js
+  endpoints: src/ForwardPath.Server/app/api/v1/endpoints/
+  endpoint_router: src/ForwardPath.Server/app/api/v1/api.py   # for accurate /api/v1 prefixes
+  feature_flags: src/ForwardPath.Server/app/core/feature_flags_registry.py
+  settings: src/ForwardPath.Server/app/core/config.py          # connector enable_* flags
+
+# Suite areas in use. The skill adds new ones here when a new feature area appears.
+areas: [AUTH, CHAT, PROP, RES, PROF, MEM, ADMIN, CONN, DOC, KG]
+
+# Where `publish` mirrors the plan for customer collaboration.
+publish:
+  target: notion
+  notion_parent: <notion-database-or-page-id>   # per customer
+
+environments: [local, dev, prod]

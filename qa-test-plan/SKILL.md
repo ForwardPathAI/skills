@@ -31,8 +31,8 @@ Pick the mode from the request. If ambiguous, ask.
 Build the **live surface** = the set of things a tester can exercise. Resolve paths from `qa/qa-config.yml` `surfaces:`; defaults match the FP skeleton.
 
 1. **Routes** — parse the Vue router (default `src/ForwardPath.Web/src/router/index.js`). Collect each `path:` (resolve nested `children` to full paths, e.g. `/proposals` + `list` → `/proposals/list`) and its `meta` (`requiresAuth`, `requiresAdmin`, `requiresSuperAdmin`). Skip pure redirects and the catch-all.
-2. **Backend endpoint groups** — list modules in `src/ForwardPath.Server/app/api/v1/endpoints/` (ignore `__init__`, `__pycache__`, non-`.py`). For accurate prefixes, read the router-include file (`app/api/v1/api.py` or `router.py`) for `prefix="/api/v1/..."`; fall back to `/api/v1/<module>` when unresolved.
-3. **Feature flags** — keys in `FEATURE_FLAG_REGISTRY` (default `app/core/feature_flags_registry.py`) **plus** `enable_*` connector fields on `Settings` (`app/core/config.py`). Note each flag's default and category.
+2. **Backend endpoint groups** — list modules in `src/ForwardPath.Server/app/api/v1/endpoints/` (ignore `__init__`, `__pycache__`, non-`.py`). For accurate prefixes, read the router-include file (default `src/ForwardPath.Server/app/api/v1/api.py` or `src/ForwardPath.Server/app/api/v1/router.py`) for `prefix="/api/v1/..."`; fall back to `/api/v1/<module>` when unresolved.
+3. **Feature flags** — keys in `FEATURE_FLAG_REGISTRY` (default `src/ForwardPath.Server/app/core/feature_flags_registry.py`) **plus** `enable_*` connector fields on `Settings` (default `src/ForwardPath.Server/app/core/config.py`). Note each flag's default and category.
 
 A surface item is identified by a stable token used in `Covers:` tags:
 - Route: the path, e.g. `/chat`, `/proposals/list`
@@ -52,15 +52,16 @@ Copy this checklist and track progress:
 
 ### generate
 
-1. Enumerate the surface.
-2. Read `templates/test-plan-template.md`. Fill the document header (overview, scope, in/out of scope, approach & roles, environments, entry/exit/pass-fail criteria) from `qa-config.yml` + the README.
-3. Group surface into **suites** by feature area (one `TS-<AREA>`). Map routes/endpoints/flags into the suite they belong to.
-4. For each suite, write **test cases** using `templates/test-case-template.md`:
+1. Load `qa/qa-config.yml`; if missing, auto-detect skeleton paths and write it from `templates/qa-config.example.yml` with detected paths filled in.
+2. Enumerate the surface from `qa/qa-config.yml`.
+3. Read `templates/test-plan-template.md`. Fill the document header (overview, scope, in/out of scope, approach & roles, environments, entry/exit/pass-fail criteria) from `qa/qa-config.yml` + the README.
+4. Group surface into **suites** by feature area (one `TS-<AREA>`). Map routes/endpoints/flags into the suite they belong to.
+5. For each suite, write **test cases** using `templates/test-case-template.md`:
    - Full detail (steps + expected) for **Critical/High** flows — auth, the primary chat→generate→export paths, role gating, connector ingest.
    - Stubs (title, priority, `Covers:`, "_steps TBD_") for Medium/Low — enough to show structure without faking exhaustive coverage. **Log** how many are stubs so the team knows what's left.
-5. Build the **Coverage map** table: every surface token → covering `TC-` IDs. This is the drift index.
-6. Set frontmatter `last_synced_commit` to current `git rev-parse --short HEAD`.
-7. Write `qa/test-plan.md`. If `qa/qa-config.yml` didn't exist, write one from `templates/qa-config.example.yml` with detected paths filled in.
+6. Build the **Coverage map** table: every surface token → covering `TC-` IDs. This is the drift index.
+7. Set frontmatter `last_synced_commit` to current `git rev-parse --short HEAD`.
+8. Write `qa/test-plan.md`.
 
 ### update
 

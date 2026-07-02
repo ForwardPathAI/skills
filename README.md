@@ -18,6 +18,8 @@ npx skills add forwardpathai/skills/open-pr
 npx skills add forwardpathai/skills/stack-pr
 npx skills add forwardpathai/skills/cloud-agent-pr-stats
 npx skills add forwardpathai/skills/cloud-agent-triage
+npx skills add forwardpathai/skills/backlog-hygiene
+npx skills add forwardpathai/skills/ticket-refiner
 npx skills add forwardpathai/skills/azure-infra-setup
 npx skills add forwardpathai/skills/engineering-projects-on-track
 npx skills add forwardpathai/skills/mobile-ui
@@ -36,6 +38,8 @@ npx skills add forwardpathai/skills/qa-test-plan
 | [stack-pr](./stack-pr) | Open a stacked/dependent GitHub PR based on the current branch (sibling of open-pr) via a Linear issue, commit, and `gh`. |
 | [cloud-agent-pr-stats](./cloud-agent-pr-stats) | Count PRs opened by cloud coding agents (Cursor, Codex, Devin, Claude, Copilot) across a GitHub org, by branch-name prefix. |
 | [cloud-agent-triage](./cloud-agent-triage) | Evaluate whether Linear tickets suit autonomous Cursor cloud agents (why yes / why not), triage a repo's backlog honoring blockers, and optionally delegate the ready ones to Cursor. |
+| [backlog-hygiene](./backlog-hygiene) | Scan a Linear project's backlog for relevance — flag stale, already-shipped, or duplicated issues using update age, code/PR evidence, and ticket similarity — then apply confirmed actions one at a time. |
+| [ticket-refiner](./ticket-refiner) | Interview the person who knows why a Linear ticket exists and rewrite it to pass issue-writer's agent-ready bar; the gap-driven interview step neither backlog-hygiene nor cloud-agent-triage has. |
 | [engineering-projects-on-track](./engineering-projects-on-track) | On-track % for ForwardPath Engineering Linear projects in In Progress or UAT, from the latest project status update. |
 | [azure-infra-setup](./azure-infra-setup) | Author Forward Path Azure infrastructure (Terraform/Bicep) — shared ACR, OIDC/RBAC, environments, Key Vault, Container Apps. |
 | [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini). |

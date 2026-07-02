@@ -42,7 +42,7 @@ Give each ticket one **suitability verdict** from the rubric, then apply the **B
 Suitability verdicts (pick one):
 
 - **Ready** — all rubric dimensions pass (no unresolved red flags, including codebase grounding and environment self-containment). Eligible for handoff once confirmed unblocked.
-- **Needs refinement** — promising but missing acceptance criteria / file grounding, or too big. Suggest concrete edits first (optionally hand to [issue-writer/SKILL.md](../issue-writer/SKILL.md) to rewrite or split), then re-evaluate.
+- **Needs refinement** — promising but missing acceptance criteria / file grounding, or too big. Suggest concrete edits first (optionally hand to [ticket-refiner/SKILL.md](../ticket-refiner/SKILL.md) to interview the ticket's owner and rewrite it, or to [issue-writer/SKILL.md](../issue-writer/SKILL.md) directly to split), then re-evaluate.
 - **Not a fit** — inherently ambiguous, exploratory, or high-risk. Keep human-led.
 
 **Blocked** is an overlay, not a fourth verdict: **any** candidate with an open `blocked by` relation is flagged Blocked **regardless of its suitability verdict**, grouped under Blocked in the proposal (noting both its underlying verdict and the blocking issue), and never eligible for handoff until the blocker resolves. Only a ticket whose suitability verdict is Ready **and** which is not Blocked counts as handoff-ready.
@@ -183,4 +183,6 @@ Assigning or delegating a Linear issue to **Cursor** launches a cloud agent that
 ## Additional resources
 
 - Full rubric, examples, handoff mechanics, and cloud-agent constraints: [REFERENCE.md](REFERENCE.md)
-- Rewriting/splitting borderline tickets: [issue-writer/SKILL.md](../issue-writer/SKILL.md)
+- Interviewing the ticket's owner and rewriting it: [ticket-refiner/SKILL.md](../ticket-refiner/SKILL.md)
+- Description template and splitting rules: [issue-writer/SKILL.md](../issue-writer/SKILL.md)
+- Whether a ticket is still relevant (stale/done/duplicate, a different question from suitability): [backlog-hygiene/SKILL.md](../backlog-hygiene/SKILL.md)

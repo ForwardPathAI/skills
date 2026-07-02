@@ -27,6 +27,7 @@ npx skills add forwardpathai/skills/customer-deployment-package
 npx skills add forwardpathai/skills/review-mp4
 npx skills add forwardpathai/skills/azure-hibernate
 npx skills add forwardpathai/skills/qa-test-plan
+npx skills add forwardpathai/skills/teach-web-actions
 ```
 
 ## Skills
@@ -47,6 +48,7 @@ npx skills add forwardpathai/skills/qa-test-plan
 | [review-mp4](./review-mp4) | Understand an mp4 (local or URL): extract frames with ffmpeg, pick the sharpest in-focus frame per window via variance-of-Laplacian blur detection (Python or Node), then read them to answer questions. |
 | [azure-hibernate](./azure-hibernate) | Hibernate a live client project's Azure resource group to minimum cost (scale/stop App Service Plans, web apps, SQL, Redis, databases via the `az` CLI) and wake it for retesting — reversibly, recording state before every change. |
 | [qa-test-plan](./qa-test-plan) | Generate and maintain customer-shareable QA test plans for a Forward Path app from its code surface (routes/endpoints/flags); audit for coverage drift, sync after feature changes, and publish to Notion for collaborative QA. |
+| [teach-web-actions](./teach-web-actions) | Learn a website by recording a user-driven Chrome session (HAR + UI steps) via Playwright codegen, distill it into a reusable lesson (endpoints, payloads, parameter knobs, auth), then replay a variation with new parameters as an API call or as UI navigation captured to mp4. |
 
 ## Authoring
 

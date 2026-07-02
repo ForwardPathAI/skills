@@ -13,7 +13,7 @@ Every ticket gets exactly one **verdict**:
 | Verdict | Means | Default suggested action |
 |---|---|---|
 | **Keep** | Still relevant, no contrary evidence | None (see [thin-spec flag](#thin-spec-flag) below) |
-| **Stale** | No update in the age threshold, no evidence it's done | Ping for relevance, deprioritize, or close |
+| **Stale** | No update and no recent activity within the age threshold, no evidence it's done | Ping for relevance, deprioritize, or close |
 | **Likely done** | Repo/PR evidence the work already shipped | Comment with evidence, move to a completed/canceled state |
 | **Duplicate or superseded** | Same scope as another issue, or a newer issue replaces its intent | Link and close the redundant one |
 
@@ -55,7 +55,7 @@ Fetch in parallel when there are many candidates. For each issue, collect:
 | Evidence | How |
 |---|---|
 | **Age** | Days since `updatedAt`. Default stale threshold: **90 days**. Use a tighter/looser threshold if the user names one. |
-| **Activity** | `list_comments` (`issueId`) — any discussion at all, and how recent. |
+| **Activity** | `list_comments` (`issueId`) — any discussion at all, how recent, and whether the newest comment is within the stale threshold. |
 | **Code/PR evidence** | Pull concrete nouns from the title/description (file names, component names, feature names) and `Grep`/`Glob` the repo for them. Then `git log --all --grep="<issue-identifier>"` and, if `gh` is available, `gh pr list --state merged --search "<issue-identifier>"` — teams commonly reference the Linear ID in commits or PR titles. Record the specific file, commit, or PR found; "found nothing" is also evidence. |
 | **Duplicate/superseded** | `list_issues` with `query` set to the issue's key terms, scoped to the same `project`. Compare scope, not just title wording — a near-identical newer issue supersedes an older one even with a different title. |
 
@@ -67,12 +67,12 @@ Apply in this order — first match wins:
 
 1. Found a same-scope issue (duplicate) or a newer issue that replaces this one's intent (superseded) → **Duplicate or superseded**
 2. Found code/PR evidence the described work already shipped → **Likely done**
-3. No update past the age threshold **and** no activity **and** neither of the above → **Stale**
+3. No update past the age threshold **and** no recent activity within that threshold **and** neither of the above → **Stale**
 4. Otherwise → **Keep**
 
 #### Thin-spec flag
 
-On a **Keep** verdict, separately check whether the description would pass [issue-writer](../issue-writer/SKILL.md)'s "before submitting" bar (real file paths, measurable acceptance criteria, explicit scope). If it wouldn't, attach a one-line flag: *"spec is thin — consider running ticket-refiner"*. This is a note, not a verdict change, and never triggers a write on its own.
+On a **Keep** verdict, separately check whether the description would pass [issue-writer](../issue-writer/SKILL.md)'s "before submitting" bar (real file paths, measurable acceptance criteria, explicit scope). If it wouldn't, attach a one-line flag naming the missing or thin sections: *"spec is thin — consider running ticket-refiner; gaps: Technical Context, Acceptance Criteria"*. This is a note, not a verdict change, and never triggers a write on its own.
 
 ### Step 5: Report
 
@@ -92,6 +92,8 @@ Stale (<k>)
 |-------|--------------|----------|-------------------|
 
 Keep (<k>) — <m> flagged thin-spec
+| Issue | Last updated | Thin-spec gaps | Suggested action |
+|-------|--------------|----------------|-------------------|
 ```
 
 Link each issue with its Linear URL. Cite the evidence column with what you actually found (commit SHA, PR link, file path, other issue id) — not a restated verdict.
@@ -116,6 +118,7 @@ Resolve target state names via `list_issue_statuses` (`statusType`, never a gues
 |---|---|
 | Repo has no commits/PRs referencing Linear IDs | Fall back to the keyword `Grep`/`Glob` search only; note that the identifier search found nothing. |
 | Issue is mid-cycle with recent comments but old `updatedAt` | Activity beats age — not Stale. |
+| Issue has comments, but none within the stale threshold | Old discussion alone does not beat age — it can still be Stale. |
 | Two issues look like duplicates but scopes differ on inspection | Not a duplicate — leave both as Keep (or flag thin-spec if either is vague). |
 | User wants a different age threshold | Use theirs for Step 3; state the threshold used in the report. |
 | `gh` unavailable | Skip the merged-PR search; rely on `git log --all --grep` and the keyword search. |

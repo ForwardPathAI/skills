@@ -41,6 +41,7 @@ Map the current description against issue-writer's template sections. Mark each:
 | Acceptance Criteria | objectively checkable | "works correctly" | absent |
 | Out of Scope | explicit exclusions | absent or "TBD" |
 | Dependencies | named issues or "None" | absent |
+| Additional Context | bug repro steps, error messages, screenshots, design/doc links, or "None" | references context without enough detail to act | absent |
 
 Only **present-but-vague** and **missing** sections drive Step 3 — skip interviewing sections that are already concrete.
 
@@ -56,6 +57,7 @@ Ask about one gap at a time, not the whole template at once. Stop on a section t
 | Technical Context | Ask which files/patterns apply; if the human isn't sure, search the repo together rather than inventing a path |
 | Out of Scope | "What's explicitly *not* included here?" |
 | Dependencies | "Does this wait on anything, or block anything else?" |
+| Additional Context | "Are there repro steps, errors, screenshots, design links, or docs the agent needs — or is there truly no extra context?" |
 
 If the human doesn't know an answer (genuinely undecided, not just unasked), record that explicitly in the draft rather than inventing one — an honest "Open question: X" is more agent-ready than a confident guess.
 
@@ -78,7 +80,7 @@ Never call `save_issue` before the user has approved the exact draft text; re-sh
 |---|---|
 | Every section is already concrete | Say so; skip the interview and Step 4 — nothing to refine. |
 | Human gives a vague answer twice on the same gap | Record it as an open question in the draft rather than pushing a third time. |
-| Refining a ticket handed off from backlog-hygiene or cloud-agent-triage | Skip re-deriving context already in that report — start the interview from its specific gap list. |
+| Refining a ticket handed off from backlog-hygiene or cloud-agent-triage | Skip re-deriving context already in that report — start the interview from its specific gap list or thin-spec gaps; if the handoff has no gaps, run Step 2 first. |
 | User wants to refine multiple tickets in one session | Run Steps 1–5 fully for one ticket before starting the next — don't interleave interviews. |
 
 ## Anti-patterns

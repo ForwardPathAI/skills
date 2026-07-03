@@ -29,6 +29,7 @@ npx skills add forwardpathai/skills/azure-hibernate
 npx skills add forwardpathai/skills/qa-test-plan
 npx skills add forwardpathai/skills/teach-web-actions
 npx skills add forwardpathai/skills/product-foundation
+npx skills add forwardpathai/skills/linear-backlog-grill
 ```
 
 ## Skills
@@ -51,6 +52,7 @@ npx skills add forwardpathai/skills/product-foundation
 | [qa-test-plan](./qa-test-plan) | Generate and maintain customer-shareable QA test plans for a Forward Path app from its code surface (routes/endpoints/flags); audit for coverage drift, sync after feature changes, and publish to Notion for collaborative QA. |
 | [teach-web-actions](./teach-web-actions) | Learn a website by recording a user-driven Chrome session (HAR + UI steps) via Playwright codegen, distill it into a reusable lesson (endpoints, payloads, parameter knobs, auth), then replay a variation with new parameters as an API call or as UI navigation captured to mp4. |
 | [product-foundation](./product-foundation) | The standard stack and conventions for building Forward Path products — Bun monorepo, Next.js App Router, Hono RPC APIs, Drizzle/Postgres, TanStack Query, Better Auth, Azure. Scaffold new repos, add modules, and enforce code conventions. |
+| [linear-backlog-grill](./linear-backlog-grill) | Grill Linear project backlogs for execution readiness — grade tickets, interview for missing specification, split oversized work, and rewrite issues to pass the agent-ready bar. |
 
 ## Authoring
 

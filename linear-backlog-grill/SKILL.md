@@ -7,13 +7,13 @@ description: Grill Linear project backlogs for execution readiness. Use when rev
 
 Turn a Linear project backlog into small, independent, executable tickets. This skill is about specification quality, not whether the work is still relevant; use [backlog-hygiene](../backlog-hygiene/SKILL.md) first when the user wants stale, duplicate, or already-shipped issues removed.
 
-A ready ticket can be picked up by an engineer or coding agent without follow-up questions. It has one outcome, obvious boundaries, checkable acceptance criteria, real implementation context, and explicit dependencies.
+A ready ticket can be handed to a zero-context executor — an engineer or coding agent that has seen none of this discussion — without follow-up questions. It has one outcome, obvious boundaries, checkable acceptance criteria, real implementation context, and explicit dependencies.
 
 ## Prerequisites
 
 - Linear MCP available and authenticated.
 - The target Linear project or team. If the user did not name one, infer it from the repo name or git remote and confirm before scanning.
-- The target repo available locally when tickets need technical context checked against real files.
+- The target repo available locally when rewriting tickets — issue-writer's excerpts and commands must come from real reads of the repo, not guesses.
 
 Stop and tell the user what's missing if Linear MCP is unavailable.
 
@@ -124,7 +124,7 @@ When the ticket should be split, grill for the slices first. Each child ticket m
 
 ### Step 6: Confirm and save rewrites
 
-Draft rewrites using [issue-writer](../issue-writer/SKILL.md)'s description template. Read that skill before drafting so this skill uses the same agent-ready issue format.
+Draft rewrites with [issue-writer](../issue-writer/SKILL.md) — read that whole skill before the first draft and follow it: its hard rules (excerpts from your own reads, verified commands, no secret values), its recon step (including the commit SHA stamp), and its description template. Skip its create step — this skill owns the Linear write flow below.
 
 Show the exact proposed Linear changes before writing:
 

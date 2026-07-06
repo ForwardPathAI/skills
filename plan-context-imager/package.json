@@ -1,0 +1,10 @@
+{
+  "name": "plan-context-imager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Render a plan's codebase context into dense PNG pages via pxpipe.",
+  "dependencies": {
+    "pxpipe-proxy": "^0.8.0"
+  }
+}

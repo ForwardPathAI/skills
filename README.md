@@ -30,6 +30,8 @@ npx skills add forwardpathai/skills/qa-test-plan
 npx skills add forwardpathai/skills/teach-web-actions
 npx skills add forwardpathai/skills/product-foundation
 npx skills add forwardpathai/skills/linear-backlog-grill
+npx skills add forwardpathai/skills/plan-refiner
+npx skills add forwardpathai/skills/plan-context-imager
 ```
 
 ## Skills
@@ -53,6 +55,8 @@ npx skills add forwardpathai/skills/linear-backlog-grill
 | [teach-web-actions](./teach-web-actions) | Learn a website by recording a user-driven Chrome session (HAR + UI steps) via Playwright codegen, distill it into a reusable lesson (endpoints, payloads, parameter knobs, auth), then replay a variation with new parameters as an API call or as UI navigation captured to mp4. |
 | [product-foundation](./product-foundation) | The standard stack and conventions for building Forward Path products — Bun monorepo, Next.js App Router, Hono RPC APIs, Drizzle/Postgres, TanStack Query, Better Auth, Azure. Scaffold new repos, add modules, and enforce code conventions. |
 | [linear-backlog-grill](./linear-backlog-grill) | Grill Linear project backlogs for execution readiness — grade tickets, interview for missing specification, split oversized work, and rewrite issues to pass the agent-ready bar. |
+| [plan-refiner](./plan-refiner) | Harden an existing Cursor plan so a weaker executor model can implement it without judgment calls — hunt unknowns, resolve them via codebase/web research or a one-gap-at-a-time user interview, anticipate non-obvious scenarios, and rewrite the plan file in place as unambiguous, verifiable statements. |
+| [plan-context-imager](./plan-context-imager) | Gather the codebase context a plan depends on, render it into dense PNG pages via pxpipe's `renderTextToImages`, and embed the images plus a per-page index into the plan so the executor reads them instead of re-grepping the codebase each step. |
 
 ## Authoring
 

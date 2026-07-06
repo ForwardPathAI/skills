@@ -24,6 +24,7 @@ npx skills add forwardpathai/skills/azure-infra-setup
 npx skills add forwardpathai/skills/engineering-projects-on-track
 npx skills add forwardpathai/skills/mobile-ui
 npx skills add forwardpathai/skills/mobile-ui-implement
+npx skills add forwardpathai/skills/web-ui
 npx skills add forwardpathai/skills/customer-deployment-package
 npx skills add forwardpathai/skills/review-mp4
 npx skills add forwardpathai/skills/azure-hibernate
@@ -33,6 +34,7 @@ npx skills add forwardpathai/skills/product-foundation
 npx skills add forwardpathai/skills/linear-backlog-grill
 npx skills add forwardpathai/skills/plan-refiner
 npx skills add forwardpathai/skills/plan-context-imager
+npx skills add forwardpathai/skills/standup-report
 ```
 
 ## Skills
@@ -50,6 +52,7 @@ npx skills add forwardpathai/skills/plan-context-imager
 | [azure-infra-setup](./azure-infra-setup) | Author Forward Path Azure infrastructure (Terraform/Bicep) — shared ACR, OIDC/RBAC, environments, Key Vault, Container Apps. |
 | [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini). |
 | [mobile-ui-implement](./mobile-ui-implement) | Turn mobile UI mockups (PNG screens or a PDF deck) into per-screen implementation blueprints, then build them in an Expo Go-compatible app — decomposing each screen into layers, components, states, and animations a weaker model can build one at a time. |
+| [web-ui](./web-ui) | Turn a SOW and/or a real Next.js + Tailwind codebase into a grounded web screen spec and consistent desktop mockups (via Google Gemini) — anchored by a brand style board and a persistent app-shell (nav/sidebar) so every screen looks like one credible product. |
 | [customer-deployment-package](./customer-deployment-package) | Build a customer-facing deployment handoff — external Terraform/Bicep, setup instructions filled into the Notion template and saved to the deployments DB, then exported and zipped with a Windows-safe name. |
 | [review-mp4](./review-mp4) | Understand an mp4 (local or URL): extract frames with ffmpeg, pick the sharpest in-focus frame per window via variance-of-Laplacian blur detection (Python or Node), then read them to answer questions. |
 | [azure-hibernate](./azure-hibernate) | Hibernate a live client project's Azure resource group to minimum cost (scale/stop App Service Plans, web apps, SQL, Redis, databases via the `az` CLI) and wake it for retesting — reversibly, recording state before every change. |
@@ -59,6 +62,7 @@ npx skills add forwardpathai/skills/plan-context-imager
 | [linear-backlog-grill](./linear-backlog-grill) | Grill Linear project backlogs for execution readiness — grade tickets, interview for missing specification, split oversized work, and rewrite issues to pass the agent-ready bar. |
 | [plan-refiner](./plan-refiner) | Harden an existing Cursor plan so a weaker executor model can implement it without judgment calls — hunt unknowns, resolve them via codebase/web research or a one-gap-at-a-time user interview, anticipate non-obvious scenarios, and rewrite the plan file in place as unambiguous, verifiable statements. |
 | [plan-context-imager](./plan-context-imager) | Gather the codebase context a plan depends on, render it into dense PNG pages via pxpipe's `renderTextToImages`, and embed the images plus a per-page index into the plan so the executor reads them instead of re-grepping the codebase each step. |
+| [standup-report](./standup-report) | Generate a narratable daily standup (yesterday / today / blockers) for yourself or a named user from Linear issues, GitHub merged/open PRs, and local Cursor chat transcripts. |
 
 ## Authoring
 

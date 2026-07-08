@@ -109,7 +109,7 @@ Report to the user:
 - File paths: the canvas (managed copy as a clickable canvas link) and the generated `.docx`.
 - Deviations from product-foundation (if any).
 - Top risks.
-- Next-step skills: [azure-infra-setup](../azure-infra-setup/SKILL.md) for full Bicep authoring, [customer-deployment-package](../customer-deployment-package/SKILL.md) for the customer handoff.
+- Next-step skills: [architecture-to-linear-plan](../architecture-to-linear-plan/SKILL.md) to turn this deliverable into Linear milestones + tickets, [azure-infra-setup](../azure-infra-setup/SKILL.md) for full Bicep authoring, [customer-deployment-package](../customer-deployment-package/SKILL.md) for the customer handoff.
 
 Complete this step when the canvas copies exist and type-check (the canvas edit result reports no errors), the DOCX (when requested) is generated with every figure rendered and no literal source, and the report is delivered.
 
@@ -147,6 +147,7 @@ Complete this step when the canvas copies exist and type-check (the canvas edit 
 ## Additional resources
 
 - Generate the POC this skill productionizes: [poc-from-sow/SKILL.md](../poc-from-sow/SKILL.md)
+- Turn this deliverable into a Linear delivery plan (milestones + tickets): [architecture-to-linear-plan/SKILL.md](../architecture-to-linear-plan/SKILL.md)
 - Forward Path stack and conventions: [product-foundation/SKILL.md](../product-foundation/SKILL.md)
 - Forward Path Azure conventions: [azure-infra-setup/SKILL.md](../azure-infra-setup/SKILL.md)
 - Customer deployment handoff: [customer-deployment-package/SKILL.md](../customer-deployment-package/SKILL.md)

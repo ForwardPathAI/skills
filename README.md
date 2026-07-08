@@ -39,6 +39,7 @@ npx skills add forwardpathai/skills/plan-context-imager
 npx skills add forwardpathai/skills/speclang-writer
 npx skills add forwardpathai/skills/poc-from-sow
 npx skills add forwardpathai/skills/poc-to-product-architecture
+npx skills add forwardpathai/skills/architecture-to-linear-plan
 npx skills add forwardpathai/skills/standup-report
 ```
 
@@ -72,6 +73,7 @@ npx skills add forwardpathai/skills/standup-report
 | [speclang-writer](./speclang-writer) | Turn a plan into a SpecLang specification — a structured, natural-language Markdown document (the single source of truth) that captures a system's behavior and its pinned implementation details so an AI toolchain or executor can generate the code from the spec. |
 | [poc-from-sow](./poc-from-sow) | Turn a SOW into a customer-validatable, continuation-ready POC codebase on the Forward Path stack — buildable, runnable, demo-deployable, with an agent-ready handoff pack — by orchestrating web-ui / mobile-ui / product-foundation / azure-infra-setup, then closing with a poc-to-product-architecture canvas + DOCX. |
 | [poc-to-product-architecture](./poc-to-product-architecture) | Turn a SOW and POC repo into a production system-design canvas — architecture, gap audit, Azure resource map, Bicep skeleton, security/reliability, and cost estimate, constrained to the Forward Path stack and customer-deployable Bicep. |
+| [architecture-to-linear-plan](./architecture-to-linear-plan) | Turn the poc-to-product-architecture deliverable (canvas + DOCX) and any web-ui/mobile-ui mockups into a delivery plan — Linear milestones with proposed timelines and executable functional + design tickets — then, once approved, create the project, milestones, and issues in Linear via the Linear MCP. |
 | [standup-report](./standup-report) | Generate a narratable daily standup (yesterday / today / blockers) for yourself or a named user from Linear issues, GitHub merged/open PRs, and local Cursor chat transcripts. |
 
 ## Authoring

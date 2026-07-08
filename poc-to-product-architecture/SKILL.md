@@ -1,11 +1,14 @@
 ---
 name: poc-to-product-architecture
-description: Turn a Statement of Work and POC repository into a production system-design canvas — architecture, POC gap audit, Azure resource map, Bicep skeleton, security/reliability measures, and cost estimate, constrained to the Forward Path stack and customer-deployable Bicep. Use when the user says "productionize this POC", "turn this POC into a product", "SOW to architecture", "system design from SOW and POC", "make this POC production-ready", or mentions poc-to-product-architecture.
+description: Turn a Statement of Work and POC repository into a production system-design deliverable — a Cursor canvas plus a shareable DOCX report covering architecture, POC gap audit, Azure resource map, Bicep skeleton, security/reliability measures, and cost estimate, constrained to the Forward Path stack and customer-deployable Bicep. Use when the user says "productionize this POC", "turn this POC into a product", "SOW to architecture", "system design from SOW and POC", "make this POC production-ready", "architecture report/docx", or mentions poc-to-product-architecture.
 ---
 
 # POC to Product Architecture
 
-Forward Path POCs prove feasibility; this skill turns a **Statement of Work** ($sow) and a **POC repository** ($pocLink, optional) into a production system-design deliverable: a Cursor canvas (`<app>-architecture.canvas.tsx`) that presents the architecture, POC gap audit, Azure resource map, Bicep skeleton, security/reliability measures, and cost estimate — constrained so the whole topology deploys to customer Azure tenants from a single parameterized Bicep template via container images in the shared ACR.
+Forward Path POCs prove feasibility; this skill turns a **Statement of Work** ($sow) and a **POC repository** ($pocLink, optional) into a production system-design deliverable — constrained so the whole topology deploys to customer Azure tenants from a single parameterized Bicep template via container images in the shared ACR. It presents the architecture, POC gap audit, Azure resource map, Bicep skeleton, security/reliability measures, and cost estimate as:
+
+1. A **Cursor canvas** (`<app>-architecture.canvas.tsx`) — the interactive source of truth (keeps the Bicep skeleton and mermaid diagram source inline).
+2. A **shareable DOCX report** (`<App-Title>-Production-Architecture.docx`) — a clean, designed document for non-technical stakeholders, with **rendered** diagrams and **no** literal Bicep/mermaid source.
 
 The skill is usually invoked **from inside the POC repo**. Reference bundled docs relative to this skill's directory (wherever `skills.sh` installed it), never an absolute install path.
 
@@ -16,10 +19,13 @@ The skill is usually invoked **from inside the POC repo**. Reference bundled doc
 - **`gh` CLI** authenticated — needed for org repo search and POC inspection when the POC is not the current repo.
 - Read access to the **invoking repo** (the usual invocation context is inside the POC repo).
 - Read [product-foundation/SKILL.md](../product-foundation/SKILL.md) for the target stack and [azure-infra-setup/SKILL.md](../azure-infra-setup/SKILL.md) for Azure conventions before designing.
+- For the DOCX report (Step 5): **Python 3** with **`python-docx`** (`pip install python-docx`) and **mermaid-cli** via `npx -y @mermaid-js/mermaid-cli` to render diagrams. If unavailable and not installable, use the DOCX fallback in [DOCX_GUIDE.md](DOCX_GUIDE.md).
 - Bundled references in this skill directory:
   - [ARCHITECTURE_BAR.md](ARCHITECTURE_BAR.md) — production-quality checklist the design must pass.
   - [BICEP_CONSTRAINT.md](BICEP_CONSTRAINT.md) — deployability contract (ACR images, single parameterized Bicep, webhook install).
   - [CANVAS_GUIDE.md](CANVAS_GUIDE.md) — canvas authoring rules and required deliverable sections.
+  - [DOCX_GUIDE.md](DOCX_GUIDE.md) — DOCX report pipeline (diagram render + generator), section mapping, and the no-literal-source rule.
+  - [assets/build_docx.py](assets/build_docx.py) — reusable, styled DOCX generator (copy into the POC repo and fill with content).
 
 Stop and report anything missing before proceeding.
 
@@ -32,7 +38,7 @@ Copy this checklist and track progress:
 - [ ] Step 2: Locate the POC
 - [ ] Step 3: Audit the POC
 - [ ] Step 4: Design the production architecture
-- [ ] Step 5: Produce the deliverable
+- [ ] Step 5: Produce the deliverables (canvas + DOCX report)
 ```
 
 ### Step 1: Ingest the SOW
@@ -84,21 +90,26 @@ Complete this step when every SOW requirement from Step 1 has a status: `covered
 
 Complete this step when the bar passes, the Bicep skeleton outline exists, and the cost table is filled.
 
-### Step 5: Produce the deliverable
+### Step 5: Produce the deliverables (canvas + DOCX report)
 
-Write the canvas per [CANVAS_GUIDE.md](CANVAS_GUIDE.md) to **both** locations:
+**5a — Canvas (source of truth).** Write the canvas per [CANVAS_GUIDE.md](CANVAS_GUIDE.md) to **both** locations:
 1. `docs/architecture/<app>-architecture.canvas.tsx` in the POC repo (version-controlled source of truth).
 2. The IDE managed canvases directory `/Users/<user>/.cursor/projects/<workspace>/canvases/<app>-architecture.canvas.tsx` (render duplicate).
 
 Verify the repo copy is git-visible (`git status --short docs/architecture/`); if ignored, relocate or ask before changing ignore rules — same rule as [customer-deployment-package](../customer-deployment-package/SKILL.md) Step 6.
 
+**5b — DOCX report.** Produce the shareable document per [DOCX_GUIDE.md](DOCX_GUIDE.md), mirroring the canvas content:
+1. Author mermaid sources in `docs/architecture/` (`<app>-architecture.mmd`, `<app>-cost.mmd`, any extra diagram) and render each to PNG with mermaid-cli.
+2. Copy [assets/build_docx.py](assets/build_docx.py) to `docs/architecture/build_docx.py`, fill the `CONFIG` block and `build()` content region from Steps 1–4, and run `python3 build_docx.py`.
+3. The DOCX embeds **rendered diagram images only** — it must not contain literal Bicep or mermaid source (that stays in the canvas). Skip 5b only if the user does not want a document, or fall back per [DOCX_GUIDE.md](DOCX_GUIDE.md) if the toolchain is unavailable.
+
 Report to the user:
-- Both file paths (the managed one as a clickable canvas link).
+- File paths: the canvas (managed copy as a clickable canvas link) and the generated `.docx`.
 - Deviations from product-foundation (if any).
 - Top risks.
 - Next-step skills: [azure-infra-setup](../azure-infra-setup/SKILL.md) for full Bicep authoring, [customer-deployment-package](../customer-deployment-package/SKILL.md) for the customer handoff.
 
-Complete this step when both copies exist, the canvas type-checks (the canvas edit result reports no errors), and the report is delivered.
+Complete this step when the canvas copies exist and type-check (the canvas edit result reports no errors), the DOCX (when requested) is generated with every figure rendered and no literal source, and the report is delivered.
 
 ## Decision table
 
@@ -111,6 +122,9 @@ Complete this step when both copies exist, the canvas type-checks (the canvas ed
 | Budget signals absent from the SOW | Default to consumption/scale-to-zero SKUs and say so in the cost table caption. |
 | User states there is no POC | Skip Step 3; omit the POC gap-audit section from the deliverable. |
 | A design element has no SOW or POC citation | Mark it `inferred` and list it in Risks. |
+| User only wants the canvas (no document) | Do Step 5a; skip 5b. |
+| `python-docx` or mermaid-cli unavailable and not installable | Use the DOCX fallback in [DOCX_GUIDE.md](DOCX_GUIDE.md); never paste raw mermaid/Bicep text into the DOCX as a substitute for a rendered image. |
+| Design changes after the DOCX is built | Regenerate **both** — re-render diagrams, re-run `build_docx.py`, and re-sync the canvas — so they never drift apart. |
 
 ## Anti-patterns
 
@@ -123,6 +137,10 @@ Complete this step when both copies exist, the canvas type-checks (the canvas ed
 - Creating per-app ACRs instead of using the shared `forwardpathai` registry.
 - Designing topology that cannot be expressed as one parameterized Bicep template.
 - Stating security/reliability measures as aspirations instead of concrete decisions.
+- Pasting literal Bicep or mermaid source into the DOCX — the DOCX gets **rendered** diagram images only; literal source lives in the canvas.
+- Embedding un-rendered mermaid text (or a broken/`[missing diagram]` placeholder) in the delivered DOCX.
+- Letting the canvas and DOCX drift — regenerate both whenever the design changes.
+- Shipping a Word-default-looking DOCX instead of the styled house format in [assets/build_docx.py](assets/build_docx.py).
 
 ## Additional resources
 
@@ -132,3 +150,5 @@ Complete this step when both copies exist, the canvas type-checks (the canvas ed
 - Production-quality checklist: [ARCHITECTURE_BAR.md](ARCHITECTURE_BAR.md)
 - Bicep deployability contract: [BICEP_CONSTRAINT.md](BICEP_CONSTRAINT.md)
 - Canvas deliverable guide: [CANVAS_GUIDE.md](CANVAS_GUIDE.md)
+- DOCX report guide: [DOCX_GUIDE.md](DOCX_GUIDE.md)
+- DOCX generator template: [assets/build_docx.py](assets/build_docx.py)

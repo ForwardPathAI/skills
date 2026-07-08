@@ -2,6 +2,8 @@
 
 How to author the architecture deliverable produced by `poc-to-product-architecture`. This guide is self-contained so the skill works even when the running agent has not read Cursor's canvas skill.
 
+The canvas is the **interactive source of truth** and keeps the Bicep skeleton and mermaid diagram source inline. Its companion — a shareable DOCX report with the same sections but **rendered** diagrams and **no** literal Bicep/mermaid source — is covered in [DOCX_GUIDE.md](DOCX_GUIDE.md). Keep the two in sync: when the design changes, regenerate both.
+
 ## File rules
 
 - Exactly **one** `.canvas.tsx` file per deliverable.
@@ -76,6 +78,8 @@ Every resource the Bicep skeleton declares, with SKU and region. Include: Log An
 
 A code block following the section list in [BICEP_CONSTRAINT.md](BICEP_CONSTRAINT.md): parameters, Log Analytics, Container Apps environment, Key Vault, ACR pull wiring, per-service Container Apps, PostgreSQL, extras, outputs. Use real resource types and parameter names — not a complete working template.
 
+This section is **canvas-only**: the DOCX report omits the literal Bicep (and mermaid) source and instead points readers at the next-step skills. See [DOCX_GUIDE.md](DOCX_GUIDE.md).
+
 ### 7. Security and reliability
 
 The passed items from [ARCHITECTURE_BAR.md](ARCHITECTURE_BAR.md), stated as **decisions** not aspirations. Group under Security and Reliability headings.
@@ -103,7 +107,7 @@ If the running agent has no canvas support, write the same ten sections to `docs
 ## Reporting
 
 In the Step 5 report, include:
-- Both file paths (managed copy as a clickable canvas link using its full absolute path).
+- File paths: the canvas (managed copy as a clickable canvas link using its full absolute path) and, when produced, the generated DOCX report (see [DOCX_GUIDE.md](DOCX_GUIDE.md)).
 - Deviations from product-foundation (if any).
 - Top risks from section 10.
 - Next-step skills: [azure-infra-setup](../azure-infra-setup/SKILL.md) for full Bicep authoring, [customer-deployment-package](../customer-deployment-package/SKILL.md) for the customer handoff.

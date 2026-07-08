@@ -36,6 +36,7 @@ npx skills add forwardpathai/skills/linear-backlog-grill
 npx skills add forwardpathai/skills/plan-refiner
 npx skills add forwardpathai/skills/plan-context-imager
 npx skills add forwardpathai/skills/speclang-writer
+npx skills add forwardpathai/skills/poc-from-sow
 npx skills add forwardpathai/skills/poc-to-product-architecture
 npx skills add forwardpathai/skills/standup-report
 ```
@@ -67,6 +68,7 @@ npx skills add forwardpathai/skills/standup-report
 | [plan-refiner](./plan-refiner) | Harden an existing Cursor plan so a weaker executor model can implement it without judgment calls — hunt unknowns, resolve them via codebase/web research or a one-gap-at-a-time user interview, anticipate non-obvious scenarios, and rewrite the plan file in place as unambiguous, verifiable statements. |
 | [plan-context-imager](./plan-context-imager) | Gather the codebase context a plan depends on, render it into dense PNG pages via pxpipe's `renderTextToImages`, and embed the images plus a per-page index into the plan so the executor reads them instead of re-grepping the codebase each step. |
 | [speclang-writer](./speclang-writer) | Turn a plan into a SpecLang specification — a structured, natural-language Markdown document (the single source of truth) that captures a system's behavior and its pinned implementation details so an AI toolchain or executor can generate the code from the spec. |
+| [poc-from-sow](./poc-from-sow) | Turn a SOW into a customer-validatable, continuation-ready POC codebase on the Forward Path stack — buildable, runnable, demo-deployable, with an agent-ready handoff pack — by orchestrating web-ui / mobile-ui / product-foundation / azure-infra-setup, then closing with a poc-to-product-architecture canvas + DOCX. |
 | [poc-to-product-architecture](./poc-to-product-architecture) | Turn a SOW and POC repo into a production system-design canvas — architecture, gap audit, Azure resource map, Bicep skeleton, security/reliability, and cost estimate, constrained to the Forward Path stack and customer-deployable Bicep. |
 | [standup-report](./standup-report) | Generate a narratable daily standup (yesterday / today / blockers) for yourself or a named user from Linear issues, GitHub merged/open PRs, and local Cursor chat transcripts. |
 

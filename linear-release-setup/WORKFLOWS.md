@@ -52,7 +52,7 @@ Add this job to the workflow that runs on `release.published` and builds/pushes 
 linear-release:
   name: Sync Linear (customer release)
   needs: [build-release-images]
-  if: success() && needs.build-release-images.result == 'success'
+  if: ${{ !cancelled() && (needs.build-release-images.result == 'success' || (github.event.release.prerelease && needs.build-release-images.result == 'skipped')) }}
   runs-on: ubuntu-latest
   permissions:
     contents: read

@@ -50,10 +50,12 @@ Set variables from the repo:
 DEFAULT_BRANCH="$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)"
 git fetch origin "$DEFAULT_BRANCH"
 git checkout "$DEFAULT_BRANCH"
-git pull --ff-only "origin/$DEFAULT_BRANCH"
+git pull --ff-only origin "$DEFAULT_BRANCH"
 git rev-parse HEAD "origin/$DEFAULT_BRANCH"   # must match
-LAST_TAG="$(gh release list --limit 1 --json tagName -q '.[0].tagName')"
-git log "${LAST_TAG}..origin/$DEFAULT_BRANCH" --oneline
+LAST_TAG="$(gh release list --limit 1 --exclude-pre-releases --json tagName -q '.[0].tagName // empty')"
+if [ -n "$LAST_TAG" ]; then
+  git log "${LAST_TAG}..origin/$DEFAULT_BRANCH" --oneline
+fi
 ```
 
 - **No prior release:** ask the user for `LAST_TAG` or the commit to release from.

@@ -3,17 +3,24 @@
 ForwardPath Mobile UI — mockup generator (self-contained).
 
 Generates, analyzes, and modifies high-fidelity MOBILE APP UI mockups using a
-Gemini image model, via one of two interchangeable backends:
+Gemini image model, via one of three interchangeable backends:
 
   - gemini      Google Gemini API directly (google-genai SDK)
   - openrouter  OpenRouter's OpenAI-compatible API (stdlib HTTP, no extra deps)
+  - local       On-device fallback (no key, Apple Silicon) — reference-capable
+                FLUX.2 Klein Edit / Qwen-Image-Edit via the image-gen skill's
+                mflux CLIs. Used only when no cloud key exists and the user has
+                consented; see local_backend.py. analyze/modify-json in local
+                mode are agent-native by default (the agent writes the JSON),
+                with an opt-in offline VLM via --vlm.
 
 All prompt construction, portrait enforcement, and JSON handling are shared
 across backends — only the transport differs. Forces PORTRAIT phone framing so
 screens render upright, and persists API keys per provider on this machine so
 they are asked for only once.
 
-Requires: Pillow (always). google-genai only for the gemini backend.
+Requires: Pillow (always). google-genai only for the gemini backend. The local
+backend shells out to the separately-installed image-gen skill (mflux).
 
 Commands:
   setup        Store the API key for a provider (and optional model overrides)
@@ -23,8 +30,10 @@ Commands:
   modify-json  Apply natural-language changes to a JSON design spec
   regenerate   Re-render a mockup from a (modified) JSON spec
 
-Select the backend with --provider (gemini|openrouter), the MOBILE_UI_PROVIDER
-env var, or the stored default. Default: gemini.
+Select the backend with --provider (gemini|openrouter|local), the
+MOBILE_UI_PROVIDER env var, or the stored default. Default: gemini. The local
+provider never engages implicitly — the agent must pass --provider local after
+confirming Apple Silicon + user consent (see SKILL.md).
 """
 
 import argparse
@@ -35,6 +44,8 @@ import json
 import os
 import sys
 from pathlib import Path
+
+import local_backend
 
 CONFIG_PATH = Path.home() / ".config" / "mobile-ui" / "config.json"
 DEFAULT_PROVIDER = "gemini"
@@ -108,8 +119,8 @@ def resolve_provider(args):
     provider = os.environ.get("MOBILE_UI_PROVIDER") or load_config().get("provider")
     if provider is None:
         return DEFAULT_PROVIDER
-    if provider not in PROVIDERS:
-        valid = ", ".join(PROVIDERS)
+    if provider not in PROVIDERS and provider != "local":
+        valid = ", ".join(list(PROVIDERS) + ["local"])
         print(f"ERROR: unknown provider {provider!r} (from MOBILE_UI_PROVIDER or stored "
               f"config). Valid providers: {valid}.", file=sys.stderr)
         sys.exit(2)
@@ -142,6 +153,9 @@ def find_api_key(provider):
 def resolve_model(args_model, provider, kind):
     if args_model:
         return args_model
+    if provider == "local":
+        # One image engine covers both kinds; analyze/modify-json bypass this.
+        return load_config().get("local_model") or local_backend.resolve_default_local_model()
     return provider_config(provider).get(kind) or PROVIDERS[provider][kind]
 
 
@@ -357,15 +371,29 @@ class OpenRouterBackend:
 
 
 def get_backend(provider):
+    if provider == "local":
+        reason = local_backend.unavailable_reason()
+        if reason:
+            print(f"ERROR: --provider local unavailable: {reason}. The on-device fallback "
+                  "needs an Apple Silicon Mac with the image-gen skill set up "
+                  "(bash <image-gen>/scripts/setup_env.sh).", file=sys.stderr)
+            sys.exit(2)
+        return local_backend.LocalBackend()
     api_key = find_api_key(provider)
     if not api_key:
         meta = PROVIDERS[provider]
         keys = " / ".join(meta["env_keys"])
+        # If this machine can run the on-device fallback, tell the agent so it can
+        # offer local generation (after user consent) instead of blocking on a key.
+        extra = ""
+        if local_backend.local_installed():
+            extra = (" Alternatively this Apple Silicon Mac can generate on-device with no "
+                     "key — ask the user to confirm, then re-run with --provider local.")
         # Stable, greppable sentinel so the calling agent knows to ask the user.
         print(f"NO_API_KEY: No {provider} API key configured. Ask the user for a key "
               f"({meta['key_url']}), then store it by piping it via stdin: "
               f"printf '%s' THE_KEY | python mockup_gen.py setup --provider {provider} "
-              f"(or set {keys}).", file=sys.stderr)
+              f"(or set {keys}).{extra}", file=sys.stderr)
         sys.exit(3)
     if provider == "gemini":
         try:
@@ -451,6 +479,16 @@ def read_api_key(args, provider):
 
 def cmd_setup(args):
     provider = resolve_provider(args)
+    if provider == "local":
+        cfg = load_config()
+        cfg["provider"] = "local"
+        if getattr(args, "local_model", None):
+            cfg["local_model"] = args.local_model
+        save_config(cfg)
+        print(f"Saved local as the default provider at {CONFIG_PATH} (no key needed).")
+        print(f"  Local engine: {resolve_model(None, 'local', 'generation_model')} "
+              "(auto: Qwen-Image-Edit if cached, else FLUX.2 Klein Edit)")
+        return
     key = read_api_key(args, provider)
     if not key:
         keys = " / ".join(PROVIDERS[provider]["env_keys"])
@@ -477,19 +515,37 @@ def cmd_setup(args):
     print(f"  Analysis model:   {resolve_model(None, provider, 'analysis_model')}")
 
 
+def _print_local_fallback_status():
+    st = local_backend.local_status()
+    if st["installed"]:
+        weights = "weights cached" if st["weights_present"] else "weights download on first run"
+        print(f"LOCAL_FALLBACK_AVAILABLE: on-device generation ready (engine "
+              f"{st['default_model']}, {weights}, {st['free_gb']} GB free).")
+    else:
+        print(f"LOCAL_FALLBACK_UNAVAILABLE ({local_backend.unavailable_reason()}).")
+    vlm = "AVAILABLE" if local_backend.vlm_installed() else "UNAVAILABLE"
+    tail = "ready" if local_backend.vlm_installed() else "needs scripts/setup_vlm.sh"
+    print(f"LOCAL_VLM_{vlm}: offline analyze/modify-json --vlm {tail} "
+          "(default path is agent-native, no setup).")
+
+
 def cmd_check(args):
     provider = resolve_provider(args)
+    if provider == "local":
+        _print_local_fallback_status()
+        return
     meta = PROVIDERS[provider]
     if provider_config(provider).get("api_key"):
         print(f"CONFIGURED: {provider} key stored at {CONFIG_PATH}")
-        return
-    env_present = next((k for k in meta["env_keys"] if os.environ.get(k)), None)
-    if env_present:
-        print(f"CONFIGURED: {provider} key from environment variable {env_present}")
     else:
-        keys = " or ".join(meta["env_keys"])
-        print(f"NOT_CONFIGURED ({provider}): pipe key via stdin (printf '%s' THE_KEY | "
-              f"python mockup_gen.py setup --provider {provider}) or set {keys}")
+        env_present = next((k for k in meta["env_keys"] if os.environ.get(k)), None)
+        if env_present:
+            print(f"CONFIGURED: {provider} key from environment variable {env_present}")
+        else:
+            keys = " or ".join(meta["env_keys"])
+            print(f"NOT_CONFIGURED ({provider}): pipe key via stdin (printf '%s' THE_KEY | "
+                  f"python mockup_gen.py setup --provider {provider}) or set {keys}")
+    _print_local_fallback_status()
 
 
 def cmd_generate(args):
@@ -532,29 +588,69 @@ def _write_json_or_exit(raw, err, output_path, retry_hint):
     print(f"Saved {output_path}")
 
 
+def _emit_agent_native_analyze(image, output):
+    """Local default: no model call — the agent (itself a strong VLM) reads the
+    mockup and writes the JSON spec. Print a greppable directive it can act on."""
+    print("LOCAL_ANALYZE_AGENT_NATIVE: running on-device with no cloud key. The agent "
+          f"should READ the image '{image}', produce the JSON design spec described "
+          f"below, and WRITE it to '{output}'. (Or re-run with --vlm to use the offline "
+          "Qwen2.5-VL model instead.)")
+    print("\n--- analyze instruction / schema ---")
+    print(ANALYZE_PROMPT)
+
+
+def _emit_agent_native_modify(json_file, changes, output):
+    print("LOCAL_MODIFY_AGENT_NATIVE: running on-device with no cloud key. The agent "
+          f"should READ the JSON spec '{json_file}', apply the changes below, and WRITE "
+          f"the COMPLETE modified JSON (all unmentioned fields kept exactly) to "
+          f"'{output}'. (Or re-run with --vlm to use the offline LLM instead.)")
+    print(f"\n--- requested changes ---\n{changes}")
+
+
 def cmd_analyze(args):
     provider = resolve_provider(args)
     check_paths([args.image])
+    output = args.output or (Path(args.image).stem + "_analysis.json")
+    if provider == "local":
+        if not getattr(args, "vlm", False):
+            _emit_agent_native_analyze(args.image, output)
+            return
+        backend = local_backend.LocalBackend()
+        print("Analyzing with the on-device VLM [local --vlm]...")
+        raw, err = backend.generate_text(None, ANALYZE_PROMPT, [args.image], 0.1,
+                                         vlm_model=args.vlm_model)
+        _write_json_or_exit(raw, err, output,
+                            "Try again, or drop --vlm to analyze agent-native.")
+        return
     backend = get_backend(provider)
     model = resolve_model(args.model, provider, "analysis_model")
     print(f"Analyzing with {model} [{provider}]...")
     raw, err = backend.generate_text(model, ANALYZE_PROMPT, [args.image], 0.1)
-    output = args.output or (Path(args.image).stem + "_analysis.json")
     _write_json_or_exit(raw, err, output, "Try again or adjust the image.")
 
 
 def cmd_modify_json(args):
     provider = resolve_provider(args)
-    backend = get_backend(provider)
-    model = resolve_model(args.model, provider, "analysis_model")
     spec = Path(args.json_file).read_text()
+    output = args.output or (Path(args.json_file).stem + "_modified.json")
     prompt = (f"Here is a JSON spec of a mobile app screen:\n\n{spec}\n\n"
               f"Apply these modifications: {args.changes}\n\n"
               "Return the COMPLETE modified JSON, keeping all unmentioned fields exactly. "
               "Return ONLY valid JSON.")
+    if provider == "local":
+        if not getattr(args, "vlm", False):
+            _emit_agent_native_modify(args.json_file, args.changes, output)
+            return
+        backend = local_backend.LocalBackend()
+        print("Modifying JSON with the on-device LLM [local --vlm]...")
+        raw, err = backend.generate_text(None, prompt, None, 0.1, vlm_model=args.vlm_model)
+        _write_json_or_exit(raw, err, output,
+                            "Try again, or drop --vlm to modify agent-native.")
+        return
+    backend = get_backend(provider)
+    model = resolve_model(args.model, provider, "analysis_model")
     print(f"Modifying JSON with {model} [{provider}]...")
     raw, err = backend.generate_text(model, prompt, None, 0.1)
-    output = args.output or (Path(args.json_file).stem + "_modified.json")
     _write_json_or_exit(raw, err, output, "Try again or simplify the changes.")
 
 
@@ -586,9 +682,10 @@ def cmd_regenerate(args):
 # ── CLI ───────────────────────────────────────────────────────────────────────
 def add_provider_arg(sp):
     sp.add_argument(
-        "--provider", choices=list(PROVIDERS),
+        "--provider", choices=list(PROVIDERS) + ["local"],
         help="Backend to use (default: MOBILE_UI_PROVIDER env, stored default, "
-             "then gemini)")
+             "then gemini). 'local' = on-device fallback (Apple Silicon, no key, "
+             "user consent required)")
 
 
 def main():
@@ -603,6 +700,9 @@ def main():
     sp.add_argument("--api-key", help="Legacy: visible in process args; prefer stdin/env")
     sp.add_argument("--generation-model")
     sp.add_argument("--analysis-model")
+    sp.add_argument("--local-model", choices=list(local_backend.LOCAL_MODELS),
+                    help="With --provider local: pin the on-device engine "
+                         "(default auto-picks Qwen-Image-Edit if cached, else FLUX.2)")
 
     sp = sub.add_parser("check", help="Report whether an API key is configured")
     add_provider_arg(sp)
@@ -627,6 +727,12 @@ def main():
     sp.add_argument("image")
     sp.add_argument("-o", "--output")
     sp.add_argument("--model")
+    sp.add_argument("--vlm", action="store_true",
+                    help="With --provider local: use the offline VLM instead of the "
+                         "agent-native default (needs scripts/setup_vlm.sh)")
+    sp.add_argument("--vlm-model",
+                    help="Override the offline VLM (alias or HF id; "
+                         "default mlx-community/Qwen2.5-VL-3B-Instruct-4bit)")
 
     sp = sub.add_parser("modify-json", help="Apply changes to a JSON spec")
     add_provider_arg(sp)
@@ -634,6 +740,12 @@ def main():
     sp.add_argument("--changes", required=True)
     sp.add_argument("-o", "--output")
     sp.add_argument("--model")
+    sp.add_argument("--vlm", action="store_true",
+                    help="With --provider local: use the offline LLM instead of the "
+                         "agent-native default (needs scripts/setup_vlm.sh)")
+    sp.add_argument("--vlm-model",
+                    help="Override the offline LLM (alias or HF id; "
+                         "default mlx-community/Qwen2.5-3B-Instruct-4bit)")
 
     sp = sub.add_parser("regenerate", help="Re-render a mockup from a JSON spec")
     add_provider_arg(sp)

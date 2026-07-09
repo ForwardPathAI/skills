@@ -27,9 +27,10 @@ pip install google-genai       # only for --provider gemini (default)
 ```
 The `openrouter` provider needs no extra package (it uses the Python stdlib).
 
-**Provider.** The tool renders Gemini image models through one of two backends, selected with `--provider` (or the `MOBILE_UI_PROVIDER` env var, or the stored default):
+**Provider.** The tool renders through one of three backends, selected with `--provider` (or the `MOBILE_UI_PROVIDER` env var, or the stored default):
 - `gemini` (default) — Google Gemini API directly. Key from https://aistudio.google.com/apikey (`GEMINI_API_KEY` / `GOOGLE_API_KEY`).
 - `openrouter` — OpenRouter's OpenAI-compatible API. Key from https://openrouter.ai/keys (`OPENROUTER_API_KEY`). `image_config` (aspect ratio + size) is forwarded to Gemini image models, so portrait control is preserved. Pass `--provider openrouter` to **every** command below.
+- `local` — **on-device fallback, no API key.** Reference-capable FLUX.2 Klein Edit (or Qwen-Image-Edit) run through the separately-installed [`image-gen`](../image-gen) skill's `mflux` CLIs. Apple Silicon only. Cloud stays preferred; only use `local` when there's no cloud key **and** the user consents — see [No cloud key? On-device fallback](#no-cloud-key-on-device-fallback). Needs `image-gen` set up once: `bash <image-gen>/scripts/setup_env.sh`.
 
 Set `TOOL` to the absolute path of `scripts/mockup_gen.py` **inside this skill's own directory** (the folder this `SKILL.md` lives in — wherever the skill was installed, e.g. `.cursor/skills/`, `.claude/skills/`, or `.agents/skills/`). Reuse this `$TOOL` for every command below.
 
@@ -43,6 +44,35 @@ printf '%s' "USER_KEY_HERE" | python "$TOOL" setup --provider openrouter
 # Alternatively, skip setup entirely and export GEMINI_API_KEY (or OPENROUTER_API_KEY).
 ```
 Keys persist per provider at `~/.config/mobile-ui/config.json`. If any call prints `NO_API_KEY`, ask the user for a key and run `setup`, then retry. Never hardcode a key.
+
+### No cloud key? On-device fallback
+
+When the user has **no** Gemini/OpenRouter key, this machine can generate mockups fully offline — but only on an Apple Silicon Mac, and only with the user's consent. The generator never falls back silently: `local` runs solely via an explicit `--provider local`. Follow this flow:
+
+```mermaid
+flowchart TD
+  A["check gemini + openrouter keys"] --> B{"any cloud key?"}
+  B -->|yes| C["use cloud (default, preferred)"]
+  B -->|no| D{"LOCAL_FALLBACK_AVAILABLE?<br/>(Apple Silicon + image-gen mflux)"}
+  D -->|no| E["ask the user for a cloud API key (setup), then retry"]
+  D -->|yes| F["ask the user: generate on-device with the local model?"]
+  F -->|yes| G["run every command with --provider local<br/>(refs still passed for consistency)"]
+  F -->|no| E
+```
+
+1. Run `python "$TOOL" check`. It prints the cloud key status **and** a `LOCAL_FALLBACK_AVAILABLE` / `LOCAL_FALLBACK_UNAVAILABLE (reason)` line.
+2. If no cloud key but `LOCAL_FALLBACK_AVAILABLE`, **ask the user** (via the chat, e.g. the question/approval UI) whether to generate on-device. Explain the trade-offs honestly (below). Only proceed on a yes.
+3. On consent, add `--provider local` to **every** `generate`/`regenerate` call. Keep passing the same `--colors`, `--style`, `--description`, and `--refs` — references are forwarded to the edit model (`--image-paths`), so cross-screen consistency is preserved.
+4. Optionally persist it as the default: `python "$TOOL" setup --provider local` (no key needed; `--local-model flux2-klein-4b|qwen-image-edit` to pin the engine).
+
+The engine auto-picks: **Qwen-Image-Edit** if its weights are already cached, otherwise **FLUX.2 Klein Edit** (`flux2-klein-4b`, the lighter default). First run downloads weights (~12 GB free needed) into the shared HF cache.
+
+**Honest limitations of the local path** (tell the user):
+- References **are** used, so brand/chrome consistency holds up far better than plain text-to-image — but still below Gemini's reference fidelity, and an edit model can drift on complex layouts.
+- Diffusion renders small UI text less crisply than Gemini. It's a solid "better-than-nothing" fallback, not a Gemini replacement.
+- Slower (on-device), and needs the `image-gen` skill installed on Apple Silicon.
+
+**analyze / modify-json with no cloud key.** In local mode these default to **agent-native** — the fastest, highest-quality path: running `analyze`/`modify-json --provider local` prints a `LOCAL_ANALYZE_AGENT_NATIVE` / `LOCAL_MODIFY_AGENT_NATIVE` directive, and **you (the agent) then read the mockup with the Read tool and write/edit the JSON yourself** (no model download, fully offline). Only add `--vlm` if a scripted, offline model is required instead of doing it inline — that needs a one-time `bash "$(dirname "$TOOL")/setup_vlm.sh"` (creates a shared `~/.ui-vlm` venv; default VLM `Qwen2.5-VL-3B`, override with `--vlm-model`).
 
 ---
 
@@ -101,20 +131,22 @@ Always pass `--colors`, `--style`, `--description`, and previously generated scr
 **5. Audit.** Re-check every mockup against the SOW (no invented features) and Expo SDK 54 feasibility. Regenerate any drift (retry once; if needed lower `--temperature` or simplify).
 
 ### Editing an existing mockup (optional)
-Use the 3-step flow: `analyze` → `modify-json` → `regenerate` (keeps layout, applies only requested changes). See script `--help`.
+Use the 3-step flow: `analyze` → `modify-json` → `regenerate` (keeps layout, applies only requested changes). See script `--help`. With `--provider local`, `analyze`/`modify-json` are agent-native by default (you read the image and write the JSON), while `regenerate --provider local` re-renders on-device, forwarding `--original` + `--refs` to the edit model.
 
 ---
 
 ## Command reference
-Every command accepts `--provider gemini|openrouter` (default `gemini`).
+Every command accepts `--provider gemini|openrouter|local` (default `gemini`). For `local`, the engine auto-picks Qwen-Image-Edit if cached else `flux2-klein-4b` (force with `--model flux2-klein-4b|qwen-image-edit`); no key is required.
 ```bash
-python "$TOOL" check [--provider gemini|openrouter]
+python "$TOOL" check [--provider gemini|openrouter|local]   # also prints LOCAL_FALLBACK_AVAILABLE/UNAVAILABLE
 printf '%s' KEY | python "$TOOL" setup [--provider gemini|openrouter] [--generation-model M] [--analysis-model M]
-python "$TOOL" generate --prompt "..." -o out.png [--provider ...] [--refs ...] [--colors ...] [--style ...] [--description ...] [--theme light|dark] [--frame iphone|android|none] [--aspect 9:16] [--size 1K|2K|4K] [--temperature 0.35]
-python "$TOOL" analyze image.png [-o spec.json] [--provider ...]
-python "$TOOL" modify-json --json-file spec.json --changes "..." [-o spec2.json] [--provider ...]
+python "$TOOL" setup --provider local [--local-model flux2-klein-4b|qwen-image-edit]   # no key needed
+python "$TOOL" generate --prompt "..." -o out.png [--provider ...] [--model ...] [--refs ...] [--colors ...] [--style ...] [--description ...] [--theme light|dark] [--frame iphone|android|none] [--aspect 9:16] [--size 1K|2K|4K] [--temperature 0.35]
+python "$TOOL" analyze image.png [-o spec.json] [--provider ...] [--vlm] [--vlm-model M]
+python "$TOOL" modify-json --json-file spec.json --changes "..." [-o spec2.json] [--provider ...] [--vlm] [--vlm-model M]
 python "$TOOL" regenerate --json-spec spec2.json [--original image.png] [--refs ...] -o out.png [--provider ...]
 ```
+With `--provider local`, `analyze`/`modify-json` are agent-native by default (they print a directive; you write the JSON). `--vlm` runs a fully-offline model instead and needs a one-time `bash "$(dirname "$TOOL")/setup_vlm.sh"`.
 
 ## Resources
 - [`EXPO_SDK_54.md`](EXPO_SDK_54.md) — capability → package map + grounding constraints.

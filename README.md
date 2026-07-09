@@ -41,6 +41,7 @@ npx skills add forwardpathai/skills/poc-from-sow
 npx skills add forwardpathai/skills/poc-to-product-architecture
 npx skills add forwardpathai/skills/architecture-to-linear-plan
 npx skills add forwardpathai/skills/standup-report
+npx skills add forwardpathai/skills/inbox-brief
 ```
 
 ## Skills
@@ -75,6 +76,7 @@ npx skills add forwardpathai/skills/standup-report
 | [poc-to-product-architecture](./poc-to-product-architecture) | Turn a SOW and POC repo into a production system-design canvas — architecture, gap audit, Azure resource map, Bicep skeleton, security/reliability, and cost estimate, constrained to the Forward Path stack and customer-deployable Bicep. |
 | [architecture-to-linear-plan](./architecture-to-linear-plan) | Turn the poc-to-product-architecture deliverable (canvas + DOCX) and any web-ui/mobile-ui mockups into a delivery plan — Linear milestones with proposed timelines and executable functional + design tickets — then, once approved, create the project, milestones, and issues in Linear via the Linear MCP. |
 | [standup-report](./standup-report) | Generate a narratable daily standup (yesterday / today / blockers) for yourself or a named user from Linear issues, GitHub merged/open PRs, and local Cursor chat transcripts. |
+| [inbox-brief](./inbox-brief) | Context brief of today's Outlook inbox (or named emails) — scrapes Outlook Web via a persistent Playwright profile (no Graph API/admin consent), filters GitHub/automated noise, and enriches each human thread with related Linear issues and local Cursor chats. |
 
 ## Authoring
 

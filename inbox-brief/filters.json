@@ -1,0 +1,33 @@
+{
+  "_comment": "Noise filters applied by scripts/fetch_emails.js. Row-level names skip opening the conversation at all; email/subject patterns drop individual messages after extraction. All patterns are case-insensitive JS regexes.",
+  "excludeRowSenderNames": [
+    "GitHub",
+    "Linear",
+    "Microsoft Teams",
+    "Microsoft Viva",
+    "Slack",
+    "Notion",
+    "Vercel",
+    "Sentry",
+    "Datadog",
+    "Azure DevOps",
+    "Google Calendar"
+  ],
+  "excludeSenderEmailPatterns": [
+    "^notifications@github\\.com$",
+    "^noreply@github\\.com$",
+    "^no-?reply@",
+    "^donotreply@",
+    "^notification[s]?@",
+    "@em\\.linear\\.app$",
+    "@notifications\\.",
+    "@docusign\\.net$",
+    "@calendly\\.com$"
+  ],
+  "excludeSubjectPatterns": [
+    "^(Accepted|Declined|Tentative|Canceled|Cancelled):",
+    "^Automatic reply:",
+    "^Out of Office",
+    "^Undeliverable:"
+  ]
+}

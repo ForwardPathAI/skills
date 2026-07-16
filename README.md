@@ -44,6 +44,7 @@ npx skills add forwardpathai/skills/architecture-to-linear-plan
 npx skills add forwardpathai/skills/standup-report
 npx skills add forwardpathai/skills/inbox-brief
 npx skills add forwardpathai/skills/project-update-writer
+npx skills add forwardpathai/skills/eng-report-effort-estimate
 ```
 
 ## Skills
@@ -81,6 +82,7 @@ npx skills add forwardpathai/skills/project-update-writer
 | [standup-report](./standup-report) | Generate a narratable daily standup (yesterday / today / blockers) for yourself or a named user from Linear issues, GitHub merged/open PRs, and local Cursor chat transcripts. |
 | [inbox-brief](./inbox-brief) | Context brief of today's Outlook inbox (or named emails) — scrapes Outlook Web via a persistent Playwright profile (no Graph API/admin consent), filters GitHub/automated noise, and enriches each human thread with related Linear issues and local Cursor chats. |
 | [project-update-writer](./project-update-writer) | Summarize everything shipped in a Linear project since its last status update — baseline from the latest update, issues completed since grouped by capability area — and post a new project update with health after the user confirms. |
+| [eng-report-effort-estimate](./eng-report-effort-estimate) | Generate the combined Engineering Report + Effort Estimate document in Notion for a custom build — understanding check with price levers, gated generation, fixed-price effort estimation with internal QA phase, and a post-generation coverage audit. |
 
 ## Authoring
 

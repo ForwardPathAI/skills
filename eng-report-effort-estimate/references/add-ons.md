@@ -6,7 +6,7 @@ No standard hour baselines — price each per project, presented in the Step 0.3
 
 ## Baked-in defaults
 
-Included in every estimate unless the user explicitly drops them:
+Include each default when its Applies to condition is met, unless the user explicitly drops it. Skip defaults that do not apply — do not estimate them and do not ask the user to drop them:
 
 | Component | Applies to | What it is |
 |---|---|---|

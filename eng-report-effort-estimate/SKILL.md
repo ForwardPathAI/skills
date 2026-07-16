@@ -40,7 +40,7 @@ Every question that passes the price-lever test, each with a price-impact estima
 - Phasing is a price lever: where features could split into phases, present the phase options with the price delta of each.
 
 ### 0.4 Standard add-ons
-Read [references/add-ons.md](references/add-ons.md). Confirm the baked-in defaults are in the estimate (or the user drops them), then propose each offered add-on whose trigger fits, priced in the 0.3 format. For each, the user decides: **build** (estimate as a feature), **offer** (list in the document's Optional Add-Ons section with its price), or **skip**.
+Read [references/add-ons.md](references/add-ons.md). Confirm each applicable baked-in default is in the estimate (or the user drops it); skip defaults whose Applies to condition is not met. Then propose each offered add-on whose trigger fits, priced in the 0.3 format. For each, the user decides: **build** (estimate as a feature), **offer** (list in the document's Optional Add-Ons section with its price), or **skip**.
 
 **Gate: do not proceed until the user confirms the understanding check is accurate and has decided on each price lever — which to put to the client, and what assumption to use in the meantime so the estimate can still be produced — and on each proposed add-on.**
 
@@ -121,5 +121,5 @@ Confirm no features were silently deferred or removed (non-negotiable 2). Anythi
 - Every question in the document passes the price-lever test and meets every Step 0.3 rule (impact estimate, ordered highest first, lean list); remove any that don't.
 
 ### 4.6 Add-ons check
-- Baked-in defaults are estimated or were explicitly dropped by the user.
+- Each applicable baked-in default is estimated or was explicitly dropped by the user; non-applicable defaults are omitted (not estimated, not treated as drops).
 - Every "build" add-on is estimated like any feature; every "offer" add-on appears in Optional Add-Ons with hours and cost; none silently dropped.

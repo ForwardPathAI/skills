@@ -52,9 +52,9 @@ Before the app goes to the customer for UAT, ForwardPath runs an internal QA pas
 
 ```
 Build:  total dev hours ÷ 2.5 hrs/day = working days ÷ 5 = build weeks
-+ Internal QA phase (from complexity table above)
++ Internal QA phase in weeks (from complexity table above — if the tier is in days, convert: days ÷ 5)
 + UAT: minimum 3 weeks, client-led
-= Estimated Timeline
+= Estimated Timeline (weeks)
 ```
 
 ## Inline effort format (per technical section)

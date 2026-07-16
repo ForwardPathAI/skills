@@ -107,7 +107,7 @@ Confirm no features were silently deferred or removed (non-negotiable 2). Anythi
 
 ### 4.3 Effort sanity check
 - Inline section totals roll up correctly to the summary table, and a QA Fixes line is present.
-- Timeline math works: build weeks + internal QA phase + 3 weeks UAT (see estimation rules).
+- Timeline math works: build weeks + internal QA phase in weeks (convert days ÷ 5 when the QA tier is in days) + 3 weeks UAT (see estimation rules).
 - Flag sections with suspiciously low or high estimates for a second look.
 
 ### 4.4 Completeness check

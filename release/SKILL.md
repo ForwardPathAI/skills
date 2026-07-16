@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a production GitHub release from the default branch with gh — semver tag, release notes, breaking-change gate, and CI watch.
+description: Cut a production GitHub release from the default branch with gh — semver tag, release notes, breaking-change gate, and CI watch. SDK repos (publishable package.json) get a version-bump release PR before tagging.
 disable-model-invocation: true
 ---
 
@@ -9,6 +9,11 @@ disable-model-invocation: true
 Cut a **production** GitHub release from the repo's **default branch**: scan for customer-breaking changes, propose a semver tag, compose release notes from commits and linked tracker issues, publish with `gh`, and watch the release-triggered workflow until it succeeds.
 
 Works in any git repo — discover branch names, tag format, CI workflows, and release pipelines from the repo; do not assume monorepo layout, container registry, or a specific issue tracker prefix.
+
+Two **release modes**, detected in Step 1:
+
+- **App mode** — tag the default branch directly (Steps 1–7 as written).
+- **SDK mode** — the repo publishes a package whose publish workflow requires the tag to match `package.json` version, so a version-bump release PR must merge before tagging. Steps 5–6 are replaced by [SDK-RELEASE.md](./SDK-RELEASE.md).
 
 Production only — no prerelease tags or `--prerelease` flows.
 
@@ -42,7 +47,7 @@ Copy this checklist and track progress:
 
 ### Step 1: Pre-flight
 
-**Completion criterion:** `origin/<default-branch>` is fetched, local branch matches it, there is at least one commit since the last production tag, and the latest CI run on that branch is not failed.
+**Completion criterion:** `origin/<default-branch>` is fetched, local branch matches it, there is at least one commit since the last production tag, the latest CI run on that branch is not failed, and the release mode is recorded.
 
 Set variables from the repo:
 
@@ -73,7 +78,9 @@ gh run list --branch="$DEFAULT_BRANCH" --limit 10 --json workflowName,conclusion
 
 Pick the most recent run on `$DEFAULT_BRANCH` for a push/merge CI workflow (skip `release`-event runs). If `conclusion` is `failure`, stop and show the run URL. If `status` is `in_progress` or `queued`, tell the user and wait (`gh run watch <id>`) or ask whether to proceed.
 
-Record `LAST_TAG`, `DEFAULT_BRANCH`, and tag prefix for all later steps.
+**Release mode** — SDK mode when the root `package.json` has `publishConfig` (or the release workflow runs `npm publish` / verifies tag against `package.json` version); app mode otherwise. Confirm with the user when the signals conflict.
+
+Record `LAST_TAG`, `DEFAULT_BRANCH`, tag prefix, and release mode for all later steps.
 
 ### Step 2: Breaking-change gate
 
@@ -152,6 +159,8 @@ Show the full notes body to the user before Step 5.
 
 ### Step 5: Publish release
 
+**SDK mode:** follow [SDK-RELEASE.md](./SDK-RELEASE.md) for Steps 5–6 (release PR → merge → tag → watch), then return to Step 7. The rest of this step and Step 6 are app mode.
+
 **Completion criterion:** GitHub release exists, is **published** (not draft), tag targets the default branch.
 
 Discover whether publish triggers CI from workflow files:
@@ -229,6 +238,7 @@ Summarize artifact outputs (container images, npm packages, etc.) only from what
 | CI still running | Wait or ask — do not silently skip |
 | Breaking-change findings | Present all, ask, abort on decline |
 | No release workflow in repo | Skip Step 6 watch after user acknowledgment |
+| SDK mode (publishable package.json) | Replace Steps 5–6 with [SDK-RELEASE.md](./SDK-RELEASE.md) |
 | Workflow not found immediately | Poll `gh run list` briefly before failing |
 | Release workflow failed | Report failure; do not claim release is complete |
 
@@ -242,7 +252,9 @@ Summarize artifact outputs (container images, npm packages, etc.) only from what
 - Omitting Dependabot commits from notes
 - Inventing tracker issue titles without MCP lookup
 - Treating a failed release workflow as a successful release
+- Tagging an SDK repo before the version-bump PR is merged (publish fails on tag/version mismatch)
 
 ## Additional resources
 
 - Breaking-change scan paths and semver rules: [BREAKING-CHANGE-SCAN.md](./BREAKING-CHANGE-SCAN.md)
+- SDK release PR flow (Steps 5–6 replacement): [SDK-RELEASE.md](./SDK-RELEASE.md)

@@ -54,7 +54,7 @@ For each behavior in scope, draft cases covering:
 - Integration — where this feature touches others
 - Regression risk — existing behavior the change could break
 
-Present the candidates as a table: **Test Case | Steps | Expected Result | Category | Priority**. Use only Category and Priority options that exist in the live schema. Mark any candidate that overlaps an existing row as `possible duplicate of <row>` instead of silently including or dropping it.
+Present the candidates as a table: **Test Case | Feature | Steps | Expected Result | Category | Priority**. Use only Feature, Category, and Priority options that exist in the live schema. Mark any candidate that overlaps an existing row as `possible duplicate of <row>` instead of silently including or dropping it.
 
 Done when: every candidate is shown to the user with steps and expected result — no stubs.
 
@@ -66,7 +66,7 @@ Done when: the user has explicitly confirmed the final set.
 
 ### Step 5: Persist approved cases
 
-`notion-create-pages` — one row per approved case, `Status: Not Started`. Append only: never edit or delete rows QA already owns (existing statuses are regression history).
+`notion-create-pages` — one row per approved case, with `Feature` set and `Status: Not Started`. Append only: never edit or delete rows QA already owns (existing statuses are regression history).
 
 Done when: rows written equals cases approved, verified by re-querying the database. Report the count and the database link.
 
@@ -78,7 +78,7 @@ Done when: rows written equals cases approved, verified by re-querying the datab
 | Inventing routes/endpoints/behavior not in the app | Only cover what exists in code |
 | Editing or deleting existing rows | Append only; statuses are regression history |
 | Silently skipping duplicates | Flag them for QA to decide |
-| Hardcoding Category/Priority options | Read the live schema |
+| Hardcoding Feature/Category/Priority options | Read the live schema |
 
 ## Related
 

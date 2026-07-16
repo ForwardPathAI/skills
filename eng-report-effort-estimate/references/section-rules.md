@@ -28,9 +28,11 @@ Effort Summary Table (top-level — hours, cost, timeline at a glance)
    - Effort Estimate — [Section Name] (inline)
 [N+1] Integration Considerations
    - Effort Estimate — Integrations (inline)
-[N+2] Open Questions & Decisions Required
-[N+3] Access & Data Required to Start Building
-[N+4] Unresolved Questions for Follow-Up
+[N+2] Optional Add-Ons (only when the user chose to offer add-ons — each labeled
+      as a ForwardPath proposal, with hours + cost)
+[N+3] Open Questions & Decisions Required
+[N+4] Access & Data Required to Start Building
+[N+5] Unresolved Questions for Follow-Up
 ---
 Effort Summary — Full Breakdown (detailed table, bottom of doc)
 ```

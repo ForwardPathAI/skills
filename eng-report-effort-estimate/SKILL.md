@@ -28,7 +28,7 @@ Every distinct feature, function, and capability discussed in the context, in pl
 > - Users will see a dashboard showing all active jobs and their current status
 
 ### 0.3 Price levers
-Every question that passes the price-lever test, each with a price-impact estimate so the user can decide whether it's worth asking the client. Keep the list lean — long lists go unanswered.
+Every question that passes the price-lever test, each with a price-impact estimate. Keep the list lean.
 
 | Question | Why it moves the price | Price impact |
 |---|---|---|
@@ -39,7 +39,10 @@ Every question that passes the price-lever test, each with a price-impact estima
 - Order by price impact, highest first.
 - Phasing is a price lever: where features could split into phases, present the phase options with the price delta of each.
 
-**Gate: do not proceed until the user confirms the understanding check is accurate and has decided how to handle each price lever — which to put to the client, and what assumption to use in the meantime so the estimate can still be produced.**
+### 0.4 Standard add-ons
+Read [references/add-ons.md](references/add-ons.md). Confirm the baked-in defaults are in the estimate (or the user drops them), then propose each offered add-on whose trigger fits, priced in the 0.3 format. For each, the user decides: **build** (estimate as a feature), **offer** (list in the document's Optional Add-Ons section with its price), or **skip**.
+
+**Gate: do not proceed until the user confirms the understanding check is accurate and has decided on each price lever — which to put to the client, and what assumption to use in the meantime so the estimate can still be produced — and on each proposed add-on.**
 
 ## Step 1: Collect required inputs
 
@@ -88,7 +91,7 @@ The database has "Engineering Scoping Doc" and "Engineering Effort Estimate" as 
 
 ## Step 3: Write the document
 
-Read [references/section-rules.md](references/section-rules.md) — it holds the required document structure, header and effort-table formats, per-section authoring rules, and style rules. Every mandatory section must be present; each technical section carries an inline effort estimate in the format given in [references/estimation-rules.md](references/estimation-rules.md).
+Read [references/section-rules.md](references/section-rules.md) — it holds the required document structure, header and effort-table formats, per-section authoring rules, and style rules. Each technical section carries an inline effort estimate in the format given in [references/estimation-rules.md](references/estimation-rules.md).
 
 ## Step 4: Post-generation audit (gate)
 
@@ -115,6 +118,8 @@ Confirm no features were silently deferred or removed (non-negotiable 2). Anythi
 - Access & Data Required section has everything the client needs to provide.
 
 ### 4.5 Price-lever check
-- Every question in the document passes the price-lever test; remove any that don't.
-- Every question carries a price-impact estimate (magnitude + hours/dollar range where possible), ordered highest first.
-- The list is lean.
+- Every question in the document passes the price-lever test and meets every Step 0.3 rule (impact estimate, ordered highest first, lean list); remove any that don't.
+
+### 4.6 Add-ons check
+- Baked-in defaults are estimated or were explicitly dropped by the user.
+- Every "build" add-on is estimated like any feature; every "offer" add-on appears in Optional Add-Ons with hours and cost; none silently dropped.

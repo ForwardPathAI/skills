@@ -1,145 +1,86 @@
 ---
 name: qa-test-plan
-description: Generate and maintain customer-shareable QA test plans for Forward Path apps. Use when asked to create a QA/UAT/acceptance test plan (generate), sync a plan after feature changes (update), report test coverage gaps or drift (audit), or publish a plan to Notion for customer QA (publish). Also reached by automation that keeps test plans in line as the app evolves.
+description: Add QA test cases to the Notion QA Test Plan database — generate candidates from a feature change or the whole app, get QA approval, then persist. Use when a feature ships or a PR opens and test coverage should be added, or when populating the plan for a new app.
 ---
 
 # QA Test Plan
 
-Produce and maintain a **customer-shareable QA test plan** for a Forward Path custom app build. The canonical plan is markdown at `qa/test-plan.md` — version-controlled, diffable, agent-maintainable; `publish` mirrors it to Notion for customer collaboration.
+Maintain the **Notion QA Test Plan database** — the canonical store QA works through during full regression runs. Each row is one test case. This skill generates candidate cases, gets QA approval, and appends them.
 
-Everything keys off the **surface**: the set of routes, backend endpoint groups, and feature flags a tester can exercise. Forward Path apps share a skeleton (`ForwardPath.Server` + `ForwardPath.Web`), so the surface is enumerable from code — which is what makes coverage and **drift** mechanical to check.
-
-## Modes
-
-Pick the mode from the request. If ambiguous, ask.
-
-| Mode | Use when | Effect |
-|------|----------|--------|
-| **generate** | No `qa/test-plan.md` yet, or "create a test plan for this app" | Bootstrap a full plan from the code surface. Writes `qa/test-plan.md` (+ `qa/qa-config.yml` if missing). |
-| **update** | After a feature change, "sync the test plan" | Diff live surface vs. plan; add cases for new surface, flag stale cases, bump `last_synced_commit`. Edits in place. |
-| **audit** | "check coverage / drift"; called by automation | **Read-only.** Emit a gap report (uncovered surface + orphaned cases). No edits. This is the engine for CI / scheduled-agent / Cursor automation. |
-| **publish** | "publish to Notion for the customer" | Render `qa/test-plan.md` to Notion (per customer). Idempotent: update the existing page if present. |
-
-## Prerequisites
-
-- Run from the **app repo root** (the one with `src/ForwardPath.Server` / `src/ForwardPath.Web`), not the skills repo.
-- `qa/qa-config.yml` — read it if present; if absent, auto-detect the skeleton paths (see [Surface enumeration](#surface-enumeration)) and write a config in `generate`.
-- For `publish`: Notion MCP available and `publish.notion_parent` set in config. Stop and ask for the parent page/DB id if missing.
-
-## Surface enumeration (shared by generate / update / audit)
-
-Build the **live surface** = the set of things a tester can exercise. Resolve paths from `qa/qa-config.yml` `surfaces:`; defaults match the FP skeleton.
-
-1. **Routes** — parse the Vue router (default `src/ForwardPath.Web/src/router/index.js`). Collect each `path:` (resolve nested `children` to full paths, e.g. `/proposals` + `list` → `/proposals/list`) and its `meta` (`requiresAuth`, `requiresAdmin`, `requiresSuperAdmin`). Skip pure redirects and the catch-all.
-2. **Backend endpoint groups** — list modules in `src/ForwardPath.Server/app/api/v1/endpoints/` (ignore `__init__`, `__pycache__`, non-`.py`). For accurate prefixes, read the router-include file (default `src/ForwardPath.Server/app/api/v1/api.py` or `src/ForwardPath.Server/app/api/v1/router.py`) for `prefix="/api/v1/..."`; fall back to `/api/v1/<module>` when unresolved.
-3. **Feature flags** — keys in `FEATURE_FLAG_REGISTRY` (default `src/ForwardPath.Server/app/core/feature_flags_registry.py`) **plus** `enable_*` connector fields on `Settings` (default `src/ForwardPath.Server/app/core/config.py`). Note each flag's default and category.
-
-A surface item is identified by a stable token used in `Covers:` tags:
-- Route: the path, e.g. `/chat`, `/proposals/list`
-- Endpoint: `/api/v1/<group>`, e.g. `/api/v1/search`
-- Flag: `flag:<key>`, e.g. `flag:enable_hybrid_search`
+**Each project has its own database**, created once by `qa-test-plan-setup` and titled `<Project> — QA Test Plan`. The live schema (properties, select options) is the source of truth — read it from Notion, never assume.
 
 ## Workflow
 
-Copy this checklist and track progress:
-
 ```
-- [ ] Step 1: Determine mode + load/auto-detect qa/qa-config.yml
-- [ ] Step 2: Enumerate the live surface (routes, endpoints, flags)
-- [ ] Step 3: Run the mode (generate / update / audit / publish)
-- [ ] Step 4: Self-check against "Before finishing"
-```
-
-### generate
-
-1. Load `qa/qa-config.yml`; if missing, auto-detect skeleton paths and write it from `templates/qa-config.example.yml` with detected paths filled in.
-2. Enumerate the surface from `qa/qa-config.yml`.
-3. Read `templates/test-plan-template.md`. Fill the document header (overview, scope, in/out of scope, approach & roles, environments, entry/exit/pass-fail criteria) from `qa/qa-config.yml` + the README.
-4. Group surface into **suites** by feature area (one `TS-<AREA>`). Map routes/endpoints/flags into the suite they belong to.
-5. For each suite, write **test cases** using `templates/test-case-template.md`:
-   - Full detail (steps + expected) for **Critical/High** flows — auth, the primary chat→generate→export paths, role gating, connector ingest.
-   - Stubs (title, priority, `Covers:`, "_steps TBD_") for Medium/Low — enough to show structure without faking exhaustive coverage. **Log** how many are stubs so the team knows what's left.
-6. Build the **Coverage map** table: every surface token → covering `TC-` IDs. This is the drift index.
-7. Set frontmatter `last_synced_commit` to current `git rev-parse --short HEAD`.
-8. Write `qa/test-plan.md`.
-
-### update
-
-1. Enumerate the surface. Collect all `Covers:` tokens from the existing plan.
-2. Compute the set difference (see [Drift detection](#drift-detection)).
-3. For **uncovered** tokens: add cases (or stubs) to the right suite; create the suite if the feature area is new.
-4. For **orphaned** tokens (in plan, not in code): do **not** delete — mark the case `> ⚠️ STALE: covers \`<token>\` no longer in code (commit <sha>). Review.` so a human decides.
-5. Update the Coverage map and bump `last_synced_commit`. Preserve existing case IDs, `Status:`, and customer edits — only append/annotate.
-
-### audit (read-only — no edits)
-
-1. Enumerate the surface. Collect `Covers:` tokens from the plan.
-2. Compute drift. Emit a markdown report only:
-
-```markdown
-## QA test-plan drift report — <app> @ <sha>
-**Uncovered (N):** new surface with no test case
-- `/api/v1/reports` (endpoint)
-- `flag:enable_sql_context`
-
-**Orphaned (M):** cases covering surface not found in code
-- TC-PROP-007 covers `/proposals/archive`
-
-**Coverage:** X/Y surface items covered (Z%).
+- [ ] Step 1: Locate the database
+- [ ] Step 2: Gather context (feature or whole-app)
+- [ ] Step 3: Generate candidates
+- [ ] Step 4: QA review gate
+- [ ] Step 5: Persist approved cases
 ```
 
-3. If clean, say so explicitly ("0 uncovered, 0 orphaned"). This output is designed to drop into a PR comment or Linear issue.
+### Step 1: Locate this project's database
 
-### publish
+Resolve the database in this order:
 
-1. Read `qa/test-plan.md` and `publish.notion_parent` from config.
-2. `notion-search` for an existing page titled `<app> — QA Test Plan` under the parent.
-   - Found → `notion-update-page` to replace its body with the rendered plan.
-   - Not found → `notion-create-pages` under `notion_parent`.
-3. Render markdown to Notion blocks: H2 per suite, each case as a toggle/section with its steps and expected. Keep `Status:` checkboxes so customers can tick them in Notion.
-4. Return the Notion URL. Note in the plan footer: "Published to Notion: <url> (<sha>)".
+1. **Repo config** — read `qa/qa-config.yml` in the app repo; use its `notion_database:` URL.
+2. **Search by project** — `notion-search` for `<Project> — QA Test Plan`, where `<Project>` is the app repo / project name. A title match on the wrong project is worse than no match — confirm the hit with the user if more than one is plausible.
+3. **Ask** — request the database URL from the user. After they provide it, offer to save it to `qa/qa-config.yml` (`notion_database: <url>`) so future runs skip this step.
 
-## Drift detection
+Then read the database schema (properties and select options).
 
-```
-live      = routes ∪ endpoints ∪ flags        (from code)
-covered   = all Covers: tokens                 (from plan)
-uncovered = live − covered                      → need cases
-orphaned  = covered − live                      → flag stale (never auto-delete)
-```
+If no database exists for this project, stop and tell the user to run `/qa-test-plan-setup` — do not create a database from this skill.
 
-Normalize tokens before comparing (lowercase, strip trailing slashes, `flag:` prefix for flags). Treat `:id`/`:pathMatch` params as part of the base path.
+Done when: the right project's database is confirmed and its schema loaded.
 
-## Test plan format
+### Step 2: Gather context
 
-`templates/test-plan-template.md` and `templates/test-case-template.md` are the structure — fill them, don't reinvent the layout. The rules that govern them:
+Two branches — pick from how you were invoked:
 
-- **Stable IDs** — suites `TS-<AREA>`, cases `TC-<AREA>-<NNN>`. Never renumber an existing case; only append. Areas: `AUTH, CHAT, PROP, RES, PROF, MEM, ADMIN, CONN, DOC, KG` — add new ones to `qa-config.yml`.
-- **`Covers:` is the traceability contract** — each case lists the exact surface tokens it exercises (`/route`, `/api/v1/<group>`, `flag:<key>`). An omitted or invented token breaks drift detection.
-- **Coverage map** — the table mapping every surface token to its covering case(s); keep it in sync with the cases. It is the drift index.
+- **Feature-scoped** (the common case — a PR opened, a feature shipped): extract the feature name and what changed from the PR description, diff, and changed files.
+- **Whole-app** (initial population): enumerate what a tester can exercise — routes, backend endpoint groups, feature flags — from the app repo. Run from the app repo root, not the skills repo.
 
-## Before finishing
+Either way, query the database for existing rows touching this feature so candidates don't duplicate coverage.
 
-- [ ] Every `Covers:` token resolves to a real route/endpoint/flag in the current code.
-- [ ] Coverage map matches the cases (no token listed without a `TC-` behind it).
-- [ ] Existing case IDs, `Status:` values, and customer edits preserved (update mode).
-- [ ] `last_synced_commit` bumped to current HEAD.
-- [ ] Reads professionally for a customer — no internal jargon, secrets, or file paths leaking into the customer-facing prose (file paths belong only in `Covers:`/coverage map).
-- [ ] Stub count reported so the team knows what still needs fleshing out.
+Done when: you can list the feature scope and the existing coverage for it.
+
+### Step 3: Generate candidates
+
+For each behavior in scope, draft cases covering:
+
+- Happy path — the feature works as intended
+- Edge cases — boundaries, empty inputs, unusual states
+- Error handling — invalid input, permission failures
+- Integration — where this feature touches others
+- Regression risk — existing behavior the change could break
+
+Present the candidates as a table: **Test Case | Steps | Expected Result | Category | Priority**. Use only Category and Priority options that exist in the live schema. Mark any candidate that overlaps an existing row as `possible duplicate of <row>` instead of silently including or dropping it.
+
+Done when: every candidate is shown to the user with steps and expected result — no stubs.
+
+### Step 4: QA review gate
+
+This is a hard stop. Ask QA to approve, edit, drop, or add cases. Do not write anything to Notion until they confirm the final set.
+
+Done when: the user has explicitly confirmed the final set.
+
+### Step 5: Persist approved cases
+
+`notion-create-pages` — one row per approved case, `Status: Not Started`. Append only: never edit or delete rows QA already owns (existing statuses are regression history).
+
+Done when: rows written equals cases approved, verified by re-querying the database. Report the count and the database link.
 
 ## Anti-patterns
 
-| Anti-pattern | Why it's bad | Fix |
-|---|---|---|
-| Inventing routes/endpoints/flags | Plan diverges from reality | Only tag surface that exists in code |
-| `Covers:` "everything" or omitted | Breaks drift detection | One precise token list per case |
-| Deleting orphaned cases automatically | Destroys customer QA history / may be a rename | Mark STALE; let a human decide |
-| Renumbering case IDs | Breaks external references & Notion links | Append new IDs only |
-| Faking exhaustive coverage | False confidence | Stub Medium/Low cases; report the stub count |
-| Leaking secrets/internal paths into customer prose | Not customer-shareable | Keep paths in `Covers:` only |
-| Editing in `audit` mode | Audit must be safe for automation | Audit is read-only; use `update` to change |
-| Hardcoding ButtconRAG specifics | Skill must generalize | Drive everything from `qa-config.yml` + enumeration |
+| Anti-pattern | Fix |
+|---|---|
+| Writing to Notion before QA confirms | The review gate is the point — wait |
+| Inventing routes/endpoints/behavior not in the app | Only cover what exists in code |
+| Editing or deleting existing rows | Append only; statuses are regression history |
+| Silently skipping duplicates | Flag them for QA to decide |
+| Hardcoding Category/Priority options | Read the live schema |
 
 ## Related
 
-- When a coverage gap should become tracked work, file it with the `issue-writer` skill and link the issue in the case's `Linear:` field.
+- `qa-test-plan-setup` — creates the database and defines the schema.
+- When a generated case reveals a product gap, file it with the `issue-writer` skill.

@@ -30,6 +30,7 @@ npx skills add forwardpathai/skills/customer-deployment-package
 npx skills add forwardpathai/skills/review-mp4
 npx skills add forwardpathai/skills/azure-hibernate
 npx skills add forwardpathai/skills/qa-test-plan
+npx skills add forwardpathai/skills/qa-test-plan-setup
 npx skills add forwardpathai/skills/teach-web-actions
 npx skills add forwardpathai/skills/product-foundation
 npx skills add forwardpathai/skills/linear-release-setup
@@ -65,7 +66,8 @@ npx skills add forwardpathai/skills/project-update-writer
 | [customer-deployment-package](./customer-deployment-package) | Build a customer-facing deployment handoff — external Terraform/Bicep, setup instructions filled into the Notion template and saved to the deployments DB, then exported and zipped with a Windows-safe name. |
 | [review-mp4](./review-mp4) | Understand an mp4 (local or URL): extract frames with ffmpeg, pick the sharpest in-focus frame per window via variance-of-Laplacian blur detection (Python or Node), then read them to answer questions. |
 | [azure-hibernate](./azure-hibernate) | Hibernate a live client project's Azure resource group to minimum cost (scale/stop App Service Plans, web apps, SQL, Redis, databases via the `az` CLI) and wake it for retesting — reversibly, recording state before every change. |
-| [qa-test-plan](./qa-test-plan) | Generate and maintain customer-shareable QA test plans for a Forward Path app from its code surface (routes/endpoints/flags); audit for coverage drift, sync after feature changes, and publish to Notion for collaborative QA. |
+| [qa-test-plan](./qa-test-plan) | Add QA test cases to the Notion QA Test Plan database — generate candidates from a feature change or the whole app, get QA approval, then append rows QA works through during full regression runs. |
+| [qa-test-plan-setup](./qa-test-plan-setup) | Per-project one-time creation of a `<Project> — QA Test Plan` Notion database with the fixed Forward Path schema (test case, feature, steps, expected result, category, priority, status). |
 | [teach-web-actions](./teach-web-actions) | Learn a website by recording a user-driven Chrome session (HAR + UI steps) via Playwright codegen, distill it into a reusable lesson (endpoints, payloads, parameter knobs, auth), then replay a variation with new parameters as an API call or as UI navigation captured to mp4. |
 | [product-foundation](./product-foundation) | The standard stack and conventions for building Forward Path products — Bun monorepo, Next.js App Router, Hono RPC APIs, Drizzle/Postgres, TanStack Query, Better Auth, Azure. Scaffold new repos, add modules, and enforce code conventions. |
 | [linear-release-setup](./linear-release-setup) | Set up GitHub Release workflows that publish containers, keep a scheduled Linear release in progress from main merges, and complete it when the customer GitHub Release ships. |

@@ -32,13 +32,13 @@ git checkout "$DEFAULT_BRANCH" && git pull --ff-only origin "$DEFAULT_BRANCH"
 node -p "require('./package.json').version"   # must equal <X.Y.Z>
 ```
 
-Refresh the Step 4 notes for `${LAST_TAG}..HEAD` so every commit now on the default branch appears once — including any that landed while PR checks ran. Place the bump PR under **Chores**.
+Refresh the Step 4 notes for `${LAST_TAG}..HEAD` so every commit now on the default branch appears once — including any that landed while PR checks ran. Place the bump PR under **Chores**. Show the full refreshed notes body to the user and wait for confirmation before Step 5b — do not publish notes the user has not reviewed after the refresh.
 
 ## Step 5b: Tag + publish release
 
 **Completion criterion:** GitHub release published; tag points at the default-branch head that contains the version bump; local `package.json` version equals the tag.
 
-Same `gh release create` command as Step 5 in SKILL.md, targeting the post-merge `$DEFAULT_BRANCH` head (use the refreshed notes body). Creating the release (and its tag) is what triggers the publish workflow.
+Same `gh release create` command as Step 5 in SKILL.md, targeting the post-merge `$DEFAULT_BRANCH` head (use the user-confirmed refreshed notes body). Creating the release (and its tag) is what triggers the publish workflow.
 
 ## Step 6 (SDK): Watch publish workflow
 

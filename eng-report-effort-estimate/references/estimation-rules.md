@@ -5,7 +5,7 @@
 | Parameter | Value |
 |---|---|
 | Rate | **$550/hour (CAD)** |
-| Pricing model | **Fixed price** — this estimate becomes the SOW price; overruns are ForwardPath's to absorb, so estimate honestly |
+| Pricing model | **Fixed price** — this estimate becomes the SOW price; overruns are ForwardPath's to absorb |
 | Standard monorepo setup (auth, DB, web app, API, queues, CI/CD) | **10 hours** — the only standard component baseline; everything else is estimated per-project from judgment |
 | Developers | **1 developer** — multi-dev builds are rare and handled ad hoc when they come up |
 | Dev capacity | **2.5 hours/day** = this project's share of a dev who splits across multiple client projects |

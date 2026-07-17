@@ -45,6 +45,7 @@ npx skills add forwardpathai/skills/standup-report
 npx skills add forwardpathai/skills/inbox-brief
 npx skills add forwardpathai/skills/project-update-writer
 npx skills add forwardpathai/skills/eng-report-effort-estimate
+npx skills add forwardpathai/skills/setup-preview-env
 ```
 
 ## Skills
@@ -83,6 +84,7 @@ npx skills add forwardpathai/skills/eng-report-effort-estimate
 | [inbox-brief](./inbox-brief) | Context brief of today's Outlook inbox (or named emails) — scrapes Outlook Web via a persistent Playwright profile (no Graph API/admin consent), filters GitHub/automated noise, and enriches each human thread with related Linear issues and local Cursor chats. |
 | [project-update-writer](./project-update-writer) | Summarize everything shipped in a Linear project since its last status update — baseline from the latest update, issues completed since grouped by capability area — and post a new project update with health after the user confirms. |
 | [eng-report-effort-estimate](./eng-report-effort-estimate) | Generate the combined Engineering Report + Effort Estimate document in Notion for a custom build — understanding check with price levers, gated generation, fixed-price effort estimation with internal QA phase, and a post-generation coverage audit. |
+| [setup-preview-env](./setup-preview-env) | Set up ephemeral per-pull-request Azure preview environments for a containerized app — shared/per-PR Terraform, GitHub Actions deploy/teardown, auth redirects, and runbooks distilled from the ButtconRAG preview lane. |
 
 ## Authoring
 

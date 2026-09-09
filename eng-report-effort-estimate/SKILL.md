@@ -1,6 +1,6 @@
 ---
 name: eng-report-effort-estimate
-description: Generate the combined Engineering Report + Effort Estimate document in Notion for a ForwardPath custom-build project — the pre-SOW internal doc that breaks technical effort into hours and price. Use when the user asks to scope a client build, estimate effort or hours, create an engineering report or scoping doc, or provides a discovery-call transcript or client requirements wanting engineering analysis.
+description: Generate the combined Engineering Report + Effort Estimate document in Notion for a ForwardPath custom build. Use when the user wants the pre-SOW engineering scoping document from discovery material, not a standalone estimate for one feature or workstream.
 ---
 
 # Engineering Report + Effort Estimate
@@ -12,11 +12,9 @@ Two non-negotiables govern every step:
 1. **Extract, don't invent.** Every feature, constraint, pain point, and requirement in the document must trace back to the provided context (transcripts, notes, RFPs, emails). Anything not discussed is marked TBD or raised as an open question — never fabricated.
 2. **No silent phasing.** Never split features into V1/V2, defer anything to "future", or drop a feature to simplify a recommendation without explicit user approval. Every feature in the source material appears in the document unless the user says to exclude it. Phasing opportunities are presented as price levers in Step 0.3, not decided in the document.
 
-A **price lever** is a question whose different answers change the hours/cost estimate. It is the only kind of question this skill asks — the document exists to understand price, not to perfectly scope the build, and every question put to the client risks going unanswered. The test: would a different answer move the number? If it only sharpens scope or picks an implementation detail with no effort delta, it doesn't belong.
-
 ## Step 0: Understanding check (gate)
 
-Read ALL provided context — transcripts, scoping notes, requirements, RFPs, prior emails, attachments — and read [references/estimation-rules.md](references/estimation-rules.md) (needed to quantify price levers). Then produce for the user:
+Read ALL provided context — transcripts, scoping notes, requirements, RFPs, prior emails, attachments. Read and apply [effort-estimate](../effort-estimate/SKILL.md) through its price-lever step using its ForwardPath delivery defaults. Then produce for the user:
 
 ### 0.1 Build summary
 2–3 plain-language sentences: what is being built and why, understandable with zero technical background.
@@ -32,15 +30,16 @@ Every question that passes the price-lever test, each with a price-impact estima
 
 | Question | Why it moves the price | Price impact |
 |---|---|---|
-| [The decision or unknown] | [What about it drives hours] | [Magnitude + range, e.g. **High: +15–25 hrs / +$8,250–$13,750**] |
+| [The decision or unknown] | [What about it drives hours] | [Magnitude + hours and cost delta] |
 
+- Use only price levers identified by `effort-estimate`; do not add general scoping questions.
 - Impact = magnitude (**High / Medium / Low**) plus an hours-and-dollar range wherever one can be estimated. If it can't be quantified yet, say why and still give a rough magnitude.
 - Where the answer swings between two concrete options, show both (e.g. "Phase 1 only: 60 hrs / $33,000 — Phase 1+2: 110 hrs / $60,500").
 - Order by price impact, highest first.
 - Phasing is a price lever: where features could split into phases, present the phase options with the price delta of each.
 
 ### 0.4 Standard add-ons
-Read [references/add-ons.md](references/add-ons.md). Confirm each applicable baked-in default is in the estimate (or the user drops it); skip defaults whose Applies to condition is not met. Then propose each offered add-on whose trigger fits, priced in the 0.3 format. For each, the user decides: **build** (estimate as a feature), **offer** (list in the document's Optional Add-Ons section with its price), or **skip**.
+Read [references/add-ons.md](references/add-ons.md). Confirm each applicable baked-in default is in the estimate (or the user drops it); skip defaults whose Applies to condition is not met. Then propose each offered add-on whose trigger fits, using `effort-estimate` to price it in the 0.3 format. For each, the user decides: **build** (estimate as a feature), **offer** (list in the document's Optional Add-Ons section with its price), or **skip**.
 
 **Gate: do not proceed until the user confirms the understanding check is accurate and has decided on each price lever — which to put to the client, and what assumption to use in the meantime so the estimate can still be produced — and on each proposed add-on.**
 
@@ -69,7 +68,7 @@ Verify you have the following. Ask for any missing Critical Input.
 | Number of developers assigned | Effort calculation |
 | Target completion date | Timeline section |
 
-Defaults for anything not provided are in [references/estimation-rules.md](references/estimation-rules.md).
+Defaults for anything not provided come from the ForwardPath delivery reference used by `effort-estimate`.
 
 ## Step 2: Create in Notion
 
@@ -84,14 +83,14 @@ Create the document as a new page in the Engineering Scoping Documents database.
 | Type | `Engineering Scoping Doc` |
 | Client Name | Client company name |
 | Effort Estimate Required By | Date if provided, otherwise blank |
-| Build Timeline Estimate | Calculated from effort (see estimation rules) |
+| Build Timeline Estimate | Calculated by `effort-estimate` |
 | Point Consumption | Total estimated hours |
 
 The database has "Engineering Scoping Doc" and "Engineering Effort Estimate" as separate types; this combined document uses "Engineering Scoping Doc". If the user wants a combined type added to the schema, handle that separately.
 
 ## Step 3: Write the document
 
-Read [references/section-rules.md](references/section-rules.md) — it holds the required document structure, header and effort-table formats, per-section authoring rules, and style rules. Each technical section carries an inline effort estimate in the format given in [references/estimation-rules.md](references/estimation-rules.md).
+Read [references/section-rules.md](references/section-rules.md) — it holds the required document structure, header and effort-table formats, per-section authoring rules, and style rules. Use `effort-estimate` for every technical section and for the final rollup; render its line items in the document's inline format.
 
 ## Step 4: Post-generation audit (gate)
 
@@ -110,7 +109,7 @@ Confirm no features were silently deferred or removed (non-negotiable 2). Anythi
 
 ### 4.3 Effort sanity check
 - Inline section totals roll up correctly to the summary table, and a QA Fixes line is present.
-- Timeline math works: build weeks + internal QA phase in weeks (convert days ÷ 5 when the QA tier is in days) + 3 weeks UAT (see estimation rules).
+- Recalculate cost and timeline with `effort-estimate`; every value must match its ForwardPath delivery defaults.
 - Flag sections with suspiciously low or high estimates for a second look.
 
 ### 4.4 Completeness check

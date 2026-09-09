@@ -14,7 +14,7 @@ Two non-negotiables govern every step:
 
 ## Step 0: Understanding check (gate)
 
-Read ALL provided context — transcripts, scoping notes, requirements, RFPs, prior emails, attachments. Read and apply [effort-estimate](../effort-estimate/SKILL.md) through its price-lever step using its ForwardPath delivery defaults. Then produce for the user:
+Read ALL provided context — transcripts, scoping notes, requirements, RFPs, prior emails, attachments. Read and apply [effort-estimate](../effort-estimate/SKILL.md) through its price-lever step. Use confirmed project inputs and approved price-lever assumptions first, then its ForwardPath delivery defaults only for unspecified values. Then produce for the user:
 
 ### 0.1 Build summary
 2–3 plain-language sentences: what is being built and why, understandable with zero technical background.
@@ -90,7 +90,7 @@ The database has "Engineering Scoping Doc" and "Engineering Effort Estimate" as 
 
 ## Step 3: Write the document
 
-Read [references/section-rules.md](references/section-rules.md) — it holds the required document structure, header and effort-table formats, per-section authoring rules, and style rules. Use `effort-estimate` for every technical section and for the final rollup; render its line items in the document's inline format.
+Read [references/section-rules.md](references/section-rules.md) — it holds the required document structure, header and effort-table formats, per-section authoring rules, and style rules. Use `effort-estimate` for every technical section and for the final rollup; render its line items in the document's inline format. Exclude the standard monorepo setup from every technical-section total and assign it once as a standalone final-rollup line.
 
 ## Step 4: Post-generation audit (gate)
 
@@ -108,8 +108,8 @@ Fix anything missing before presenting the final version.
 Confirm no features were silently deferred or removed (non-negotiable 2). Anything the document excludes must appear in Open Questions as a price lever with the price delta of each phase option.
 
 ### 4.3 Effort sanity check
-- Inline section totals roll up correctly to the summary table, and a QA Fixes line is present.
-- Recalculate cost and timeline with `effort-estimate`; every value must match its ForwardPath delivery defaults.
+- Inline section totals roll up correctly to the summary table; the standard monorepo setup appears exactly once, and QA-fix and UAT bug-fix hours remain identifiable for timeline calculation.
+- Recalculate cost and timeline with `effort-estimate` using the effective estimation contract: preserve confirmed project inputs and approved price-lever assumptions, and apply ForwardPath delivery defaults only to unspecified values.
 - Flag sections with suspiciously low or high estimates for a second look.
 
 ### 4.4 Completeness check

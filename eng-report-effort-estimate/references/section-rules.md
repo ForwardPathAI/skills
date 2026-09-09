@@ -62,9 +62,21 @@ Immediately after the header — the quick view for Sales and leadership:
 | ... | | | |
 | QA Fixes | XX hrs | $XX,XXX | Judged from complexity; QA review itself unbilled |
 | **Total Build** | **XX hrs** | **$XX,XXX** | |
-| **Internal QA phase** | — | — | X days/weeks, sized by complexity tier |
-| **UAT (3 weeks minimum)** | — | — | Client-led |
-| **Estimated Timeline** | **XX weeks** | | Build weeks + QA phase + 3 wks UAT, 1 dev at 2.5 hrs/day |
+| **Internal QA phase** | — | — | [Duration from estimator] |
+| **UAT** | — | — | [Duration from estimator], client-led |
+| **Estimated Timeline** | **XX weeks** | | Build + QA phase + UAT using the estimator contract |
+
+## Inline effort format (per technical section)
+
+Place this table at the bottom of each technical section:
+
+> **Effort Estimate — [Section Name]**
+>
+> | Task | Hours | Notes |
+> |---|---:|---|
+> | [Task 1] | X | [Assumption or basis] |
+> | [Task 2] | X | |
+> | **Section Total** | **X** | |
 
 ## Authoring rules
 

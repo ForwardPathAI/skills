@@ -60,7 +60,9 @@ Immediately after the header — the quick view for Sales and leadership:
 | [Component 1] | XX hrs | $XX,XXX | |
 | [Component 2] | XX hrs | $XX,XXX | |
 | ... | | | |
+| Standard monorepo setup | XX hrs | $XX,XXX | Included once; excluded from technical-section totals |
 | QA Fixes | XX hrs | $XX,XXX | Judged from complexity; QA review itself unbilled |
+| UAT Fixes | XX hrs | $XX,XXX | Occur during UAT; excluded from the pre-QA build-week numerator |
 | **Total Build** | **XX hrs** | **$XX,XXX** | |
 | **Internal QA phase** | — | — | [Duration from estimator] |
 | **UAT** | — | — | [Duration from estimator], client-led |

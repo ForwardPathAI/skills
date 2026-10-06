@@ -53,4 +53,4 @@ After maintenance fixes change visible behavior, recapture the affected views, r
 
 Finish only when the selected PR workflow's completion rules are satisfied and applicable screenshots represent the final changes and render in the PR, or report the concrete remaining blockers. Distinguish completed technical review from human approval and merge readiness.
 
-Return the PR link, final head SHA, concise validation and review status, and any screenshot limitations. Show the saved screenshots in the final response using Markdown images with absolute file paths, alongside the PR link. Do not promise future monitoring, merge, enable auto-merge, or deploy as part of this workflow.
+Return the PR link, final head SHA, concise validation and review status, and any screenshot limitations. Show the screenshots alongside the PR link using the client's supported image display method or verified attachment URLs. Use Markdown images with absolute file paths only when the client supports displaying local files; otherwise report any remaining display limitation. Do not promise future monitoring, merge, enable auto-merge, or deploy as part of this workflow.

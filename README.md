@@ -15,6 +15,7 @@ Or install a single skill by name:
 ```bash
 npx skills add forwardpathai/skills/issue-writer
 npx skills add forwardpathai/skills/open-pr
+npx skills add forwardpathai/skills/open-pr-with-screenshots
 npx skills add forwardpathai/skills/release
 npx skills add forwardpathai/skills/stack-pr
 npx skills add forwardpathai/skills/maintain-pr
@@ -56,6 +57,7 @@ npx skills add forwardpathai/skills/setup-preview-env
 |-------|-------------|
 | [issue-writer](./issue-writer) | Write Linear issues an AI coding agent can execute without follow-up questions. |
 | [open-pr](./open-pr) | Open a GitHub PR from local changes via a Linear issue, Linear's git branch, commit, and `gh`. |
+| [open-pr-with-screenshots](./open-pr-with-screenshots) | Extend normal, stacked, or existing PR work with verified screenshots of the actual UI changes, embedded in the PR description. Install with `open-pr`, or `stack-pr` for stacks. |
 | [release](./release) | Cut a production GitHub release from the default branch — semver tag, release notes, breaking-change gate, and CI watch. |
 | [stack-pr](./stack-pr) | Open a stacked/dependent GitHub PR based on the current branch (sibling of open-pr) via a Linear issue, commit, and `gh`. |
 | [maintain-pr](./maintain-pr) | Maintain an open GitHub PR through Greptile and human review feedback, merge conflicts, and CI failures — triage every finding, fix, validate, push, reply/resolve, and recheck the latest head until it is ready or concretely blocked. |

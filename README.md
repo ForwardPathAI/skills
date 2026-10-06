@@ -17,6 +17,7 @@ npx skills add forwardpathai/skills/issue-writer
 npx skills add forwardpathai/skills/open-pr
 npx skills add forwardpathai/skills/release
 npx skills add forwardpathai/skills/stack-pr
+npx skills add forwardpathai/skills/maintain-pr
 npx skills add forwardpathai/skills/cloud-agent-pr-stats
 npx skills add forwardpathai/skills/cloud-agent-triage
 npx skills add forwardpathai/skills/backlog-hygiene
@@ -57,6 +58,7 @@ npx skills add forwardpathai/skills/setup-preview-env
 | [open-pr](./open-pr) | Open a GitHub PR from local changes via a Linear issue, Linear's git branch, commit, and `gh`. |
 | [release](./release) | Cut a production GitHub release from the default branch — semver tag, release notes, breaking-change gate, and CI watch. |
 | [stack-pr](./stack-pr) | Open a stacked/dependent GitHub PR based on the current branch (sibling of open-pr) via a Linear issue, commit, and `gh`. |
+| [maintain-pr](./maintain-pr) | Maintain an open GitHub PR through Greptile and human review feedback, merge conflicts, and CI failures — triage every finding, fix, validate, push, reply/resolve, and recheck the latest head until it is ready or concretely blocked. |
 | [cloud-agent-pr-stats](./cloud-agent-pr-stats) | Count PRs opened by cloud coding agents (Cursor, Codex, Devin, Claude, Copilot) across a GitHub org, by branch-name prefix. |
 | [cloud-agent-triage](./cloud-agent-triage) | Evaluate whether Linear tickets suit autonomous Cursor cloud agents (why yes / why not), triage a repo's backlog honoring blockers, and optionally delegate the ready ones to Cursor. |
 | [backlog-hygiene](./backlog-hygiene) | Scan a Linear project's backlog for relevance — flag stale, already-shipped, or duplicated issues using update age, code/PR evidence, and ticket similarity — then apply confirmed actions one at a time. |

@@ -49,6 +49,7 @@ npx skills add forwardpathai/skills/project-update-writer
 npx skills add forwardpathai/skills/effort-estimate
 npx skills add forwardpathai/skills/eng-report-effort-estimate
 npx skills add forwardpathai/skills/setup-preview-env
+npx skills add forwardpathai/skills/t3-thread-follow
 ```
 
 ## Skills
@@ -91,6 +92,7 @@ npx skills add forwardpathai/skills/setup-preview-env
 | [effort-estimate](./effort-estimate) | Produce a bottom-up engineering-hours estimate for a feature, workstream, or software build, with explicit scope assumptions and quantified price levers. |
 | [eng-report-effort-estimate](./eng-report-effort-estimate) | Generate the combined Engineering Report + Effort Estimate document in Notion for a custom build — understanding check with price levers, gated generation, fixed-price effort estimation with internal QA phase, and a post-generation coverage audit. |
 | [setup-preview-env](./setup-preview-env) | Set up ephemeral per-pull-request Azure preview environments for a containerized app — shared/per-PR Terraform, GitHub Actions deploy/teardown, auth redirects, and runbooks distilled from the ButtconRAG preview lane. |
+| [t3-thread-follow](./t3-thread-follow) | Find T3 Code threads by title, ID, or description, then use their context, build on their work, or wait for a result across providers. |
 
 ## Authoring
 

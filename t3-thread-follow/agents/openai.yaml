@@ -1,0 +1,4 @@
+interface:
+  display_name: "T3 Thread Follow"
+  short_description: "Find threads by name; build on or wait for their work"
+  default_prompt: "Use $t3-thread-follow to find another T3 Code thread and build on its work or wait for its result."

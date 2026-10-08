@@ -2,6 +2,8 @@
 
 Use ButtconRAG as a case study, not a template. Read the current files before relying on this summary because its preview lane evolved through live pipeline failures.
 
+Its direct PR publishing identity is historical evidence, not a supported security pattern. Follow [SKILL.md](SKILL.md) sections 5–7 for isolated builds and protected default-branch publishing/deployment. These instructions do not claim that the case-study repo has already migrated.
+
 ## Source manifest
 
 From the workspace root, inspect:
@@ -35,7 +37,7 @@ ButtconRAG separates long-lived shared capacity from PR-owned resources:
 - Remote state keys are `preview/shared.tfstate` and `preview/pr-<N>.tfstate`.
 - Resource names, tags, database name, cache prefix, vector prefix, image tag, and URLs include the PR number.
 
-The deploy workflow:
+The historical deploy workflow:
 
 - skips drafts and forks before privileged work;
 - checks out the exact PR head;
@@ -54,7 +56,7 @@ The teardown workflow:
 - deletes the state blob only after successful destroy;
 - updates the sticky comment.
 
-These are the reusable load-bearing ideas: a shared/per-PR split, immutable deployment tags, explicit state isolation, privileged-event gates, lifecycle symmetry, bounded smoke checks, and idempotent reporting.
+Reuse the shared/per-PR split, immutable deployment tags, explicit state isolation, lifecycle symmetry, bounded smoke checks, and idempotent reporting. Replace its identity/execution boundary with the protected path in SKILL.md; skipping forks alone does not isolate untrusted code from credentials.
 
 ## Lessons from the live rollout
 
@@ -95,11 +97,11 @@ One Entra app registration serves all previews. Per-PR Terraform cannot safely o
 
 The app registration makes the CI service principal an owner and grants `Application.ReadWrite.OwnedBy`, avoiding tenant-wide `Application.ReadWrite.All`.
 
-### PR OIDC has a different subject
+### Historical PR OIDC must be replaced
 
-The working federated subject is `repo:<owner>/<repo>:pull_request`. Credentials scoped to `repo:<owner>/<repo>:environment:dev` or `production` do not match PR-triggered jobs.
+The case study used `repo:<owner>/<repo>:pull_request`. Do not recreate that publishing credential. Jobs declaring a protected `preview` environment use its exact environment-scoped subject instead, which may differ from legacy examples when GitHub subject customization is enabled.
 
-Fork PRs must not receive this identity. A fork gate after checkout or after a build has started is too late if that job already has cloud credentials.
+Both fork and same-repo PR code must stay out of jobs that can mint Azure tokens. Build without cloud access; publish inert image artifacts and deploy trusted default-branch Terraform through the protected orchestration in SKILL.md. `workflow_run` does not make downloaded artifacts trusted or safe to execute.
 
 ### URL construction has one source
 
@@ -116,6 +118,7 @@ Do not add custom DNS during the first tracer deployment unless it is a requirem
 
 ## Gaps not to copy
 
+- Direct PR OIDC plus building/executing PR code in a publishing/deployment job is unsupported. Replace it with the protected split workflow before enabling preview publishing.
 - The runbooks still describe per-app managed identities and Key Vault references in places, while the current Terraform injects values and uses an ACR token. Validate code and update docs together.
 - The pull-only ACR token and `preview-acr-pull-password` Key Vault secret are required by current Terraform, but their creation and rotation are not documented.
 - The preview Container Apps environment requires runtime access through a manually maintained dev PostgreSQL firewall rule. Codify it or document how CAE outbound-IP changes are detected and applied.
@@ -152,12 +155,12 @@ Any unresolved item is a design decision, not a placeholder to fill with a Buttc
 Validate all of these before handoff:
 
 - Deploy and teardown compute the same PR number, state key, resource names, and redirect URI.
-- Terraform deploys the immutable image tag built from the checked-out SHA.
+- Terraform deploys the digest of the image built from the validated PR head SHA; approval and artifact provenance refer to that same full SHA.
 - Each frontend URL appears identically in runtime config, CORS, cookies, auth redirect, output, smoke test, and PR comment.
 - Every mutable dependency is isolated or explicitly accepted as shared.
 - Every created resource, namespace, redirect, secret, and state lock has a cleanup owner.
 - State survives a failed destroy.
-- Fork code never runs in a job that can mint the Azure OIDC token.
+- PR code never runs in a job that can mint the Azure OIDC token. Privileged workflow definitions, Terraform, and helpers come from the trusted default branch; PR artifacts stay inert and PR caches never reach privileged jobs.
 - Draft events cannot cancel an active infrastructure operation.
 - Logs, outputs, comments, summaries, and plans do not print secret values.
 - Documentation describes the implementation that actually exists.

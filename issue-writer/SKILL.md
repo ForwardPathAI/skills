@@ -27,8 +27,8 @@ Three properties make an issue executable:
    - The conventions that apply (error handling, naming, folder layout) and one exemplar file the executor must match.
    - Intent docs where present (`CLAUDE.md`/`AGENTS.md`, ADRs, `CONTEXT.md`, `DESIGN.md`) — quote the specific lines that constrain this work; the executor has not read those docs.
    - Record `git rev-parse --short HEAD` — the issue stamps the commit it was written against, so the executor can detect drift.
-2. **Resolve the project** — required field. If the user didn't name one, infer from the repo (folder name or `.git/config` remote) and confirm before writing.
-3. **Fetch labels and projects from Linear via MCP** — never invent label names; only apply labels that exist in the workspace.
+2. **Fetch teams, projects, and labels from Linear via MCP** — use existing workspace values; never invent names.
+3. **Resolve placement without routine confirmation** — honor any team/project the user named. Otherwise infer from the repo name, git remote, existing issues, and session context. Use a clearly matching project when one exists. If no suitable project exists, create the issue under the known team without a project; do not create a project or attach unrelated work to one merely to fill the field. Ask only when the team is unknown or multiple plausible placements remain ambiguous. A clear inferred placement or the absence of a project does not require approval.
 4. **Scope** — if the change is larger than ~4 focused hours, split into multiple issues (see [Splitting large work](splitting.md)).
 5. **Write** — follow the [Description template](#description-template).
 6. **Create via Linear MCP** with all required fields set.
@@ -37,7 +37,8 @@ Three properties make an issue executable:
 
 | Field | Rule |
 |-------|------|
-| **Project** | Required. Infer from repo name if absent; confirm with user before creating. |
+| **Team** | Required. Use the team named by the user or established by repo/workspace context. |
+| **Project** | Optional. Follow the placement rules above; omit it or pass `null` for a team-only issue. |
 | **Priority** | Required. Urgent / High / Medium / Low. Default Medium if unspecified. |
 | **Labels** | Required. Pull from Linear; apply only existing labels. |
 | **Title** | Imperative mood, stating what will be true after the issue lands. "Add email validation to signup form", not "Signup issue". |
@@ -132,6 +133,6 @@ If you can't satisfy all four in one issue, split (see [Splitting large work](sp
 - Does every requirement name exact files and symbols, not "the relevant module"?
 - Are the STOP conditions specific to this issue's actual risks, not boilerplate?
 - **Bugs** include reproduction — error, steps, expected vs actual.
-- Project, priority, and labels are set in Linear; dependencies stated or "None".
+- Team, priority, and labels are set in Linear; project follows the placement rules and may be absent; dependencies stated or "None".
 - No secret values anywhere in the issue — locations and credential types only.
 - The commit SHA is filled in and the excerpts match what's live at that SHA.

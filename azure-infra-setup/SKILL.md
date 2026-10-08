@@ -13,7 +13,7 @@ Default compute: **Azure Container Apps** (lower cost, simpler ops). Use **App S
 
 This skill guides authoring and review. It does not itself authorize live deployments, credential rotation, deletion, or changes to shared infrastructure. Carry out live actions only within the user's requested scope.
 
-Before choosing identities or permissions, inspect the repo's infra and workflows and, when accessible, the target tenant/subscription, existing registry resource ID, registry permission mode, and GitHub environment protections. Use read-only discovery. Do not guess missing IDs or claim live verification when only source files were reviewed.
+Before choosing identities or permissions, inspect the repo's infra and workflows and, when accessible, the target tenant/subscription and GitHub environment protections. For Forward Path-managed infrastructure, also inspect the existing registry resource ID and permission mode. Customer-tenant templates need only the registry hostname and customer pull-secret references; do not require access to Forward Path's Azure control plane. Use read-only discovery. Do not guess missing IDs or claim live verification when only source files were reviewed.
 
 When existing infra conflicts with the rules below, identify the conflict and prepare a scoped correction. Do not copy insecure settings as precedent or silently change org-wide registry settings to make one application work.
 
@@ -28,7 +28,7 @@ All custom builds pull and push through the org-wide registry:
 
 Image references in infra and CI should use `forwardpathai.azurecr.io/<app-image>`.
 
-- Resolve the existing registry through a Terraform data source or Bicep `existing` resource, including its actual subscription/resource group. Do not create, import into application state, replace, or delete the shared registry. Use an explicit provider alias or resource scope when it lives in another subscription.
+- For Forward Path-managed infrastructure, resolve the existing registry through a Terraform data source or Bicep `existing` resource, including its actual subscription/resource group. Use an explicit provider alias or resource scope when it lives in another subscription. Customer-tenant templates use `forwardpathai.azurecr.io` and customer pull-secret references without querying Forward Path's registry resource or including Forward Path subscription IDs. Do not create, import into application state, replace, or delete the shared registry.
 - Do not create a per-app or customer ACR, or fall back to another registry when authentication fails. Diagnose identity, RBAC, tenant, and networking instead.
 - ACR admin access and anonymous pull must remain disabled. Do not enable them or retrieve admin credentials with `az acr credential show` or ARM `listCredentials`. If either is already enabled, report it and prepare an org-scoped remediation; do not disable shared access as an incidental app change.
 
@@ -68,7 +68,7 @@ Do not invent alternate prod tags (`prod`, environment name in tag, etc.) unless
 
 Deploy production using the resolved image digest, or a release tag enforced as immutable. Publish `latest` for compatibility, but do not deploy production by that mutable tag. Record the release-to-digest mapping for rollback.
 
-Pin third-party GitHub Actions to verified full commit SHAs. Publish/deploy only from trusted main merges or published releases. Pull-request checks must not receive publishing/deployment identities; never run untrusted PR code under `pull_request_target` with Azure access.
+Pin third-party GitHub Actions to verified full commit SHAs. Dev/production publishing and deployment run only from trusted main merges or published releases. PR previews use the separate protected publishing path in [setup-preview-env](../setup-preview-env/SKILL.md): isolated builds without cloud access, then trusted default-branch orchestration with a protected preview environment and an environment-scoped OIDC identity. Pull-request check/build jobs must not receive publishing/deployment identities. Privileged jobs must not execute PR-controlled code, scripts, Terraform, workflow definitions, or artifact contents, including under `pull_request_target` or `workflow_run`.
 
 ## App registration and RBAC
 
@@ -162,7 +162,7 @@ Keep databases, caches, state storage, and Key Vault on private networking where
 Before finishing infra or a deploy workflow, confirm:
 
 ```
-- [ ] Images use existing shared ACR `forwardpathai`; no new registry or shared-registry ownership in app state
+- [ ] Images use existing shared ACR `forwardpathai`; customer templates use hostname/pull refs without Forward Path control-plane access; no new registry or shared-registry ownership in app state
 - [ ] Every push/promotion/retry uses OIDC through registry login; no stored publishing credentials or password fallback
 - [ ] Forward Path runtime pulls use managed identity; customer tokens are per-customer/app and repository-scoped read-only
 - [ ] No admin credentials, anonymous pull, or registry/firewall bypasses
@@ -172,7 +172,7 @@ Before finishing infra or a deploy workflow, confirm:
 - [ ] RBAC matches the existing registry mode; repository conditions applied where supported; legacy exposure documented
 - [ ] Bootstrap privileges separated from deploy CI; dev cannot deploy prod or read prod secrets
 - [ ] Production image digest or immutable release tag; dev write access cannot overwrite release images where isolation is supported
-- [ ] Actions pinned to verified SHAs; untrusted PRs cannot publish/deploy
+- [ ] Actions pinned to verified SHAs; PR builds have no cloud access; previews publish/deploy only through trusted protected orchestration
 - [ ] Region meets customer residency requirements; prefer East US 2 or Canada Central when unconstrained
 - [ ] Secrets referenced from Key Vault; no values in git, tfvars, outputs, handoff archives, or routine Terraform state inputs
 - [ ] Encrypted remote state with OIDC and env-scoped access; unavoidable secret persistence explicitly documented
@@ -199,6 +199,7 @@ Run the repo's relevant formatting, validation, and IaC/security checks. Review 
 Consult these primary references when implementing or reviewing the corresponding feature; verify behavior against the versions actually used:
 
 - [GitHub OIDC for Azure](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure)
+- [GitHub Actions untrusted-code and artifact boundaries](https://docs.github.com/en/actions/reference/security/secure-use#mitigating-the-risks-of-untrusted-code-checkout)
 - [ACR authentication](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication) and [RBAC/ABAC roles](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-rbac-built-in-roles-overview)
 - [ACR token scope maps for customer pulls](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-token-based-repository-permissions)
 - [Container Apps managed-identity pulls](https://learn.microsoft.com/en-us/azure/container-apps/managed-identity-image-pull) and [Key Vault-backed secrets](https://learn.microsoft.com/en-us/azure/container-apps/manage-secrets)

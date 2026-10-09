@@ -45,7 +45,7 @@ Copy this checklist and track progress:
 
 - Find the architecture deliverable: the canvas `.canvas.tsx` and/or DOCX in `docs/architecture/`. Read the canvas — it is the source of truth and carries every section (SOW traceability, architecture layers, phased migration path, risks, cost).
 - Find design deliverables if any: a screen spec plus mockups under `docs/poc/design/`, `mockups/`, or as named by the user. Note whether the SOW has web screens, mobile screens, or both.
-- Find `poc-from-sow` handoff material if present: `docs/poc/PRODUCT_ROADMAP.md` (ordered post-approval work), `docs/poc/SOW_TRACEABILITY.md`, `docs/poc/POC_NOTES.md` — these pre-seed the work breakdown.
+- Find `prototype` handoff material if present: `docs/poc/PRODUCT_ROADMAP.md` (ordered post-approval work), `docs/poc/SOW_TRACEABILITY.md`, `docs/poc/POC_NOTES.md` — these pre-seed the work breakdown.
 
 If the architecture deliverable is absent, stop and offer to run [poc-to-product-architecture](../poc-to-product-architecture/SKILL.md); do not invent an architecture.
 
@@ -73,7 +73,7 @@ Complete this step when every ticket has an estimate + dependencies and every mi
 
 ### Step 4: Draft tickets to the issue-writer bar
 
-For each work item, write a ticket meeting the [issue-writer](../issue-writer/SKILL.md) bar — self-contained context (paths, excerpts, conventions from the architecture/repo), verification gates as commands, an explicit in/out-of-scope list, and STOP conditions. Set priority, labels, estimate, and `blocks`/`blockedBy` relations.
+For each work item, call [issue-writer](../issue-writer/SKILL.md) in `draft` mode with the architecture/repo evidence, scope, and verification commands. Propose priority, labels, estimate, and `blocks`/`blockedBy` relations. Return the drafts to this workflow; do not write to Linear before Step 5 approval.
 
 - **Functional tickets** use the issue-writer description template, grounded in the architecture layers and product-foundation conventions.
 - **Design tickets** use [assets/DESIGN_TICKET_TEMPLATE.md](assets/DESIGN_TICKET_TEMPLATE.md): the issue-writer template plus the mockup link, the screen-spec reference, and **visual-fidelity + states + responsive + accessibility** acceptance criteria. A screen is not "done" because it renders — it is done when it matches the approved mockup.

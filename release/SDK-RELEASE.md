@@ -13,15 +13,9 @@ git checkout -b "release/<NEW_TAG>" "origin/$DEFAULT_BRANCH"
 npm pkg set version="<X.Y.Z>"          # version without tag prefix
 ```
 
-- **Lockfile:** run the repo's install (`bun install`, `npm install`, …) and commit the lockfile if it changed — some lockfiles embed the root version.
-- Commit as `chore: release <NEW_TAG>`, push, open the PR:
-
-```bash
-git push -u origin "release/<NEW_TAG>"
-gh pr create --title "chore: release <NEW_TAG>" --body "Version bump for <NEW_TAG>. Release notes preview below.
-
-<Step 4 notes body>"
-```
+- **Lockfile:** run the repo's install (`bun install`, `npm install`, …) and include a changed lockfile in the handoff below; some lockfiles embed the root version.
+- Read and follow [pr-open](../pr-open/SKILL.md) with `mode=prepared`, `tracking=none`, the current repository, base `$DEFAULT_BRANCH`, and branch `release/<NEW_TAG>`. Restrict the change to the version manifest and any required lockfile updates. Pass the verification results, title and commit message `chore: release <NEW_TAG>`, and a PR body containing the version bump and Step 4 release notes preview.
+- pr-open owns committing, pushing, and creating or reusing the PR. Record its returned URL. If it reports a blocker, stop before merging or tagging. This release workflow owns the following checks, merge, and publish steps.
 
 - Wait for PR checks when any exist: `gh pr checks --watch`. If the PR reports no checks (common when CI only runs on the default branch), proceed. On check failure, stop and report.
 - Merge using the repo's convention (check merged-PR history; default `gh pr merge --squash --delete-branch`).

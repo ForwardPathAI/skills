@@ -60,20 +60,7 @@ Give every active ticket exactly one grade:
 | **Blocked** | Depends on unresolved product, design, technical, or sequencing decisions | Name the blocker before rewriting |
 | **Discard candidate** | Appears irrelevant, duplicate, or already done | Hand off to [backlog-hygiene](../backlog-hygiene/SKILL.md) before closing |
 
-Apply this bar:
-
-- **Outcome**: one sentence says what will be true when done.
-- **Reason**: user or business value is explicit.
-- **Scope**: included work is specific.
-- **Non-goals**: excluded work is explicit.
-- **Acceptance**: criteria are objectively checkable.
-- **Dependencies**: blockers and blocked-by relationships are named, or "None."
-- **Context**: real files, systems, APIs, designs, examples, or links are named.
-- **Verification**: tests, manual checks, screenshots, logs, or other proof are specified.
-- **Size**: one focused PR, usually 1-4 hours of work.
-- **Independence**: the ticket can ship on its own or names exactly what it depends on.
-
-If any bar item is missing or vague, the ticket is not Ready.
+Read [issue-writer](../issue-writer/SKILL.md) as a reference and grade against its scoping rules and quality bar. This is assessment only; do not execute a create or update workflow while grading. Record the specific failed criteria for each non-Ready issue so ticket-refiner can start from those gaps.
 
 ### Step 4: Report the backlog map
 
@@ -100,39 +87,25 @@ Discard candidates (<k>)
 
 For each non-Ready ticket, include the smallest useful next action. Do not batch rewrite, split, close, or comment yet.
 
-### Step 5: Grill one ticket at a time
+### Step 5: Refine one selected ticket
 
-For each ticket the user chooses to address, run the grill to completion before moving to another ticket.
+For each ticket the user chooses, read and follow [ticket-refiner](../ticket-refiner/SKILL.md) in `draft` mode. Pass the issue ID, current issue and comments, Step 3 gap list, repository evidence, and any known split boundaries or blockers.
 
-Ask only about the gaps found in Step 3, in this order:
-
-| Gap | Grill question |
-|---|---|
-| Outcome | "What should be true when this ticket is done?" |
-| Reason | "Who benefits from this, and why does it matter now?" |
-| Scope | "What exactly is included in this ticket?" |
-| Non-goals | "What should this ticket explicitly not touch?" |
-| Acceptance | "How will a reviewer know this is complete?" |
-| Dependencies | "Does this wait on anything, or block anything else?" |
-| Context | "Which files, systems, APIs, designs, or examples should the implementer use?" |
-| Verification | "What tests, manual checks, or screenshots prove it works?" |
-| Size | "What is the smallest shippable slice of this work?" |
-
-Push back once on vague answers like "make it better", "works correctly", "clean up", "use best practices", or "improve performance" without a metric. If the answer is still unknown after one pushback, record it as an open question instead of inventing a detail.
-
-When the ticket should be split, grill for the slices first. Each child ticket must have its own outcome, scope, acceptance criteria, dependencies, and verification. Do not make sibling tickets depend on shared unstated context.
+That skill owns the interview and calls issue-writer to produce the proposed rewrite. Reuse its returned payload, readiness verdict, open questions, and change summary. Do not repeat its questions or run a separate drafting procedure. Complete the next step for this ticket or split set before starting another.
 
 ### Step 6: Confirm and save rewrites
 
-Draft rewrites with [issue-writer](../issue-writer/SKILL.md) — read that whole skill before the first draft and follow it: its hard rules (excerpts from your own reads, verified commands, no secret values), its recon step (including the commit SHA stamp), and its description template. Skip its create step — this skill owns the Linear write flow below.
+Show the exact proposed fields and descriptions returned by ticket-refiner, including each standalone replacement and grouping document for a split. If the result is `unchanged`, report that and skip all writes.
 
-Show the exact proposed Linear changes before writing:
+After the user approves the exact changes:
 
-- For **Needs grill**: updated title if needed, full rewritten description, and any label/priority/project changes.
-- For **Split**: parent update plus each proposed child issue.
-- For **Blocked**: comment or description update that names the blocker and owner of the decision, if known.
+- For a rewrite, call [issue-writer](../issue-writer/SKILL.md) in `update` mode with the source issue ID and approved payload.
+- For a split, call issue-writer in `create` mode for the approved standalone issues and grouping document, then `update` mode for the source issue's agreed disposition and replacement links. Preserve the source issue; do not create sub-issues or close it unless requested.
+- For a blocker that remains unresolved, save only the explicitly approved blocker note or description change. Do not label the issue Ready.
 
-Only call Linear write tools after the user approves the exact text. Save one ticket or split set at a time, then add a short Linear comment explaining that the ticket was refined for execution readiness.
+Pass the approval through to issue-writer. It owns issue writes; do not repeat them here. Record returned IDs/URLs for partial retries. After success, add one short refinement comment to the source issue, checking for an existing matching comment on a retry. This skill owns that comment because ticket-refiner ran in draft mode.
+
+Complete when the approved changes are saved once and reported with URLs, or a specific failure is reported with the already-saved IDs.
 
 ## Decision Table
 
@@ -143,7 +116,6 @@ Only call Linear write tools after the user approves the exact text. Save one ti
 | Ticket is both vague and too large | Grade **Split** first; the split defines the missing specification. |
 | Ticket cannot move until a decision is made | Grade **Blocked** and ask who owns the decision. |
 | Ticket appears done, duplicate, or obsolete | Grade **Discard candidate** and require backlog-hygiene evidence before any close action. |
-| User wants autonomous agent delegation | After rewriting, optionally evaluate with [cloud-agent-triage](../cloud-agent-triage/SKILL.md). |
 
 ## Anti-patterns
 
@@ -159,4 +131,3 @@ Only call Linear write tools after the user approves the exact text. Save one ti
 - Single-ticket refinement loop: [ticket-refiner/SKILL.md](../ticket-refiner/SKILL.md)
 - Agent-ready issue template: [issue-writer/SKILL.md](../issue-writer/SKILL.md)
 - Relevance cleanup before grilling: [backlog-hygiene/SKILL.md](../backlog-hygiene/SKILL.md)
-- Autonomous agent suitability after rewriting: [cloud-agent-triage/SKILL.md](../cloud-agent-triage/SKILL.md)

@@ -1,6 +1,6 @@
 # POC Notes — <Product Name>
 
-Every shortcut this POC takes, so productionizing is a checklist, not an investigation. Grouped by the gap-audit tags the `poc-to-product-architecture` skill consumes. Fill in each table; delete rows that don't apply. Only Tier 3 shortcuts from the `poc-from-sow` POC bar belong here.
+Every shortcut this POC takes, so productionizing is a checklist, not an investigation. Grouped by the gap-audit tags the `poc-to-product-architecture` skill consumes. Fill in each table; delete rows that don't apply. Only Tier 3 shortcuts from the `prototype` POC bar belong here.
 
 ## demo-grade — exists but must be replaced for production
 

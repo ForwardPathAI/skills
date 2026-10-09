@@ -4,6 +4,18 @@ Use `gh` or an equivalent available GitHub connector. Commands below use verifie
 
 ## Collect state
 
+Before using these recipes, check that the installed GitHub CLI supports `gh api --slurp`:
+
+```sh
+gh --version
+if ! gh api --help | grep -q -- '--slurp'; then
+  printf '%s\n' 'This workflow requires gh api --slurp. Upgrade GitHub CLI using your installation method, then rerun this check; or use an equivalent connector with complete pagination.' >&2
+  exit 1
+fi
+```
+
+Older versions such as `gh` 2.23.0 do not support this flag. Do not drop pagination or treat a failed collection as an empty result. After upgrading, also verify that `gh pr checks --help` lists `--json` and `--required` before running the check recipes below.
+
 ```sh
 gh pr view "$pr_url" --json url,number,state,isDraft,headRefName,headRefOid,headRepository,headRepositoryOwner,baseRefName,baseRefOid,isCrossRepository,maintainerCanModify,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup
 gh pr checks "$pr_url" --json name,state,bucket,link,workflow,startedAt,completedAt

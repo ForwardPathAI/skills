@@ -57,6 +57,7 @@ class ReaderTests(unittest.TestCase):
     """Exercise public behavior and access restrictions against fixture data."""
 
     def setUp(self):
+        """Create an isolated database and register cleanup for every test."""
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.db = Path(self.temp.name) / 'state.sqlite'
@@ -67,6 +68,7 @@ class ReaderTests(unittest.TestCase):
         self.tid = 'aaaaaaaa-0000-0000-0000-000000000001'
 
     def add_thread(self, tid, title, **fields):
+        """Insert and commit a thread with optional state and lifecycle fields."""
         values = dict(thread_id=tid, project_id='project', title=title,
                       updated_at='2026-01-01', **fields)
         self.writer.execute(
@@ -75,6 +77,7 @@ class ReaderTests(unittest.TestCase):
         self.writer.commit()
 
     def message(self, mid, text, role='user', tid=None, streaming=0):
+        """Commit a fixture message with a shared timestamp for ordering tests."""
         self.writer.execute(
             'INSERT INTO projection_thread_messages '
             '(message_id, thread_id, role, text, is_streaming, created_at) VALUES (?,?,?,?,?,?)',
@@ -82,12 +85,14 @@ class ReaderTests(unittest.TestCase):
         self.writer.commit()
 
     def reader(self):
+        """Open a read-only snapshot of committed fixtures and arrange cleanup."""
         self.writer.commit()
         reader = t3.Reader(self.db)
         self.addCleanup(reader.conn.close)
         return reader
 
     def collect(self, command='list', **options):
+        """Run one command against a fresh snapshot, closing it before writes."""
         args = dict(command=command, search='', messages=False, archived=False,
                     offset=0, limit=20, thread=self.tid, before=None, text_limit=100)
         args.update(options)
@@ -98,6 +103,7 @@ class ReaderTests(unittest.TestCase):
             reader.conn.close()
 
     def test_unicode_message_search_matches_metadata_casefold(self):
+        """Find accented and expanding case folds consistently across searches."""
         self.message('m1', 'CAFÉ issue on Straße')
         for query in ('café issue', 'STRASSE'):
             with self.subTest(query=query):
@@ -109,6 +115,7 @@ class ReaderTests(unittest.TestCase):
         self.assertFalse(self.collect(search='café issue')['threads'][0]['message_match'])
 
     def test_search_metacharacters_are_literal(self):
+        """Treat percent, underscore, and backslash as literal message text."""
         self.message('m1', r'100% path_name C:\cache')
         self.add_thread('bbbbbbbb', 'Other')
         self.message('m2', '1000 pathXname', tid='bbbbbbbb')
@@ -118,6 +125,7 @@ class ReaderTests(unittest.TestCase):
                 self.assertEqual([r['thread']['thread_id'] for r in rows], [self.tid])
 
     def test_search_and_show_exclude_reasoning_and_system_messages(self):
+        """Expose user and assistant messages while excluding internal roles."""
         self.message('m1', 'hidden reasoning', role='reasoning')
         self.message('m2', 'hidden system', role='system')
         self.message('m3', None)
@@ -126,6 +134,7 @@ class ReaderTests(unittest.TestCase):
         self.assertEqual([m['message_id'] for m in self.collect('show')['messages']], ['m3', 'm4'])
 
     def test_list_pagination_and_archived_deleted_filters(self):
+        """Page deterministically while honoring archive and deletion filters."""
         self.add_thread('bbbbbbbb', 'Second')
         self.add_thread('cccccccc', 'Archived', archived_at='2026-01-02')
         self.add_thread('dddddddd', 'Deleted', deleted_at='2026-01-02')
@@ -138,6 +147,7 @@ class ReaderTests(unittest.TestCase):
         self.assertEqual(self.collect(offset=20)['threads'], [])
 
     def test_history_pagination_breaks_timestamp_ties(self):
+        """Use message IDs to page tied timestamps without gaps or duplicates."""
         for number in range(1, 6):
             self.message(f'm{number}', str(number))
         page = self.collect('show', limit=2)
@@ -150,12 +160,14 @@ class ReaderTests(unittest.TestCase):
         self.assertFalse(page['has_older_messages'])
 
     def test_history_rejects_foreign_or_missing_anchor(self):
+        """Reject paging anchors that cannot identify a message in the thread."""
         self.message('foreign', 'other', tid='other-thread')
         for anchor in ('foreign', 'missing'):
             with self.subTest(anchor=anchor), self.assertRaisesRegex(ValueError, 'does not belong'):
                 self.collect('show', before=anchor)
 
     def test_resolves_ids_prefixes_provider_aliases_and_urls(self):
+        """Resolve each supported reference form to the same labeled thread."""
         self.writer.execute(
             'INSERT INTO projection_thread_sessions (thread_id,provider_thread_id,provider_name) VALUES (?,?,?)',
             (self.tid, 'provider-alias', 'codex'))
@@ -168,6 +180,7 @@ class ReaderTests(unittest.TestCase):
         self.assertIn('First · aaaaaaaa · codex', reader.state(reader.resolve(self.tid))['thread_label'])
 
     def test_resolve_rejects_ambiguous_missing_deleted_and_wildcard_refs(self):
+        """Reject unsafe or unresolvable references instead of choosing a thread."""
         self.add_thread('aaaaaaaa-0000-0000-0000-000000000002', 'Duplicate prefix')
         self.add_thread('deleted1', 'Deleted', deleted_at='2026-01-02')
         reader = self.reader()
@@ -176,6 +189,7 @@ class ReaderTests(unittest.TestCase):
                 reader.resolve(ref)
 
     def test_status_precedence(self):
+        """Prioritize blockers and errors over running, completed, and idle signals."""
         cases = [
             ({}, {}, {}, 'idle'),
             ({'latest_turn_id': 'turn'}, {}, {}, 'unknown'),
@@ -204,10 +218,12 @@ class ReaderTests(unittest.TestCase):
                 self.assertEqual(self.collect('status', thread=tid)['observed_state'], expected)
 
     def test_streaming_assistant_marks_running(self):
+        """Recognize active streaming even when no turn or session is recorded."""
         self.message('m1', 'partial', role='assistant', streaming=1)
         self.assertEqual(self.collect('status')['observed_state'], 'running')
 
     def test_read_only_and_table_access_restrictions(self):
+        """Deny writes and credential-table reads while limiting returned fields."""
         reader = self.reader()
         for sql in ("UPDATE projection_threads SET title='changed'",
                     'CREATE TABLE new_table (value TEXT)',
@@ -218,6 +234,7 @@ class ReaderTests(unittest.TestCase):
         self.assertNotIn('private_field', reader.resolve(self.tid))
 
     def test_missing_optional_tables_are_tolerated(self):
+        """Return empty optional context when those projection tables are absent."""
         for table in ('projection_projects', 'projection_thread_sessions', 'projection_turns',
                       'projection_thread_activities', 'projection_thread_proposed_plans',
                       'projection_thread_pull_requests'):
@@ -229,18 +246,21 @@ class ReaderTests(unittest.TestCase):
         self.assertEqual(result['pull_requests'], [])
 
     def test_missing_required_schema_fails_explicitly(self):
+        """Fail with a schema error when a mandatory projection is missing."""
         self.writer.execute('DROP TABLE projection_thread_messages')
         self.writer.commit()
         with self.assertRaisesRegex(ValueError, 'Incompatible T3 schema'):
             self.reader()
 
     def test_missing_database_is_not_created(self):
+        """Report an unavailable database without creating a file at its path."""
         absent = Path(self.temp.name) / 'absent.sqlite'
         with self.assertRaisesRegex(ValueError, 'unavailable'):
             t3.Reader(absent)
         self.assertFalse(absent.exists())
 
     def test_context_clipping_and_status_omits_checkpoint_files(self):
+        """Mark clipped context and omit checkpoint file details from status."""
         self.message('m1', 'x' * 150)
         self.writer.execute('UPDATE projection_threads SET latest_turn_id=?', ('turn',))
         self.writer.execute(
@@ -254,6 +274,7 @@ class ReaderTests(unittest.TestCase):
         self.assertNotIn('checkpoint_files_json', self.collect('status')['latest_turn'])
 
     def test_reader_sees_committed_wal_and_keeps_consistent_snapshot(self):
+        """Read committed WAL data while holding a stable per-reader snapshot."""
         self.writer.execute('PRAGMA journal_mode=WAL')
         self.message('m1', 'before')
         reader = self.reader()
@@ -262,6 +283,7 @@ class ReaderTests(unittest.TestCase):
         self.assertEqual(len(self.reader().rows('projection_thread_messages')), 2)
 
     def test_cli_works_outside_skill_directory_and_reports_errors(self):
+        """Verify portable invocation, structured errors, and bounded CLI options."""
         command = [sys.executable, str(SCRIPT), '--db', str(self.db)]
         result = subprocess.run(command + ['status', self.tid], cwd=self.temp.name,
                                 capture_output=True, text=True)

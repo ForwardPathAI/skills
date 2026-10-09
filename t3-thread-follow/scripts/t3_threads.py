@@ -33,13 +33,17 @@ TABLES = set(FIELDS)
 
 
 class Reader:
+    """Read an allowlisted projection snapshot without modifying T3 state."""
+
     def __init__(self, path):
+        """Open an existing database read-only and check the minimum schema."""
         path = Path(path).expanduser().resolve()
         if not path.is_file():
             raise ValueError(f'T3 state database unavailable: {path}. Supply --db with an accessible T3 state.sqlite.')
         self.path = str(path)
         self.conn = sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)
         self.conn.row_factory = sqlite3.Row
+        self.conn.create_function('T3_CASEFOLD', 1, casefold_text)
         self.conn.execute('PRAGMA query_only=ON')
         self.conn.set_authorizer(self.authorize)
         self.conn.execute('BEGIN')  # Consistent snapshot per invocation, including the live WAL.
@@ -58,11 +62,13 @@ class Reader:
 
     @staticmethod
     def authorize(action, table, column, database, source):
+        """Deny reads outside the selected projections and schema metadata."""
         if action == sqlite3.SQLITE_READ and table not in TABLES | {'sqlite_master'}:
             return sqlite3.SQLITE_DENY
         return sqlite3.SQLITE_OK
 
     def rows(self, table, where='', params=(), order='', limit=None):
+        """Select available public fields, tolerating absent optional tables."""
         if table not in self.columns:
             return []
         fields = [f for f in FIELDS[table].split() if f in self.columns[table]]
@@ -77,6 +83,7 @@ class Reader:
         return [dict(r) for r in self.conn.execute(sql, params)]
 
     def resolve(self, reference):
+        """Resolve a T3 ID, unique prefix, provider alias, or thread URL."""
         reference = reference.strip()
         if '://' in reference:
             url = urlsplit(reference)
@@ -100,6 +107,7 @@ class Reader:
         return matches[0]
 
     def state(self, thread):
+        """Combine turn, session, streaming, and blocker signals into status."""
         tid = thread['thread_id']
         sessions = self.rows('projection_thread_sessions', 'thread_id=?', (tid,), limit=1)
         session = sessions[0] if sessions else None
@@ -130,11 +138,18 @@ class Reader:
         return {'thread_label': label, 'observed_state': observed, 'session': session, 'latest_turn': turn, 'has_streaming_assistant_message': streaming}
 
 
+def casefold_text(value):
+    """Provide Unicode case folding to SQLite, treating NULL as empty text."""
+    return value.casefold() if isinstance(value, str) else ''
+
+
 def escape_like(value):
+    """Escape SQL LIKE metacharacters for literal thread-prefix matching."""
     return value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
 
 
 def clip(row, field, limit):
+    """Bound a text field and expose truncation metadata when needed."""
     value = row.get(field)
     if isinstance(value, str) and len(value) > limit:
         row[field] = value[:limit]
@@ -143,6 +158,7 @@ def clip(row, field, limit):
 
 
 def collect(reader, args):
+    """Build a filtered thread page, status snapshot, or context page."""
     if args.command == 'list':
         where = 'deleted_at IS NULL'
         if not args.archived and 'archived_at' in reader.columns['projection_threads']:
@@ -160,8 +176,8 @@ def collect(reader, args):
                 if not args.messages:
                     continue
                 message_match = bool(reader.conn.execute(
-                    "SELECT 1 FROM projection_thread_messages WHERE thread_id=? AND role IN ('user','assistant') AND text LIKE ? ESCAPE '\\' LIMIT 1",
-                    (thread['thread_id'], '%' + escape_like(args.search) + '%'),
+                    "SELECT 1 FROM projection_thread_messages WHERE thread_id=? AND role IN ('user','assistant') AND instr(T3_CASEFOLD(text), ?) > 0 LIMIT 1",
+                    (thread['thread_id'], args.search.casefold()),
                 ).fetchone())
                 if not message_match:
                     continue
@@ -209,7 +225,9 @@ def collect(reader, args):
 
 
 def bounded(low, high):
+    """Create an argparse integer validator with inclusive limits."""
     def parse(value):
+        """Parse an integer or reject an out-of-range CLI argument."""
         number = int(value)
         if not low <= number <= high:
             raise argparse.ArgumentTypeError(f'must be between {low} and {high}')
@@ -218,6 +236,7 @@ def bounded(low, high):
 
 
 def main():
+    """Parse CLI options and emit JSON results or a structured error."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--db', default=str(Path.home() / '.t3/userdata/state.sqlite'))
     commands = parser.add_subparsers(dest='command', required=True)

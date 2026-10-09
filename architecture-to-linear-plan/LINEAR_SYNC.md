@@ -47,7 +47,7 @@ For each milestone, `save_milestone` with `project` + `name` (required) + `descr
 
 ## Step 6.4 — Create issues
 
-For each ticket, `save_issue`:
+For each approved ticket, call [issue-writer](../issue-writer/SKILL.md) in `create` mode, or `update` mode with its existing ID on a rerun. Pass the approved draft, resolved workspace fields, and approval from Step 5. It owns the issue write; do not repeat `save_issue` here. Supply these delivery-specific fields:
 
 - `title` + `team` are required on create. Set `project` and `milestone` (by name or ID).
 - `description` = the full issue-writer / design-ticket body as Markdown (literal newlines; **no escaped `\n`**).
@@ -59,7 +59,7 @@ Create all issues **first**, collecting their identifiers, before wiring relatio
 
 ## Step 6.5 — Wire dependencies (second pass)
 
-Once every issue exists, set relations with `save_issue` (update by `id`): `blockedBy` / `blocks` (append-only) per the dependency graph from [WORK_BREAKDOWN.md](WORK_BREAKDOWN.md). Keep it acyclic. Relations can't reference issues that don't exist yet — that's why this is a separate pass.
+Once every issue exists, call issue-writer in `update` mode with its ID and only the intended relation changes: `blockedBy` / `blocks` (append-only) per the dependency graph from [WORK_BREAKDOWN.md](WORK_BREAKDOWN.md). Keep it acyclic. Relations can't reference issues that don't exist yet — that's why this is a separate pass.
 
 ## Step 6.6 — Grouping document
 

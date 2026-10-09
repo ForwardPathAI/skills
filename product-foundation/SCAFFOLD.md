@@ -175,4 +175,4 @@ Only the modules chosen in Step 1.
 2. **Infra:** use the [azure-infra-setup](../azure-infra-setup/SKILL.md) skill — Terraform → Azure Container Apps, ACR, Key Vault, GitHub OIDC. Multi-stage Bun Dockerfile per app (`turbo prune`, `oven/bun` base).
 3. **CI:** GitHub Actions — lint (`oxlint`), typecheck, `bun test --coverage` (Postgres + Redis services), build, `bun pm audit`.
 4. **README:** plain-language, per the collaboration section of [SKILL.md](SKILL.md) — a non-engineer can follow setup.
-5. **First commit** with everything above; ship via [open-pr](../open-pr/SKILL.md).
+5. **First commit** with everything above; ship via [pr-open](../pr-open/SKILL.md).

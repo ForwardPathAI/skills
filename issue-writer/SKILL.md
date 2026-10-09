@@ -1,11 +1,11 @@
 ---
 name: issue-writer
-description: Write Linear issues an AI coding agent can execute without follow-up questions. Use when the user wants to create a Linear issue/ticket/bug, or split a feature into multiple tickets.
+description: Draft, create, or update Linear issues an AI coding agent can execute without follow-up questions. Use for issue authoring, splitting work, or when another skill needs an executable issue draft.
 ---
 
 # Linear Issue Writer
 
-Every issue is a handoff to an **executor** with **zero context**: an AI coding agent (or unfamiliar developer) that has not seen this conversation, your repo survey, or any other issue. Assume it is competent at following explicit instructions and weak at filling gaps, recovering from ambiguity, or knowing when to stop. The issue is the product — its quality determines whether the executor succeeds. Output goes into Linear via the Linear MCP server, not a chat reply.
+Every issue is a handoff to an **executor** with **zero context**: an AI coding agent or unfamiliar developer that has not seen this conversation, your repo survey, or any other issue. Include the evidence and boundaries needed to implement and verify the work. The selected mode determines whether the result is a draft or a Linear write.
 
 Three properties make an issue executable:
 
@@ -19,6 +19,22 @@ Three properties make an issue executable:
 2. **Never reproduce secret values.** Linear is an external system. If context includes credentials, tokens, or `.env` contents, reference the `file:line` and credential type only.
 3. **Commands are verified, not guessed** — pulled from `package.json` / CI config / repo docs during recon.
 
+## Modes and handoff
+
+Select the mode before starting. Honor the caller's explicit mode. Otherwise a request to draft or propose uses `draft`, a request to create/file uses `create`, and a request to edit an identified issue uses `update`. If writing intent is unclear, return a draft.
+
+| Mode | Inputs | Result and write boundary |
+|---|---|---|
+| `draft` | Scope, repository evidence, known placement, optional existing issue | Return title, full description, proposed fields, dependencies, and unresolved questions. No Linear writes, including comments, documents, or split issues. |
+| `create` | New issue scope or a complete draft, resolved required fields, authorization to create | Reuse an existing issue for this exact work or create once. Return ID, identifier, URL, and Linear branch name. |
+| `update` | Existing issue ID, intended field changes or approved draft, authorization to update | Update that issue only. Preserve unrelated fields, discussion, and relations; never create a replacement issue. Return its ID/URL and changed fields. |
+
+The caller passes any approval already obtained, repository commit, excerpts, verified commands, and known workspace IDs. Reuse evidence that still matches the repository instead of repeating recon or interviews. If a caller requires review before saving, remain in `draft` until that review is satisfied. Do not ask again for an unchanged draft the user already approved.
+
+Linear MCP is required for `create` and `update`. In `draft`, use read tools when available; if unavailable, leave unknown workspace IDs/labels explicitly unresolved rather than inventing them. An unresolved draft can be returned for discussion but must not be described as execution-ready.
+
+For an update limited to metadata, links, or relations, inspect the target and validate those changes without regenerating its description or rerunning unrelated repository recon. Defaults apply to new issues; do not reset an existing issue's team, project, priority, labels, or content to defaults. A description rewrite must pass the template and quality bar, or explicitly retain unresolved gaps for review.
+
 ## Workflow
 
 1. **Recon** — read enough of the repo to write from evidence:
@@ -27,11 +43,16 @@ Three properties make an issue executable:
    - The conventions that apply (error handling, naming, folder layout) and one exemplar file the executor must match.
    - Intent docs where present (`CLAUDE.md`/`AGENTS.md`, ADRs, `CONTEXT.md`, `DESIGN.md`) — quote the specific lines that constrain this work; the executor has not read those docs.
    - Record `git rev-parse --short HEAD` — the issue stamps the commit it was written against, so the executor can detect drift.
-2. **Fetch teams, projects, and labels from Linear via MCP** — use existing workspace values; never invent names.
-3. **Resolve placement without routine confirmation** — honor any team/project the user named. Otherwise infer from the repo name, git remote, existing issues, and session context. Use a clearly matching project when one exists. If no suitable project exists, create the issue under the known team without a project; do not create a project or attach unrelated work to one merely to fill the field. Ask only when the team is unknown or multiple plausible placements remain ambiguous. A clear inferred placement or the absence of a project does not require approval.
+2. **Resolve workspace values** — fetch teams, projects, and labels from Linear via MCP, or reuse verified values from the caller. Never invent names. Draft mode may leave unavailable values unresolved.
+3. **Resolve placement without routine confirmation** — honor any team/project the user named. Otherwise infer from the repo name, git remote, existing issues, and session context. Use a clearly matching project when one exists. If no suitable project exists, select the known team without a project; do not create a project or attach unrelated work to one merely to fill the field. Ask only when the team is unknown or multiple plausible placements remain ambiguous. A clear inferred placement or the absence of a project does not require approval. Draft mode can return unresolved placement for later resolution.
 4. **Scope** — if the change is larger than ~4 focused hours, split into multiple issues (see [Splitting large work](splitting.md)).
 5. **Write** — follow the [Description template](#description-template).
-6. **Create via Linear MCP** with all required fields set.
+6. **Return or save according to mode** after applying the quality bar below:
+   - `draft`: return the complete proposed issue payload and any unresolved gaps. For a split, also return the grouping-document draft and standalone issue drafts per [splitting.md](splitting.md). Stop before any write.
+   - `create`: check supplied issue links and matching work in the resolved team/project before creating. Reuse a verified match; a similar title alone is not proof. Create via Linear MCP only when no matching issue exists. Fetch the result for its ID, URL, and branch name. After an uncertain write result, check whether it succeeded before retrying.
+   - `update`: fetch the target and compare it with the draft's source version. Preserve unrelated concurrent changes; resolve conflicting edits before saving. Send only intended fields using the existing issue ID. If splitting requires new issues, return those drafts for an explicit `create` handoff; update mode itself creates none.
+
+Creating and updating preserve literal Markdown newlines. Callers that receive a saved result must not repeat its write. A split run records created IDs and resumes missing items after a partial failure rather than duplicating them.
 
 ## Required fields (every issue)
 

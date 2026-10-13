@@ -52,6 +52,14 @@ npx skills add forwardpathai/skills/setup-preview-env
 npx skills add forwardpathai/skills/t3-thread-follow
 ```
 
+### Benedict review skills
+
+Review skills for [Benedict](https://github.com/josh-borseth-fp-ai/benedict), marked with `benedict/review: "true"`. Install the ones a repository wants and commit them:
+
+```bash
+npx skills add forwardpathai/skills --skill correctness --skill security --skill performance --skill duplication --skill design-patterns --skill abstraction-quality --skill test-quality
+```
+
 ## Skills
 
 | Skill | Description |
@@ -93,6 +101,13 @@ npx skills add forwardpathai/skills/t3-thread-follow
 | [eng-report-effort-estimate](./eng-report-effort-estimate) | Generate the combined Engineering Report + Effort Estimate document in Notion for a custom build — understanding check with price levers, gated generation, fixed-price effort estimation with internal QA phase, and a post-generation coverage audit. |
 | [setup-preview-env](./setup-preview-env) | Set up ephemeral per-pull-request Azure preview environments for a containerized app — shared/per-PR Terraform, GitHub Actions deploy/teardown, auth redirects, and runbooks distilled from the ButtconRAG preview lane. |
 | [t3-thread-follow](./t3-thread-follow) | Find T3 Code threads by title, ID, or description, then use their context, build on their work, or wait for a result across providers. |
+| [correctness](./correctness) | Benedict review skill: logic bugs, edge cases, inconsistent state, mishandled errors, races and broken callers. |
+| [security](./security) | Benedict review skill: reachable vulnerabilities — authorization, injection, SSRF, secret exposure, weak crypto, unsafe CI workflows. |
+| [performance](./performance) | Benedict review skill: N+1 queries, unbounded reads, quadratic loops, repeated work, leaks and blocking calls on hot paths. |
+| [duplication](./duplication) | Benedict review skill: duplicated logic (DRY) — reimplemented helpers, copy-paste, and rules defined in two places. |
+| [design-patterns](./design-patterns) | Benedict review skill: changes that break the codebase's architecture — layering, dependency direction, module boundaries, a second way of doing something. |
+| [abstraction-quality](./abstraction-quality) | Benedict review skill: leaky, shallow, speculative or misleading abstractions, functions doing several jobs, mode flags. |
+| [test-quality](./test-quality) | Benedict review skill: untested behavior changes, tests that cannot fail, wrong assertions, over-mocking and flakiness. |
 
 ## Authoring
 

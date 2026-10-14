@@ -18,7 +18,7 @@ Read the architecture **canvas** (source of truth) and, when present, the design
 | §9 Phased migration path | **Milestone candidates** — one milestone per phase. |
 | §10 Risks & open questions | Either a spike/ticket (if actionable) or a plan-level assumption/risk (if a decision the user must make). |
 
-If a `poc-from-sow` handoff exists, `docs/poc/PRODUCT_ROADMAP.md` is the pre-ordered work list (replace each `*-mock.ts` adapter, harden auth, real infra, tests) and `docs/poc/POC_NOTES.md` names the exact files each ticket touches — use them to make tickets concrete.
+If a `prototype` handoff exists, `docs/poc/PRODUCT_ROADMAP.md` is the pre-ordered work list (replace each `*-mock.ts` adapter, harden auth, real infra, tests) and `docs/poc/POC_NOTES.md` names the exact files each ticket touches — use them to make tickets concrete.
 
 ## Functional vs design tickets
 

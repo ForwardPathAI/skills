@@ -1,9 +1,9 @@
 ---
-name: poc-from-sow
-description: Turn a Statement of Work into a customer-validatable, continuation-ready POC codebase on the Forward Path stack — buildable, runnable, and demo-deployable — with an agent-ready handoff pack, closing with a poc-to-product-architecture run (canvas + DOCX) for the approval meeting. Use when the user says "POC from SOW", "build a POC", "prototype this SOW", "scaffold a proof of concept", "SOW to POC", or mentions poc-from-sow.
+name: prototype
+description: Turn a Statement of Work into a customer-validatable, continuation-ready POC codebase on the Forward Path stack — buildable, runnable, and demo-deployable — with an agent-ready handoff pack, closing with a poc-to-product-architecture run (canvas + DOCX) for the approval meeting. Use when the user says "POC from SOW", "build a POC", "prototype this SOW", "scaffold a proof of concept", "SOW to POC", or mentions prototype.
 ---
 
-# POC from SOW
+# Prototype
 
 Forward Path wins work by showing, not telling. This skill turns a **Statement of Work** ($sow) into a **proof-of-concept codebase** the customer can click through to validate usage and UI/UX — and that the team then builds *on* after approval. The POC is the first increment of the real product, never a throwaway mockup.
 

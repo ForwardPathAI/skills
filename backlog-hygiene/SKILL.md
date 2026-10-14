@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Backlog Hygiene
 
-Answer one question per ticket: **is this still real?** Not whether it's well-specified or agent-suitable (that's [cloud-agent-triage](../cloud-agent-triage/SKILL.md)) — whether it still reflects work that needs doing.
+Answer one question per ticket: **does this still reflect work that needs doing?** Use [linear-backlog-grill](../linear-backlog-grill/SKILL.md) to assess specification quality.
 
 Every ticket gets exactly one **verdict**:
 
@@ -127,10 +127,9 @@ Resolve target state names via `list_issue_statuses` (`statusType`, never a gues
 - Treating "no comments" alone as Stale — pair it with the age threshold, not either signal alone.
 - Closing a ticket on "likely done" without citing the specific file/commit/PR that proves it.
 - Inventing a label or state name instead of resolving it via `list_issue_labels`/`list_issue_statuses`.
-- Confusing this skill's relevance verdicts with [cloud-agent-triage](../cloud-agent-triage/SKILL.md)'s suitability verdicts — a Keep ticket can still be "Not a fit" for an autonomous agent, and a thin-spec ticket isn't automatically Stale.
+- Treating an incomplete specification as evidence that work is stale. A Keep ticket may still need refinement.
 
 ## Additional resources
 
 - Rewriting a thin-spec ticket: [ticket-refiner/SKILL.md](../ticket-refiner/SKILL.md)
 - Agent-ready description template and bar: [issue-writer/SKILL.md](../issue-writer/SKILL.md)
-- Whether a (relevant) ticket suits an autonomous cloud agent: [cloud-agent-triage/SKILL.md](../cloud-agent-triage/SKILL.md)

@@ -1,6 +1,6 @@
 # POC Bar
 
-The quality bar for a `poc-from-sow` POC. The governing rule: **every line survives customer approval.** The POC is the first increment of the real product, so the bar is higher than a throwaway demo — but it is still a POC, so some edges may be shortcut *as long as they are logged*.
+The quality bar for a `prototype` POC. The governing rule: **every line survives customer approval.** The POC is the first increment of the real product, so the bar is higher than a throwaway demo — but it is still a POC, so some edges may be shortcut *as long as they are logged*.
 
 This bar is reverse-engineered from the gap audit of the reference POC `PRS-PriceTagAudit` — a POC that looked good but was expensive to productionize because it took demo shortcuts in the core. Each "never" item below cites the real finding as its cautionary example. Do not repeat these.
 

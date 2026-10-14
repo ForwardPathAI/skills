@@ -84,5 +84,5 @@ A Forward Path product is legible to PMs, designers, and clients, not just engin
 ## Related skills
 
 - [azure-infra-setup](../azure-infra-setup/SKILL.md) — author the Terraform/Bicep infra for the deploy target.
-- [open-pr](../open-pr/SKILL.md) — ship the work as a Linear-linked PR.
+- [pr-open](../pr-open/SKILL.md) — ship the work as a Linear-linked PR.
 - [qa-test-plan](../qa-test-plan/SKILL.md) — generate a customer-shareable QA plan from the app surface.

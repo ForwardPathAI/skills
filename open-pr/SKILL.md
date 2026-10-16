@@ -35,28 +35,32 @@ If the work is already committed on the correct Linear branch and the user only 
 
 ### Step 1: Analyze all local changes
 
-Resolve the repo default branch: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`. Note the current branch: `git rev-parse --abbrev-ref HEAD`. Fetch both before comparing: `git fetch origin <default> <current>`.
+Resolve the compare base first: a user-named base (e.g. `develop`) when they name one, otherwise the repo default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Note the current branch: `git rev-parse --abbrev-ref HEAD`. Fetch the base: `git fetch origin <base>`. Fetch the current branch only if it exists on the remote (`git ls-remote --exit-code --heads origin <current>`).
 
-Run in parallel:
+Check whether the current branch already has a PR: `gh pr view --json number,url,state,baseRefName,headRefOid`. If it has an open one, compare new work against that PR's head, not the base — its commits are not new work.
+
+Run in parallel (`<compare>` is `origin/<base>`, or `origin/<current>` when the current branch has an open PR):
 
 ```bash
 git status
 git diff
 git diff --staged
 git log -5 --oneline
-git log origin/<default>..HEAD --oneline
-git diff --stat origin/<default>...HEAD
+git log <compare>..HEAD --oneline
+git diff --stat <compare>...HEAD
 ```
 
 Review **both** staged and unstaged diffs. Also check untracked files.
 
-- **No changes** (clean tree, no untracked files, and no commits ahead of `origin/<default>`): stop — nothing to PR.
-- If the current branch already has an open PR (`gh pr view --json number,state,baseRefName`), the new work is either more of that PR or a stack on top of it. Decide in Step 2.
+- **No changes** (clean tree, no untracked files, and no commits ahead of `<compare>`): stop — nothing to PR. If the current branch has an open PR, return its URL.
+- If the current branch has an open PR, the new work is either more of that PR or a stack on top of it. Decide in Step 2.
 - Note real file paths, patterns, line counts, and acceptance criteria — feed these into Step 2 and the Linear issues.
 
 ### Step 2: Choose PR shape and base
 
 Pick one shape. Explicit user words win ("stack this" → stack; "one PR" → one PR).
+
+If the new work belongs in the current branch's open PR, don't open another one: skip Steps 3–4, commit (Step 5), push, and update that PR's body with `gh pr edit` if the summary changed.
 
 | Shape | Use when | Base |
 |-------|----------|------|
@@ -187,7 +191,7 @@ If the base has no remote branch yet, push it first: `git push -u origin <base>`
 git push -u origin HEAD
 ```
 
-Then create the PR with `gh` against `<base>`:
+If the branch already has an open PR (`gh pr view`), reuse it — update its body with `gh pr edit` if needed. Otherwise create the PR with `gh` against `<base>`:
 
 ```bash
 gh pr create --base <base> --title "<title aligned with Linear issue>" --body "$(cat <<'EOF'

@@ -15,7 +15,7 @@ Decide from the final diff against the PR's actual base, including when updating
 
 ## Compose the existing workflow
 
-Read and follow [open-pr](../open-pr/SKILL.md) for base selection, branch preparation, validation, commits, pushes, and PR creation, including its tracking-issue requirements unless overridden by the user's instructions. For an explicitly requested stacked PR, use [stack-pr](../stack-pr/SKILL.md) instead, resolving and preserving the actual parent base before branch setup. Reuse a matching existing PR.
+Read and follow [open-pr](../open-pr/SKILL.md) for PR shape (one, split, or stacked), base selection, branch preparation, validation, commits, pushes, and PR creation, including its tracking-issue requirements unless overridden by the user's instructions. For a stacked PR, resolve and preserve the actual parent base before branch setup. Reuse a matching existing PR.
 
 Resolve companion skills by name from the current agent's discovered skill locations when they are installed separately rather than beside this skill. If the required publishing skill is unavailable, report the missing dependency and continue independently authorized capture work; do not invent a replacement publication policy. Use the agent's available tools or authenticated `gh` CLI; agent-specific plugins are not prerequisites unless the requested deliverable needs their capabilities.
 

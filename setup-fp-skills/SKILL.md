@@ -13,9 +13,9 @@ Prefer a specific workflow match over a general one. For example, a dependency-s
 
 | Skill | When | Install if missing |
 |---|---|---|
-| unslop | Every reply | `npx skills add https://github.com/cursor/plugins --skill unslop` |
-| domain-modeling | Terminology, `CONTEXT.md`, or an ADR | `npx skills add https://github.com/mattpocock/skills --skill domain-modeling` |
-| grill-with-docs | Sharpening a plan or design; also needs grilling | `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs` and `--skill grilling` |
+| unslop | Every reply | `npx skills@1.7.4 add https://github.com/cursor/plugins/tree/29fa9382c9c250d134f6a2f1aa86c01c5f63119d --skill unslop` |
+| domain-modeling | Terminology, `CONTEXT.md`, or an ADR | `npx skills@1.7.4 add https://github.com/mattpocock/skills/tree/5beb35b040e3de97e54fa9e386d7e42d15c295c2 --skill domain-modeling` |
+| grill-with-docs | Sharpening a plan or design; also needs grilling and domain-modeling | `npx skills@1.7.4 add https://github.com/mattpocock/skills/tree/5beb35b040e3de97e54fa9e386d7e42d15c295c2 --skill grill-with-docs grilling domain-modeling` |
 | [issue-writer](../issue-writer/SKILL.md) | Drafting, creating, or updating an issue | `npx skills add forwardpathai/skills/issue-writer` |
 | [ticket-refiner](../ticket-refiner/SKILL.md) | Resolving missing intent in an existing issue | `npx skills add forwardpathai/skills/ticket-refiner` |
 | [linear-backlog-grill](../linear-backlog-grill/SKILL.md) | Reviewing and refining a backlog | `npx skills add forwardpathai/skills/linear-backlog-grill` |
@@ -24,6 +24,8 @@ Prefer a specific workflow match over a general one. For example, a dependency-s
 | [prototype](../prototype/SKILL.md) | Building a prototype from a SOW | `npx skills add forwardpathai/skills/prototype` |
 | [azure-infra-setup](../azure-infra-setup/SKILL.md) | Azure infra, Terraform, Bicep, Container Apps, ACR, Key Vault | `npx skills add forwardpathai/skills/azure-infra-setup` |
 | [customer-deployment-package](../customer-deployment-package/SKILL.md) | A customer deployment handoff or client install docs | `npx skills add forwardpathai/skills/customer-deployment-package` |
+
+Third-party installs pin the CLI version and a reviewed upstream commit, so an upstream push cannot change the instructions an agent follows. To update one, review the skill at the new commit, then change its SHA here. Never install a third-party skill from a default branch.
 
 Other installed skills remain available through the session's skill catalog. This roster is a starting point, not a requirement to use a listed skill for every request.
 
@@ -43,7 +45,7 @@ For a selected skill, use the session catalog's path when available. Otherwise s
 2. Current repo: `.agents/skills/<name>/SKILL.md`, `.cursor/skills/<name>/SKILL.md`, `.claude/skills/<name>/SKILL.md`.
 3. User roots: `~/.agents/skills/<name>/SKILL.md`, `~/.claude/skills/<name>/SKILL.md`, `~/.cursor/skills/<name>/SKILL.md`, `~/.codex/skills/<name>/SKILL.md`.
 
-For grill-with-docs, also resolve grilling when that workflow is selected. If a selected skill is missing and installation is authorized, run its listed install command and search again. If it remains unavailable, report that dependency and continue any independent work. An unrelated missing skill does not block the task.
+For grill-with-docs, also resolve grilling and domain-modeling when that workflow is selected. If a selected skill is missing and installation is authorized, run its listed install command and search again. If a pinned install fails, do not retry without the pin. If it remains unavailable, report that dependency and continue any independent work. An unrelated missing skill does not block the task.
 
 Read the resolved `SKILL.md`, unless it is already in context. Do not invent a missing skill's instructions or substitute a summary for its procedure.
 

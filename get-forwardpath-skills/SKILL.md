@@ -14,11 +14,13 @@ Install the standard skill set into the current repo, at project scope, for Clau
 | get-forwardpath-skills | `forwardpathai/skills` | This skill, so teammates can rerun or update the set |
 | open-pr | `forwardpathai/skills` | Open a PR via a Linear issue and Linear's branch |
 | maintain-pr | `forwardpathai/skills` | Drive an open PR through review, conflicts, and CI |
-| release | `forwardpathai/skills` | Cut a production GitHub release |
+| release | `forwardpathai/skills` | Cut a production GitHub release (manual call only) |
 | issue-writer | `forwardpathai/skills` | Write agent-ready Linear issues |
 | improve | `shadcn/improve` | Read-only codebase audit that writes handoff plans |
-| unslop | `cursor/plugins` | Cut AI tells from writing |
+| unslop | `cursor/plugins` | Cut AI tells from writing (manual call only) |
 | grill-with-docs | `mattpocock/skills` | Interview to sharpen a plan; writes ADRs and a glossary as it goes (manual call only) |
+| grilling | `mattpocock/skills` | The interview loop grill-with-docs runs |
+| domain-modeling | `mattpocock/skills` | The ADR and glossary writing grill-with-docs runs |
 | better-auth-best-practices | `better-auth/skills` (official) | Better Auth server/client setup, adapters, sessions, plugins |
 | create-auth | `better-auth/skills` (official) | Scaffold Better Auth into an app |
 | better-auth-security-best-practices | `better-auth/skills` (official) | Rate limits, secrets, CSRF, cookie hardening |
@@ -58,7 +60,7 @@ Run each command on its own. If one fails, keep going and report it in Step 4. N
 npx -y skills add forwardpathai/skills -s get-forwardpath-skills open-pr maintain-pr release issue-writer -a claude-code cursor codex -y
 npx -y skills add shadcn/improve -s improve -a claude-code cursor codex -y
 npx -y skills add cursor/plugins -s unslop -a claude-code cursor codex -y
-npx -y skills add mattpocock/skills -s grill-with-docs -a claude-code cursor codex -y
+npx -y skills add mattpocock/skills -s grill-with-docs grilling domain-modeling -a claude-code cursor codex -y
 npx -y skills add better-auth/skills -s better-auth-best-practices create-auth better-auth-security-best-practices organization-best-practices -a claude-code cursor codex -y
 npx -y skills add Effect-TS/skills -s effect-ts -a claude-code cursor codex -y
 npx -y skills add ccheney/robust-skills -s postgres-drizzle -a claude-code cursor codex -y
@@ -72,7 +74,7 @@ The CLI writes each skill to `.agents/skills/<name>/` (read by Cursor and Codex)
 npx -y skills list
 ```
 
-Check that all 14 skills from [The set](#the-set) appear. Rerun the command for any missing skill once; if it still fails, note the error.
+Check that all 16 skills from [The set](#the-set) appear. Rerun the command for any missing skill once; if it still fails, note the error.
 
 ### Step 4: Report
 
@@ -97,4 +99,4 @@ To pick up changes to the set itself (skills added or removed here), run `npx -y
 
 ## Changing the set
 
-Edit [The set](#the-set) and the Step 2 commands together; they must list the same skills. Prefer a library's official skill repo; use a community skill only when no official one exists, and say so in the table.
+Edit [The set](#the-set) and the Step 2 commands together; they must list the same skills. Include any skill a listed skill calls, as grill-with-docs calls grilling and domain-modeling. Prefer a library's official skill repo; use a community skill only when no official one exists, and say so in the table.

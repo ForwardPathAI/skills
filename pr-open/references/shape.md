@@ -5,7 +5,7 @@ Pick one shape before filing issues or changing branches. Explicit user words wi
 | Shape | Use when | Base |
 |-------|----------|------|
 | **One PR** | One concern, a reviewer can read it in one sitting, or the parts only make sense together | Default branch (or user-named base) |
-| **Split** (independent PRs) | Two or more concerns with no dependency between them (a feature plus an unrelated fix or drive-by refactor) | Each PR on the default branch |
+| **Split** (independent PRs) | Two or more concerns with no dependency between them (a feature plus an unrelated fix or drive-by refactor) | Each PR on the default branch (or user-named base) |
 | **Stack** (dependent PRs) | Parts must land in order, and the whole is too big for one review | Each PR on the PR below it |
 
 ## Keep it as one PR when
@@ -16,7 +16,7 @@ Pick one shape before filing issues or changing branches. Explicit user words wi
 
 ## Split into independent PRs when
 
-- The diff mixes unrelated concerns. Each concern gets its own PR, issue, and branch off the default branch.
+- The diff mixes unrelated concerns. Each concern gets its own PR, issue, and branch off the default branch (or user-named base).
 - Pieces can merge in any order. If one piece needs another, that is a stack, not a split.
 
 ## Stack when all of these hold

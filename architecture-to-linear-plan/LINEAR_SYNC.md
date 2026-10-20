@@ -8,9 +8,9 @@ The protocol for creating the delivery plan in Linear via the `user-linear` MCP 
 |---|---|---|
 | The delivery / product | **Project** (create or reuse) | `save_project` |
 | A migration phase | **Project milestone** (with target date) | `save_milestone` |
-| A ticket (functional or design) | **Issue** (in the project, assigned to a milestone) | `save_issue` |
+| A ticket (functional or design) | **Issue** (in the project, assigned to a milestone) | [issue-writer](../issue-writer/SKILL.md) `create` mode (`update` on a rerun) |
 | The plan overview | **Document** (project-linked) | `save_document` |
-| Dependencies | Issue relations `blocks` / `blockedBy` | `save_issue` (second pass) |
+| Dependencies | Issue relations `blocks` / `blockedBy` | issue-writer `update` mode (second pass) |
 
 Linear milestones are **project milestones**, not initiatives — the user asked for milestones, so create real ones under one project. (Use an initiative only if the delivery spans multiple projects, via `save_project` `addInitiatives`.)
 

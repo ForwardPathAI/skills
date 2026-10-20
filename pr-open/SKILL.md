@@ -28,15 +28,15 @@ Require Linear MCP and [issue-writer](../issue-writer/SKILL.md) only for `tracki
 
 ## 1. Inspect the intended change
 
-Record the original branch, HEAD, and worktree status. Resolve the base before inspecting committed changes: a user-named base, otherwise the repository default (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Check that the base is on the remote (`git ls-remote --exit-code --heads origin <base>`). If it exists only locally, push it first, since every PR base must be on the remote; if it exists nowhere, stop and ask. Fetch it, and fetch the current branch only if it exists on the remote.
+Record the original branch, HEAD, and worktree status. Resolve the target remote once: the remote whose URL is the target repository, usually `origin`. Use it as `<remote>` for every `ls-remote`, fetch, and push in this workflow. Resolve the base before inspecting committed changes: a user-named base, otherwise the repository default (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Check that the base is on the remote (`git ls-remote --exit-code --heads <remote> <base>`). If it exists only locally, push it first, since every PR base must be on the remote; if it exists nowhere, stop and ask. Fetch it, and fetch the current branch only if it exists on the remote.
 
-Check whether the current branch already has an open PR (`gh pr view --json number,url,state,baseRefName,headRefOid,isCrossRepository`). If it does, compare new work against that PR's `headRefOid`, not the base; its commits are not new work. If that commit isn't local, fetch it with `git fetch origin pull/<number>/head`. This workflow pushes only to the target repository's remote, so if that PR's head is in another repository (`isCrossRepository` is true, as with a fork), stop and ask before you commit or push anything. If the user named a base, other than the current branch itself, that differs from that PR's `baseRefName`, stop and ask whether to retarget the PR or open a new branch and PR before you commit or push anything. Otherwise compare against the base.
+Check whether the current branch already has an open PR (`gh pr view --json number,url,state,baseRefName,headRefOid,isCrossRepository`). If it does, compare new work against that PR's `headRefOid`, not the base; its commits are not new work. If that commit isn't local, fetch it with `git fetch <remote> pull/<number>/head`. This workflow pushes only to the target repository's remote, so if that PR's head is in another repository (`isCrossRepository` is true, as with a fork), stop and ask before you commit or push anything. If the user named a base, other than the current branch itself, that differs from that PR's `baseRefName`, stop and ask whether to retarget the PR or open a new branch and PR before you commit or push anything. Otherwise compare against the base.
 
 Read staged, unstaged, and untracked work, recent commit style, and the commits and diff ahead of the compare point. Inspect the actual PR diff as well when reusing a PR. Note real paths, patterns, line counts, and acceptance criteria for the shape decision and the issues.
 
 In stacked mode, capture the parent before creating the child. Commits already on that parent belong to the parent; only changes beyond it belong to the child. Read [branch handling](references/branches.md) before changing branches.
 
-Identify the exact paths and commits that belong to this request. Leave unrelated work alone. If there is no work to submit, stop without creating an issue or branch; when the current branch has an open PR, return its URL. Preserve a caller's explicit batch boundary, such as one dependency ecosystem.
+Identify the exact paths and commits that belong to this request. Leave unrelated work alone. If there is no work to submit, stop without creating a branch. When the current branch has an open PR, first satisfy tracking for it (Step 3) if `tracking=required`, then return its URL; otherwise create no issue. Preserve a caller's explicit batch boundary, such as one dependency ecosystem.
 
 Check for an existing open PR for the intended head and base before creating anything. A supplied PR takes precedence after validation. An existing PR with a different base than the user named requires that same question. Do not silently retarget it or open another one.
 
@@ -86,12 +86,12 @@ Compose the body from the actual diff and verification results. Include the Line
 Write the exact body to a temporary UTF-8 file. For a new PR:
 
 ```bash
-git push -u origin HEAD
+git push -u <remote> HEAD
 gh pr create --repo <owner/repo> --head <head-branch> --base <base-branch> \
   --title "<title>" --body-file <body-file>
 ```
 
-Use the resolved remote if it is not `origin`. Add only labels that already exist. Before retrying an uncertain creation result, query for the head/base PR so a retry cannot create a duplicate.
+Add only labels that already exist. Before retrying an uncertain creation result, query for the head/base PR so a retry cannot create a duplicate.
 
 For an existing open PR, push the relevant commits and return its URL. Update its title/body only when needed for this change, preserving unrelated reviewer content. Leave caller-specific comments to the caller. If it already describes the work and no changes are needed, return it without another write.
 

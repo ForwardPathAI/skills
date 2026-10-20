@@ -4,7 +4,7 @@ Record the source branch and HEAD, the base ref and its resolved commit, intende
 
 ## Standard
 
-Use the explicit base or resolve the repository default. Fetch that base and create the target branch from its remote tip (`git checkout -b <branch> origin/<base>`), not from whatever HEAD is current. If the target already exists locally or remotely, inspect it and reuse it only when it belongs to this work.
+Use the explicit base or resolve the repository default. Fetch that base and create the target branch from its remote tip (`git checkout -b <branch> <remote>/<base>`, with `<remote>` from SKILL.md Step 1), not from whatever HEAD is current. If the target already exists locally or remotely, inspect it and reuse it only when it belongs to this work.
 
 If the source has committed work ahead of the base, identify the intended commits before checkout and carry over only those not already present on the target, in dependency order. Do not blindly cherry-pick every commit ahead when the source includes another feature. If the source is a feature branch whose commits belong to its own open PR, the new work is a stack; use stacked mode instead. Preserve merge history when necessary rather than assuming every commit can be cherry-picked. Reuse an already-correct branch without rebuilding it.
 
@@ -24,7 +24,7 @@ Work one PR at a time. Check out its branch, stage only that PR's files or hunks
 
 ## After a parent merges
 
-Check out `<child-branch>`, fetch both refs (`git fetch origin <new-base> <child-branch>`), and fast-forward the child (`git merge --ff-only origin/<child-branch>`); stop and ask if it has diverged. Then rebase the child onto the new base (after a squash merge, `git rebase --onto origin/<new-base> <old-parent-tip>`, where `<old-parent-tip>` is the parent's last head: `gh pr view <parent> --json headRefOid -q .headRefOid`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). This is the one place this workflow rewrites a published branch: lease against the child's verified remote head, and never force-push the default branch. maintain-pr handles later upkeep.
+Check out `<child-branch>`, fetch both refs (`git fetch <remote> <new-base> <child-branch>`), and fast-forward the child (`git merge --ff-only <remote>/<child-branch>`); stop and ask if it has diverged. Then rebase the child onto the new base (after a squash merge, `git rebase --onto <remote>/<new-base> <old-parent-tip>`, where `<old-parent-tip>` is the parent's last head: `gh pr view <parent> --json headRefOid -q .headRefOid`), push it with `git push --force-with-lease <remote> <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). This is the one place this workflow rewrites a published branch: lease against the child's verified remote head, and never force-push the default branch. maintain-pr handles later upkeep.
 
 ## Prepared
 

@@ -160,7 +160,7 @@ uses: actions/checkout@<sha>  # v5.0.1       # SHA pin → new SHA, comment upda
 Resolve a tag's SHA:
 
 ```bash
-gh api /repos/<owner>/<action>/git/ref/tags/<target> -q .object.sha
+gh api /repos/<owner>/<action>/commits/<target> -q .sha    # the commit, even for an annotated tag
 ```
 
 **Transitive** — a vulnerable action used by another action can't be fixed here; bump the outer action, or report needs-human.
@@ -203,7 +203,7 @@ No reliable CLI edit — change the declaration:
 
 ```bash
 mvn -q dependency:tree -Dincludes=<group>:<artifact> && mvn -q verify
-./gradlew dependencyInsight --dependency <pkg> && ./gradlew build
+./gradlew <project>:dependencyInsight --configuration <runtimeClasspath|compileClasspath> --dependency <pkg> && ./gradlew build
 ```
 
 ## Anything else

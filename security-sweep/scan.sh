@@ -13,7 +13,7 @@
 #
 # Env:
 #   REPOS       space-separated repo subset; skips org enumeration
-#   REPO_LIMIT  max repos to enumerate    (default: 500)
+#   REPO_LIMIT  max repos to enumerate; reaching it fails the scan (default: 500)
 #   MAX_JOBS    parallel API fetchers     (default: 8)
 #
 set -euo pipefail
@@ -42,10 +42,17 @@ if [ -n "${REPOS:-}" ]; then
   printf '%s\n' ${REPOS} > "$SCRATCH/repos.txt"
 else
   gh repo list "$ORG" --limit "$REPO_LIMIT" --no-archived --source \
-      --json name,isEmpty,isFork,defaultBranchRef \
-    | jq -r '.[]
-        | select(.isEmpty == false and .isFork == false and .defaultBranchRef != null)
-        | .name' \
+      --json name,isEmpty,isFork,defaultBranchRef > "$SCRATCH/repo-list.json"
+  # The limit applies before filtering, so reaching it means the list may be
+  # incomplete. Fail rather than sweep part of the org as if it were all of it.
+  if [ "$(jq length "$SCRATCH/repo-list.json")" -ge "$REPO_LIMIT" ]; then
+    echo "security-sweep: gh repo list hit REPO_LIMIT=$REPO_LIMIT; the scan would be incomplete." >&2
+    echo "  Rerun with a higher limit, e.g. REPO_LIMIT=2000 ./scan.sh $ORG" >&2
+    exit 1
+  fi
+  jq -r '.[]
+      | select(.isEmpty == false and .isFork == false and .defaultBranchRef != null)
+      | .name' "$SCRATCH/repo-list.json" \
     | sort > "$SCRATCH/repos.txt"
 fi
 REPO_COUNT=$(wc -l < "$SCRATCH/repos.txt" | tr -d ' ')

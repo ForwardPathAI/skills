@@ -37,7 +37,7 @@ If the work is already committed on the correct Linear branch and the user only 
 
 Resolve the compare base first: a user-named base (e.g. `develop`) when they name one, otherwise the repo default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Note the current branch: `git rev-parse --abbrev-ref HEAD`. Check that the base is on the remote (`git ls-remote --exit-code --heads origin <base>`). If it exists only locally, push it (`git push -u origin <base>`), since every PR base must be on `origin`; if it exists nowhere, stop and ask. Then fetch it: `git fetch origin <base>`. Fetch the current branch only if it exists on the remote (`git ls-remote --exit-code --heads origin <current>`).
 
-Check whether the current branch already has a PR: `gh pr view --json number,url,state,baseRefName,headRefOid`. If it has an open one, compare new work against that PR's head, not the base — its commits are not new work.
+Check whether the current branch already has a PR: `gh pr view --json number,url,state,baseRefName,headRefOid`. If it has an open one, compare new work against that PR's head, not the base — its commits are not new work. If the user named a base, other than the current branch itself, that differs from that PR's `baseRefName`, stop and ask whether to retarget the PR or open a new branch and PR before you commit or push anything.
 
 Run in parallel (`<compare>` is `origin/<base>`, or `origin/<current>` when the current branch has an open PR):
 
@@ -198,7 +198,7 @@ If the base has no remote branch yet, push it first: `git push -u origin <base>`
 git push -u origin HEAD
 ```
 
-If the branch already has an open PR (`gh pr view`), reuse it — update its body with `gh pr edit` if needed. If the user named a base that differs from that PR's `baseRefName`, stop and ask whether to retarget the PR or open a new branch and PR. Otherwise create the PR with `gh` against `<base>`:
+If the branch already has an open PR (`gh pr view`), reuse it — update its body with `gh pr edit` if needed. Otherwise create the PR with `gh` against `<base>`:
 
 ```bash
 gh pr create --base <base> --title "<title aligned with Linear issue>" --body "$(cat <<'EOF'
@@ -219,7 +219,7 @@ EOF
 
 For a stack, once all layers are open, add a short list of the whole stack (bottom to top, with PR links) to each PR body via `gh pr edit` so reviewers can see where each one sits.
 
-Return every PR URL to the user. For a stack, give the merge order (bottom first). After a parent merges, rebase the child onto the new base (with squash merges, `git rebase --onto origin/<new-base> <old-parent-tip>`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). Use maintain-pr for ongoing upkeep.
+Return every PR URL to the user. For a stack, give the merge order (bottom first). After a parent merges, fetch the new base (`git fetch origin <new-base>`), rebase the child onto it (with squash merges, `git rebase --onto origin/<new-base> <old-parent-tip>`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). Use maintain-pr for ongoing upkeep.
 
 ## Anti-patterns
 

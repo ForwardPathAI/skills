@@ -24,7 +24,7 @@ Work one PR at a time. Check out its branch, stage only that PR's files or hunks
 
 ## After a parent merges
 
-Fetch the new base (`git fetch origin <new-base>`), rebase the child onto it (after a squash merge, `git rebase --onto origin/<new-base> <old-parent-tip>`, where `<old-parent-tip>` is the parent's last head: `gh pr view <parent> --json headRefOid -q .headRefOid`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). This is the one place this workflow rewrites a published branch: lease against the child's verified remote head, and never force-push the default branch. maintain-pr handles later upkeep.
+Check out `<child-branch>`, fetch both refs (`git fetch origin <new-base> <child-branch>`), and fast-forward the child (`git merge --ff-only origin/<child-branch>`); stop and ask if it has diverged. Then rebase the child onto the new base (after a squash merge, `git rebase --onto origin/<new-base> <old-parent-tip>`, where `<old-parent-tip>` is the parent's last head: `gh pr view <parent> --json headRefOid -q .headRefOid`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). This is the one place this workflow rewrites a published branch: lease against the child's verified remote head, and never force-push the default branch. maintain-pr handles later upkeep.
 
 ## Prepared
 

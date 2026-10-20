@@ -4,19 +4,27 @@ Record the source branch and HEAD, the base ref and its resolved commit, intende
 
 ## Standard
 
-Use the explicit base or resolve the repository default. Fetch that base and create the target branch from its remote tip. If the target already exists locally or remotely, inspect it and reuse it only when it belongs to this work.
+Use the explicit base or resolve the repository default. Fetch that base and create the target branch from its remote tip (`git checkout -b <branch> origin/<base>`), not from whatever HEAD is current. If the target already exists locally or remotely, inspect it and reuse it only when it belongs to this work.
 
-If the source has committed work ahead of the base, identify the intended commits before checkout and carry over only those not already present on the target, in dependency order. Do not blindly cherry-pick every commit ahead when the source includes another feature. Preserve merge history when necessary rather than assuming every commit can be cherry-picked. Reuse an already-correct branch without rebuilding it.
+If the source has committed work ahead of the base, identify the intended commits before checkout and carry over only those not already present on the target, in dependency order. Do not blindly cherry-pick every commit ahead when the source includes another feature. If the source is a feature branch whose commits belong to its own open PR, the new work is a stack; use stacked mode instead. Preserve merge history when necessary rather than assuming every commit can be cherry-picked. Reuse an already-correct branch without rebuilding it.
 
 ## Stacked
 
-Use the explicitly named parent, or capture the current non-default branch and its tip before creating the child. If the user asks to stack while on the default branch without naming a parent, resolve which parent they mean before proceeding. Do not silently turn it into a standard PR.
+Use the explicitly named parent, or capture the current non-default branch and its tip before creating the child. If the user asks to stack while on the default branch without naming a parent, ask which branch to stack on, or offer one PR on the default branch instead. Do not proceed until they answer, and do not silently turn it into a standard PR.
 
 When the parent is current, create the child from the captured parent tip; uncommitted changes carry over. Existing parent commits stay on the parent and must not be cherry-picked into a separate history. When another parent is named, create from its verified tip and carry over only the intended child changes and commits that are absent from that parent.
 
 If resuming an existing child PR, use that PR's verified base as the parent rather than treating the child itself as a new parent. Inspect an existing target branch before reusing it.
 
 Before publishing the child, ensure the remote parent contains the intended parent tip. If it exists only locally, push that parent first. A non-fast-forward rejection needs resolution, not a force push. The PR base must be the parent, not the repository default.
+
+## Splits and stacks from one set of changes
+
+Work one PR at a time. Check out its branch, stage only that PR's files or hunks (`git add <paths>` or `git add -p`), commit, push, and open the PR. The remaining uncommitted changes stay in the working tree. For a stack, branch the next layer from the current layer's HEAD. For a split, branch the next PR from the base's remote tip, carrying the remaining changes across the checkout (stash only if checkout would fail).
+
+## After a parent merges
+
+Retarget the child to the parent's base (`gh pr edit <child> --base <new-base>`) and bring it up to date with that base. Prefer merging the new base into the child. If the parent was squash-merged and the child must be rebased (`git rebase --onto origin/<new-base> <old-parent-tip>`), that rewrites a published branch: push only with explicit authorization and `--force-with-lease` on the verified remote head. maintain-pr handles this upkeep.
 
 ## Prepared
 

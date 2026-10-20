@@ -35,7 +35,7 @@ If the work is already committed on the correct Linear branch and the user only 
 
 ### Step 1: Analyze all local changes
 
-Resolve the compare base first: a user-named base (e.g. `develop`) when they name one, otherwise the repo default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Note the current branch: `git rev-parse --abbrev-ref HEAD`. Fetch the base: `git fetch origin <base>`. Fetch the current branch only if it exists on the remote (`git ls-remote --exit-code --heads origin <current>`).
+Resolve the compare base first: a user-named base (e.g. `develop`) when they name one, otherwise the repo default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Note the current branch: `git rev-parse --abbrev-ref HEAD`. Check that the base is on the remote (`git ls-remote --exit-code --heads origin <base>`). If it exists only locally, push it (`git push -u origin <base>`), since every PR base must be on `origin`; if it exists nowhere, stop and ask. Then fetch it: `git fetch origin <base>`. Fetch the current branch only if it exists on the remote (`git ls-remote --exit-code --heads origin <current>`).
 
 Check whether the current branch already has a PR: `gh pr view --json number,url,state,baseRefName,headRefOid`. If it has an open one, compare new work against that PR's head, not the base — its commits are not new work.
 
@@ -130,7 +130,14 @@ git checkout <linear-branch-name>
 git stash pop                     # only if you stashed
 ```
 
-**Branch exists on the remote only** — `git fetch origin <linear-branch-name> && git checkout -b <linear-branch-name> origin/<linear-branch-name>`.
+**Branch exists on the remote only** — fetch it and switch to it (stash first only if checkout would fail):
+
+```bash
+git fetch origin <linear-branch-name>
+git stash push -u -m "open-pr"    # only when dirty tree blocks checkout
+git checkout -b <linear-branch-name> origin/<linear-branch-name>
+git stash pop                     # only if you stashed
+```
 
 **New branch, base = current branch** (stacking on the branch you are on, or the next layer of a stack you are building) — branch from HEAD; uncommitted changes carry over:
 

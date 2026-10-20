@@ -69,7 +69,7 @@ Complete when the tracking policy is satisfied and the issue URL is available fo
 
 ## 4. Prepare the branch and commit
 
-Follow [branch handling](references/branches.md) for the selected mode. Once the target branch name is resolved, check for its existing open PR again if it differs from the branch inspected in Step 1. Verify the branch diff against the selected base contains the intended work and excludes unrelated commits.
+If the work is already committed on the correct branch and only the PR is missing, skip branch changes and committing; Step 3 tracking still applies. Otherwise follow [branch handling](references/branches.md) for the selected mode. Once the target branch name is resolved, check for its existing open PR again if it differs from the branch inspected in Step 1. Verify the branch diff against the selected base contains the intended work and excludes unrelated commits.
 
 Stage only the selected paths and review the staged diff, including anything that was already staged. Exclude unrelated staged work from the commit while preserving its content and restoring its prior staging afterward. Never include credential files. If unrelated changes share a file, stage the relevant hunks. Commit only when there are relevant uncommitted changes; preserve existing commits when no new commit is needed. Use the caller's commit message when supplied, otherwise match repository style and explain the change's purpose.
 

@@ -4,7 +4,7 @@ Record the source branch and HEAD, the base ref and its resolved commit, intende
 
 ## Standard
 
-Use the explicit base or resolve the repository default. Fetch that base and create the target branch from its remote tip (`git checkout -b <branch> <remote>/<base>`, with `<remote>` from SKILL.md Step 1), not from whatever HEAD is current. If the target already exists locally or remotely, inspect it and reuse it only when it belongs to this work.
+Use the explicit base or resolve the repository default. Fetch that base and create the target branch from its remote tip (`git checkout -b <branch> <remote>/<base>`, with `<remote>` from SKILL.md Step 1), not from whatever HEAD is current. If the target already exists, inspect it and reuse it only when it belongs to this work. If it exists only on the remote, fetch it and check it out from that ref (`git checkout -b <branch> <remote>/<branch>`), not from the base. Before you add commits, check that its commits beyond the base (`git log <remote>/<base>..<remote>/<branch>`) belong to this work.
 
 If the source has committed work ahead of the base, identify the intended commits before checkout and carry over only those not already present on the target, in dependency order. Do not blindly cherry-pick every commit ahead when the source includes another feature. If the source is a feature branch whose commits belong to its own open PR, the new work is a stack; use stacked mode instead. Preserve merge history when necessary rather than assuming every commit can be cherry-picked. Reuse an already-correct branch without rebuilding it.
 

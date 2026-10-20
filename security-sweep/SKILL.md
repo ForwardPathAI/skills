@@ -15,6 +15,7 @@ Dependabot alerts only. Code scanning and secret scanning are out of scope — a
 ## Prerequisites
 
 - `gh` authenticated with repo write access to the org (`gh auth status`). If `/dependabot/alerts` returns 403 for *every* repo, the token is missing a scope: `gh auth refresh -h github.com -s security_events`.
+- For an `actions` batch, the token also needs the `workflow` scope to push workflow changes (`gh auth refresh -h github.com -s workflow`). Without it, that batch is needs-human.
 - `jq`.
 - Toolchains for the ecosystems in play (bun/pnpm/npm, uv/poetry, go, dotnet, cargo…). A missing toolchain fails its batch — record it and sweep on; never hand-edit a lockfile to work around it.
 - Org name. Default **ForwardPathAI** when the user doesn't name one.
@@ -68,7 +69,7 @@ Take `batches` in plan order (severity first). Then apply one split:
 Rails for the whole sweep:
 
 - Only ever create or push branches named `security-sweep/*` or `security-sweep-major/*`. Never touch another branch, never force-push, never rebase someone's work.
-- The diff may contain manifests, lockfiles, and lock artifacts (`go.sum`, `Cargo.lock`, `packages.lock.json`) only. If a tool regenerated anything else, `git checkout --` it before committing.
+- The diff may contain manifests, lockfiles, and lock artifacts (`go.sum`, `Cargo.lock`, `packages.lock.json`) only. Manifests include `pom.xml`, `build.gradle[.kts]`, and `gradle/libs.versions.toml`. An `actions` batch may also change `uses:` lines, and nothing else, in `.github/workflows/*` and composite `action.yml` files. If a tool regenerated anything else, `git checkout --` it before committing.
 - Never commit a credential file the install wrote (`.npmrc`, `.env`, `auth.json`).
 - If the install needs a private-registry token you don't have, the batch is needs-human. Do not disable integrity checks or `--force` past it.
 - Installing dependencies runs their lifecycle scripts, and the repo's checks run its own scripts. Treat both as untrusted code. Run every install, resolution, and check command through `no_gh` (Step 3), which hides the GitHub login from it. That is not a sandbox; use a credential-free container or VM when one is available. Only `scan.sh`, `gh pr diff`, and the pr-open push use the real credential. An install that needs the GitHub token, such as a GitHub Packages registry, is needs-human.
@@ -88,7 +89,7 @@ git checkout -b "security-sweep/<ecosystem>-$(date -u +%Y%m%d)"
 When `existing_sweep_pr` is set, inspect it before you fetch it or run anything on it. Anyone with push access can open a branch with that name.
 
 1. Record its head: `gh pr view <number> --repo <ORG>/<REPO> --json headRefOid,isCrossRepository`. A cross-repository head fails the check.
-2. Read `gh pr diff <number> --repo <ORG>/<REPO>`. It must touch only manifests, lockfiles, and lock artifacts, and manifest hunks may change only dependency versions, overrides, or resolutions. A change to `scripts`, hooks, workflows, or tool config fails the check.
+2. Read `gh pr diff <number> --repo <ORG>/<REPO>`. It must touch only manifests, lockfiles, and lock artifacts, and manifest hunks may change only dependency versions, overrides, or resolutions. A change to `scripts`, hooks, workflows (other than `uses:` lines on an `actions` branch), or tool config fails the check.
 3. Fetch the branch and confirm `git rev-parse FETCH_HEAD` equals the recorded head. Then check it out and add to it.
 
 If any step fails, do not check the branch out. Record the batch as needs-human, naming the PR, and open nothing for it.
@@ -103,7 +104,7 @@ Do all bumps for the batch, then install **once**.
 
 Three gates, all required:
 
-1. Install exits 0 and the lockfile changed.
+1. Install exits 0 and the lockfile changed. An ecosystem with no lockfile or install step (`actions`, and `maven`/`gradle` builds without a lockfile) needs its manifest or `uses:` change instead, plus a clean resolution query.
 2. **Every** fix's resolved version is `>= target` — check with the ecosystem's resolution query (`pnpm why`, `npm ls --all`, `go list -m all`, `dotnet list package --include-transitive`…). A bumped manifest with a stale lockfile resolution fixes nothing. A fix pinned to `target` (override, resolution, `==`, `strictly`) must resolve to exactly `target`. A resolved major above `target`'s major moves that package to its own major-version batch (Step 2).
 3. The repo's own checks pass: its declared typecheck/lint/build/test scripts, whichever exist. Skip the ones the repo doesn't define; don't invent commands.
 
@@ -120,7 +121,7 @@ Read and follow [pr-open](../pr-open/SKILL.md) with this handoff:
 | Mode / tracking | `prepared` / `none`; this sweep does not require Linear. |
 | Repository / base | The batch's repository and its default branch. |
 | Branch / existing PR | The checked-out `security-sweep/*` or `security-sweep-major/*` branch, plus `existing_sweep_pr` when present. |
-| Allowed paths | Only the batch's manifests, lockfiles, and lock artifacts. |
+| Allowed paths | Only the batch's manifests, lockfiles, and lock artifacts; for an `actions` batch, also the workflow and composite action files whose `uses:` lines it changed. |
 | Verification | Step 4 results, including package-resolution evidence and any documented pre-existing baseline failure. |
 | Title / commit message | `fix(deps): patch <N> vulnerable <ecosystem> dependencies`; retain `[breaking risk]` in the title for major-version batches. |
 | Labels | `security` only if it already exists in that repository. |

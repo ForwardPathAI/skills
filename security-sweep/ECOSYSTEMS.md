@@ -150,7 +150,7 @@ cargo audit                  # only if already installed
 
 The "package" is a repo (`actions/checkout`), the "version" a tag.
 
-**Bump** — edit `uses:` in every workflow under `.github/workflows/` (and any composite action). Match the existing pin style:
+**Bump** — edit `uses:` in every workflow under `.github/workflows/` (and any composite action). Change only `uses:` lines; pushing them needs the `workflow` token scope (SKILL.md Prerequisites). Match the existing pin style:
 
 ```yaml
 uses: actions/checkout@v5                    # tag pin → new tag

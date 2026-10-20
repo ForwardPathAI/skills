@@ -96,7 +96,8 @@ def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": 
               "composer": "composer", "maven": "maven", "gradle": "gradle",
               "pub": "pub", "swift": "swift"}[.] // .;
 
-{ repo: $repo, alerts: ($alerts[0] // []), prs: ($prs[0] // []) }
+# Older gh releases write one JSON array per page; flatten every page.
+{ repo: $repo, alerts: [ $alerts[][] ], prs: [ $prs[][] ] }
 | .repo as $repo
 
 # Open PRs whose head branch lives in this repository. A fork PR never covers an
@@ -219,7 +220,8 @@ jq -s --arg org "$ORG" --argjson unreadable "$UNREADABLE_JSON" '
     org: $org,
     repos_scanned: (length),
     repos_unreadable: $unreadable,
-    repos_clean: [ .[] | select(.alert_count == 0) | .repo ],
+    repos_clean: [ .[] | select(.alert_count == 0) | .repo
+                   | select(. as $r | $unreadable | any(. == $r) | not) ],
     batches: ( [ .[].batches[] ] | sort_by(-.max_severity_rank, .repo) ),
     covered: ( [ .[].covered[] ] | sort_by(.repo) ),
     no_fix:  ( [ .[].no_fix[]  ] | sort_by(.repo) )

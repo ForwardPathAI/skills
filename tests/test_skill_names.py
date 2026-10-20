@@ -21,7 +21,7 @@ class SkillNamingTests(unittest.TestCase):
             "actions": ["open", "write", "design"],
             "approved_names": {
                 "prototype": "Approved short workflow name.",
-                "setup-fp-skills": "Stable team entry point.",
+                "get-forwardpath-skills": "Stable team entry point.",
             },
             "legacy_names": [],
         }
@@ -44,7 +44,7 @@ class SkillNamingTests(unittest.TestCase):
         )
 
     def test_convention_qualifiers_and_approved_short_names(self):
-        for name in ["pr-open", "issue-write", "ui-design-mobile", "prototype", "setup-fp-skills"]:
+        for name in ["pr-open", "issue-write", "ui-design-mobile", "prototype", "get-forwardpath-skills"]:
             self.skill(name)
         result = self.run_lint()
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -69,7 +69,7 @@ class SkillNamingTests(unittest.TestCase):
                 path.unlink()
 
     def test_exceptions_do_not_bypass_directory_matching(self):
-        self.skill("prototype", name="setup-fp-skills")
+        self.skill("prototype", name="get-forwardpath-skills")
         result = self.run_lint()
         self.assertEqual(result.returncode, 1)
         self.assertIn("must match directory 'prototype'", result.stderr)

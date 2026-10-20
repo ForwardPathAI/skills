@@ -13,7 +13,6 @@ npx skills add forwardpathai/skills
 Or install a single skill by name:
 
 ```bash
-npx skills add forwardpathai/skills/setup-fp-skills
 npx skills add forwardpathai/skills/issue-writer
 npx skills add forwardpathai/skills/pr-open
 npx skills add forwardpathai/skills/open-pr
@@ -58,7 +57,6 @@ npx skills add forwardpathai/skills/security-sweep
 
 | Skill | Description |
 |-------|-------------|
-| [setup-fp-skills](./setup-fp-skills) | Route Forward Path work to the relevant workflow and load its dependencies only when needed. |
 | [issue-writer](./issue-writer) | Draft, create, or update executable Linear issues, with explicit modes and one owner for issue writes. |
 | [pr-open](./pr-open) | Shared PR workflow for standard, stacked, and prepared branches; explicit tracking policy and existing-PR reuse. |
 | [open-pr](./open-pr) | Compatibility entry point for pr-open with Linear tracking. |
@@ -111,7 +109,7 @@ Use `pr-open` for new callers. `open-pr` and `stack-pr` remain small compatibili
 | Delivery planning | `issue-writer` in draft mode, then create/update modes after approval | Milestones, scheduling, project and grouping document |
 | Engineering scoping | `effort-estimate` | Report structure, scoping review, and Notion output |
 
-Install required sibling skills alongside a workflow, or install the full repository. Skills must resolve missing siblings through the session catalog or installed skill roots rather than assuming a full-repository install. `setup-fp-skills` installs or reads only selected dependencies, not the whole roster.
+Install required sibling skills alongside a workflow, or install the full repository. Skills must resolve missing siblings through the session catalog or installed skill roots rather than assuming a full-repository install. To install the standard Forward Path set in a project, use `get-forwardpath-skills`.
 
 ## Authoring
 
@@ -133,7 +131,7 @@ The `name` in frontmatter must match the directory name. The `description` is wh
 
 New skills use `domain-action[-qualifier]`, such as `pr-open`, `issue-refine`, or `ui-design-mobile`. Use lowercase kebab-case, at most 63 characters. The full rule is in [AGENTS.md](AGENTS.md), with the allowed vocabulary and exceptions in [skill-naming.json](skill-naming.json).
 
-`prototype` and `setup-fp-skills` are approved names. Existing nonconforming names have explicit migration exceptions; do not add new skills to that legacy list. The check also validates repo-local wrappers under `.agents`, `.claude`, `.codex`, and `.cursor`.
+`prototype` and `get-forwardpath-skills` are approved names. Existing nonconforming names have explicit migration exceptions; do not add new skills to that legacy list. The check also validates repo-local wrappers under `.agents`, `.claude`, `.codex`, and `.cursor`.
 
 ```bash
 python3 scripts/lint_skill_names.py

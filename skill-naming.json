@@ -47,7 +47,7 @@
   ],
   "approved_names": {
     "prototype": "Intentional short workflow name chosen by the team.",
-    "setup-fp-skills": "Existing team entry point; keep this name."
+    "get-forwardpath-skills": "Team bootstrap installer added in #39; keep this name."
   },
   "legacy_names": [
     "architecture-to-linear-plan",

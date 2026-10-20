@@ -4,6 +4,12 @@ Agent skills published by [Forward Path](https://forwardpath.ai) for use with Cl
 
 ## Install
 
+To set up a project with the standard Forward Path skill set (our PR, release, and Linear skills plus vetted Effect, Drizzle, Better Auth, and writing skills), install the bootstrap skill and ask your agent to run it:
+
+```bash
+npx skills add forwardpathai/skills -s get-forwardpath-skills -a claude-code cursor codex -y
+```
+
 Install any skill in this repo with the [skills CLI](https://www.skills.sh/docs/cli):
 
 ```bash
@@ -18,7 +24,6 @@ npx skills add forwardpathai/skills/pr-open
 npx skills add forwardpathai/skills/open-pr
 npx skills add forwardpathai/skills/open-pr-with-screenshots
 npx skills add forwardpathai/skills/release
-npx skills add forwardpathai/skills/stack-pr
 npx skills add forwardpathai/skills/maintain-pr
 npx skills add forwardpathai/skills/cloud-agent-pr-stats
 npx skills add forwardpathai/skills/backlog-hygiene
@@ -51,6 +56,7 @@ npx skills add forwardpathai/skills/eng-report-effort-estimate
 npx skills add forwardpathai/skills/setup-preview-env
 npx skills add forwardpathai/skills/t3-thread-follow
 npx skills add forwardpathai/skills/security-sweep
+npx skills add forwardpathai/skills/get-forwardpath-skills
 ```
 
 ## Skills
@@ -58,11 +64,10 @@ npx skills add forwardpathai/skills/security-sweep
 | Skill | Description |
 |-------|-------------|
 | [issue-writer](./issue-writer) | Draft, create, or update executable Linear issues, with explicit modes and one owner for issue writes. |
-| [pr-open](./pr-open) | Shared PR workflow for standard, stacked, and prepared branches; explicit tracking policy and existing-PR reuse. |
-| [open-pr](./open-pr) | Compatibility entry point for pr-open with Linear tracking. |
+| [pr-open](./pr-open) | Shared PR workflow: decide one, split, or stacked PRs; standard, stacked, and prepared branches; explicit tracking policy and existing-PR reuse. |
+| [open-pr](./open-pr) | Compatibility entry point for pr-open with Linear tracking, including split and stacked PRs. |
 | [release](./release) | Cut a production GitHub release from the default branch — semver tag, release notes, breaking-change gate, and CI watch. |
-| [stack-pr](./stack-pr) | Compatibility entry point for pr-open in stacked mode with Linear tracking. |
-| [open-pr-with-screenshots](./open-pr-with-screenshots) | Extend normal, stacked, or existing PR work with verified screenshots of the actual UI changes, embedded in the PR description. Install with `open-pr`, or `stack-pr` for stacks. |
+| [open-pr-with-screenshots](./open-pr-with-screenshots) | Extend normal, stacked, or existing PR work with verified screenshots of the actual UI changes, embedded in the PR description. Install with `open-pr`. |
 | [maintain-pr](./maintain-pr) | Maintain an open GitHub PR through Greptile and human review feedback, merge conflicts, and CI failures — triage every finding, fix, validate, push, reply/resolve, and recheck the latest head until it is ready or concretely blocked. |
 | [cloud-agent-pr-stats](./cloud-agent-pr-stats) | Count PRs opened by cloud coding agents (Cursor, Codex, Devin, Claude, Copilot) across a GitHub org, by branch-name prefix. |
 | [backlog-hygiene](./backlog-hygiene) | Scan a Linear project's backlog for relevance — flag stale, already-shipped, or duplicated issues using update age, code/PR evidence, and ticket similarity — then apply confirmed actions one at a time. |
@@ -95,14 +100,15 @@ npx skills add forwardpathai/skills/security-sweep
 | [security-sweep](./security-sweep) | Sweep a GitHub org for open Dependabot alerts and open one grouped fix PR per repo per ecosystem — deduped by package, skipping alerts an existing PR already covers, verified before push. |
 | [setup-preview-env](./setup-preview-env) | Set up ephemeral per-pull-request Azure preview environments for a containerized app — shared/per-PR Terraform, GitHub Actions deploy/teardown, auth redirects, and runbooks distilled from the ButtconRAG preview lane. |
 | [t3-thread-follow](./t3-thread-follow) | Find T3 Code threads by title, ID, or description, then use their context, build on their work, or wait for a result across providers. |
+| [get-forwardpath-skills](./get-forwardpath-skills) | Install the standard Forward Path skill set into the current project for Claude Code, Cursor, and Codex — open-pr, maintain-pr, release, issue-writer, plus improve, unslop, grill-with-docs, and the Better Auth, Effect, and Drizzle skills. |
 
 ## Shared workflows
 
-Use `pr-open` for new callers. `open-pr` and `stack-pr` remain small compatibility entry points, including the repo-local `.agents/skills/open-pr` entry point.
+Use `pr-open` for new callers. `open-pr` remains a small compatibility entry point, including the repo-local `.agents/skills/open-pr` entry point.
 
 | Workflow | Calls | Responsibility kept by the workflow |
 |---|---|---|
-| Ordinary or stacked PR | `pr-open` → `issue-writer` in create mode when tracking is missing | Scope of the requested change |
+| Ordinary, split, or stacked PR | `pr-open` → `issue-writer` in create mode when tracking is missing | Scope of the requested change |
 | Security sweep | `pr-open` in prepared mode with no Linear tracking | Alert grouping, dependency fixes, verification, advisory content |
 | SDK release | `pr-open` in prepared mode with no Linear tracking | Version bump, checks, merge, release approval, publishing |
 | Backlog refinement | `ticket-refiner` in draft mode → `issue-writer` in draft mode; after review, create/update modes | Backlog selection, approval, and refinement comment |

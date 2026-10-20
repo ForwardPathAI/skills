@@ -28,7 +28,7 @@ Require Linear MCP and [issue-writer](../issue-writer/SKILL.md) only for `tracki
 
 ## 1. Inspect the intended change
 
-Record the original branch, HEAD, and worktree status. Resolve the base before inspecting committed changes: a user-named base, otherwise the repository default (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Fetch it, and fetch the current branch only if it exists on the remote.
+Record the original branch, HEAD, and worktree status. Resolve the base before inspecting committed changes: a user-named base, otherwise the repository default (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Check that the base is on the remote (`git ls-remote --exit-code --heads origin <base>`). If it exists only locally, push it first, since every PR base must be on the remote; if it exists nowhere, stop and ask. Fetch it, and fetch the current branch only if it exists on the remote.
 
 Check whether the current branch already has an open PR (`gh pr view --json number,url,state,baseRefName,headRefOid`). If it does, compare new work against that PR's head, not the base; its commits are not new work. Otherwise compare against the base.
 

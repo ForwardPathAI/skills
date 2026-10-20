@@ -39,7 +39,7 @@ Resolve the compare base first: a user-named base (e.g. `develop`) when they nam
 
 Check whether the current branch already has a PR: `gh pr view --json number,url,state,baseRefName,headRefOid`. If it has an open one, compare new work against that PR's head, not the base — its commits are not new work. If the user named a base, other than the current branch itself, that differs from that PR's `baseRefName`, stop and ask whether to retarget the PR or open a new branch and PR before you commit or push anything.
 
-Run in parallel (`<compare>` is `origin/<base>`, or `origin/<current>` when the current branch has an open PR):
+Run in parallel (`<compare>` is `origin/<base>`, or that open PR's `headRefOid` when the current branch has one; if the commit isn't local, as with a fork PR, fetch it with `git fetch origin pull/<number>/head`):
 
 ```bash
 git status
@@ -219,7 +219,7 @@ EOF
 
 For a stack, once all layers are open, add a short list of the whole stack (bottom to top, with PR links) to each PR body via `gh pr edit` so reviewers can see where each one sits.
 
-Return every PR URL to the user. For a stack, give the merge order (bottom first). After a parent merges, fetch the new base (`git fetch origin <new-base>`), rebase the child onto it (with squash merges, `git rebase --onto origin/<new-base> <old-parent-tip>`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). Use maintain-pr for ongoing upkeep.
+Return every PR URL to the user. For a stack, give the merge order (bottom first). After a parent merges, fetch the new base (`git fetch origin <new-base>`), rebase the child onto it (with squash merges, `git rebase --onto origin/<new-base> <old-parent-tip>`, where `<old-parent-tip>` is the parent's last head: `gh pr view <parent> --json headRefOid -q .headRefOid`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). Use maintain-pr for ongoing upkeep.
 
 ## Anti-patterns
 

@@ -60,7 +60,7 @@ Review **both** staged and unstaged diffs. Also check untracked files.
 
 Pick one shape. Explicit user words win ("stack this" → stack; "one PR" → one PR).
 
-If the new work belongs in the current branch's open PR, don't open another one: skip Steps 3–4, commit (Step 5), push, and update that PR's body with `gh pr edit` if the summary changed.
+If the new work belongs in the current branch's open PR, don't open another one. Skip Step 4 and keep the current branch. Check the PR body and branch name for a Linear issue: if one is linked, skip Step 3; if not, create one (Step 3) and add it to the PR body. Then commit (Step 5), push, and update that PR's body with `gh pr edit` if the summary changed.
 
 | Shape | Use when | Base |
 |-------|----------|------|

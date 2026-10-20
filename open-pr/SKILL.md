@@ -198,7 +198,7 @@ If the base has no remote branch yet, push it first: `git push -u origin <base>`
 git push -u origin HEAD
 ```
 
-If the branch already has an open PR (`gh pr view`), reuse it — update its body with `gh pr edit` if needed. Otherwise create the PR with `gh` against `<base>`:
+If the branch already has an open PR (`gh pr view`), reuse it — update its body with `gh pr edit` if needed. If the user named a base that differs from that PR's `baseRefName`, stop and ask whether to retarget the PR or open a new branch and PR. Otherwise create the PR with `gh` against `<base>`:
 
 ```bash
 gh pr create --base <base> --title "<title aligned with Linear issue>" --body "$(cat <<'EOF'
@@ -219,7 +219,7 @@ EOF
 
 For a stack, once all layers are open, add a short list of the whole stack (bottom to top, with PR links) to each PR body via `gh pr edit` so reviewers can see where each one sits.
 
-Return every PR URL to the user. For a stack, give the merge order (bottom first). After a parent merges, rebase the child onto the new base and retarget it (`gh pr edit <child> --base <new-base>`); with squash merges use `git rebase --onto origin/<new-base> <old-parent-tip>`. Use maintain-pr for ongoing upkeep.
+Return every PR URL to the user. For a stack, give the merge order (bottom first). After a parent merges, rebase the child onto the new base (with squash merges, `git rebase --onto origin/<new-base> <old-parent-tip>`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). Use maintain-pr for ongoing upkeep.
 
 ## Anti-patterns
 

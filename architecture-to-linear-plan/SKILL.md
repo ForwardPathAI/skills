@@ -95,7 +95,7 @@ Follow [LINEAR_SYNC.md](LINEAR_SYNC.md) exactly:
 1. **Resolve targets** with the `list_*` readers first: team, existing/target project, labels (apply only labels that exist), cycles, and assignees. Confirm the team + project with the user.
 2. **Create/reuse the project** (`save_project`) with start/target dates from the timeline.
 3. **Create milestones** (`save_milestone`) with target dates.
-4. **Create issues** (`save_issue`) with description, milestone, estimate, priority, labels, and mockup links; then wire `blocks`/`blockedBy` relations in a second pass.
+4. **Create issues** through [issue-writer](../issue-writer/SKILL.md) in `create` mode (`update` with the existing ID on a rerun) with description, milestone, estimate, priority, labels, and mockup links; then wire `blocks`/`blockedBy` relations in a second pass through issue-writer `update` mode. Do not call `save_issue` directly.
 5. **Create a grouping document** (`save_document`) — the plan overview + milestone/ticket table — and link its URL into the tickets.
 6. **Idempotent re-runs:** check for existing project/milestones/issues by name before creating; update instead of duplicating.
 

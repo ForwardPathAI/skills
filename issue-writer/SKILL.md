@@ -26,7 +26,7 @@ Select the mode before starting. Honor the caller's explicit mode. Otherwise a r
 | Mode | Inputs | Result and write boundary |
 |---|---|---|
 | `draft` | Scope, repository evidence, known placement, optional existing issue | Return title, full description, proposed fields, dependencies, and unresolved questions. No Linear writes, including comments, documents, or split issues. |
-| `create` | New issue scope or a complete draft, resolved required fields, authorization to create | Reuse an existing issue for this exact work or create once. Return ID, identifier, URL, and Linear branch name. |
+| `create` | New issue scope or a complete draft, resolved required fields, authorization to create | Reuse an existing issue for this exact work or create once. Return ID, identifier, URL, and Linear branch name. For a split, also create or reuse the grouping document, unless the caller supplied one, and return its ID and URL with every issue's result. |
 | `update` | Existing issue ID, intended field changes or approved draft, authorization to update | Update that issue only. Preserve unrelated fields, discussion, and relations; never create a replacement issue. Return its ID/URL and changed fields. |
 
 The caller passes any approval already obtained, repository commit, excerpts, verified commands, and known workspace IDs. Reuse evidence that still matches the repository instead of repeating recon or interviews. If a caller requires review before saving, remain in `draft` until that review is satisfied. Do not ask again for an unchanged draft the user already approved.
@@ -49,7 +49,7 @@ For an update limited to metadata, links, or relations, inspect the target and v
 5. **Write** — follow the [Description template](#description-template).
 6. **Return or save according to mode** after applying the quality bar below:
    - `draft`: return the complete proposed issue payload and any unresolved gaps. For a split, also return the grouping-document draft and standalone issue drafts per [splitting.md](splitting.md). Stop before any write.
-   - `create`: check supplied issue links and matching work in the resolved team/project before creating. Reuse a verified match; a similar title alone is not proof. Create via Linear MCP only when no matching issue exists. Fetch the result for its ID, URL, and branch name. After an uncertain write result, check whether it succeeded before retrying.
+   - `create`: check supplied issue links and matching work in the resolved team/project before creating. Reuse a verified match; a similar title alone is not proof. Create via Linear MCP only when no matching issue exists. Fetch the result for its ID, URL, and branch name. For a split, save the grouping document with `save_document` first (or reuse the caller's), then the issues, then the document's issue links, per [splitting.md](splitting.md). After an uncertain write result, check whether it succeeded before retrying.
    - `update`: fetch the target and compare it with the draft's source version. Preserve unrelated concurrent changes; resolve conflicting edits before saving. Send only intended fields using the existing issue ID. If splitting requires new issues, return those drafts for an explicit `create` handoff; update mode itself creates none.
 
 Creating and updating preserve literal Markdown newlines. Callers that receive a saved result must not repeat its write. A split run records created IDs and resumes missing items after a partial failure rather than duplicating them.

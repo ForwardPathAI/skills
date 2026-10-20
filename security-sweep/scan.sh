@@ -61,7 +61,7 @@ fetch_repo() {
     printf '[]\n' > "$SCRATCH/alerts-$repo.json"
   fi
   if ! gh pr list --repo "$ORG/$repo" --state open --limit 200 \
-        --json number,title,headRefName,url > "$SCRATCH/prs-$repo.json" 2>/dev/null; then
+        --json number,title,headRefName,url,isCrossRepository,author > "$SCRATCH/prs-$repo.json" 2>/dev/null; then
     printf '[]\n' > "$SCRATCH/prs-$repo.json"
   fi
 }
@@ -82,7 +82,13 @@ fi
 # ------------------------------------------------------------ plan per repo --
 cat > "$SCRATCH/plan.jq" <<'JQ'
 def semver: [splits("[^0-9]+")] | map(select(length > 0) | tonumber);
+# Only plain release versions (1.2.3, v1.2) count as a covering bump; a
+# prerelease or a hash suffix fails closed and stays in the fix batches.
+def plainver: test("^v?[0-9]+(\\.[0-9]+)*$");
+def covers($patched): plainver and (semver >= ($patched | semver));
 def norm:   ascii_downcase | gsub("[^a-z0-9]+"; "-");
+# Path-aware package key: "@types/node" -> ["types","node"], "g:a" -> ["g-a"].
+def segs:   ascii_downcase | ltrimstr("@") | gsub(":"; "-") | split("/") | map(gsub("[^a-z0-9]+"; "-"));
 def sevrank: {"critical": 4, "high": 3, "medium": 2, "moderate": 2, "low": 1}[.] // 0;
 # Dependabot's branch/group slug per alert ecosystem.
 def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": "nuget",
@@ -93,17 +99,33 @@ def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": 
 { repo: $repo, alerts: ($alerts[0] // []), prs: ($prs[0] // []) }
 | .repo as $repo
 
-# Open PRs, annotated with the package name Dependabot puts in its title.
+# Open PRs whose head branch lives in this repository. A fork PR never covers an
+# alert, never counts as a previous sweep, and is never handed to the agent.
+# Each PR is annotated with what Dependabot encodes in its title and branch:
+#   title  "bump <pkg> from <old> to <new>"
+#   branch "dependabot/<slug>/[dir/]<pkg>-<new>"
 | ( [ .prs[]
-      | . + { bumped: ( [ (.title // "" | ascii_downcase | match("bump +([^ ]+) +from").captures[0].string) ] | first ) } ]
+      | select(.isCrossRepository == false)
+      | (.headRefName // "") as $h
+      | ( [ (.title // "" | ascii_downcase
+             | match("bump +([^ ]+) +from +[^ ]+ +to +([^ ]+)")
+             | {pkg: .captures[0].string, to: .captures[1].string}) ] | first ) as $t
+      | ( [ ($h | match("^dependabot/[^/]+/(.+)-(v?[0-9][^/]*)$")
+             | {path: .captures[0].string, to: .captures[1].string}) ] | first ) as $b
+      | . + { dependabot: (((.author.login // "") | test("^(app/)?dependabot(\\[bot\\])?$"))
+                           and ($h | startswith("dependabot/"))),
+              slug:       ( [ ($h | ascii_downcase | match("^dependabot/([^/]+)/").captures[0].string) ] | first ),
+              title_bump:  $t,
+              branch_bump: $b } ]
   ) as $prs
 
 # Grouped Dependabot PRs ("Bump the npm_and_yarn group with 3 updates") name no
 # package, so coverage can't be decided from metadata — the agent reads the diff.
-# Keyed by Dependabot's ecosystem slug so an npm group PR isn't flagged on a pip batch.
+# Keyed by Dependabot's ecosystem slug so an npm group PR isn't flagged on a pip
+# batch. A grouped title on a non-Dependabot branch has no slug and is dropped.
 | ( [ $prs[]
-      | select((.title // "") | ascii_downcase | test("bump the .* group"))
-      | { number, slug: ( [ (.headRefName | ascii_downcase | match("^dependabot/([^/]+)/").captures[0].string) ] | first ) } ]
+      | select(.dependabot and ((.title // "") | ascii_downcase | test("bump the .* group")))
+      | {number, slug} ]
   ) as $grouped
 
 | ( [ .alerts[]
@@ -120,14 +142,24 @@ def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": 
           url:              .html_url } ]
   ) as $alerts
 
-# An open PR covers an alert when its title bumps that exact package, or its
-# branch is dependabot/<eco>/[path/]<pkg>-<version>. The trailing "-[0-9]" stops
-# `next` matching a `next-auth` branch.
+# An open PR covers an alert only when Dependabot opened it from this repository
+# on this ecosystem's branch slug, it names that exact package (title, or the
+# last path segments of the branch, so `next` never matches `next-auth`), and it
+# bumps to at least the alert's patched version.
 | ( [ $alerts[]
       | . as $a
+      | ($a.package | segs) as $key
       | ( [ $prs[]
-            | select( (.bumped == ($a.package | ascii_downcase))
-                      or ((.headRefName | norm) | test("-" + ($a.package | norm) + "-[0-9]")) ) ]
+            | select(.dependabot and .slug == ($a.ecosystem | ecoslug) and $a.patched != null)
+            | select(
+                ( .title_bump != null
+                  and (.title_bump.pkg | segs) == $key
+                  and (.title_bump.to | covers($a.patched)) )
+                or
+                ( .branch_bump != null
+                  and ((.branch_bump.path | segs) as $p
+                       | ($p | length) >= ($key | length) and $p[-($key | length):] == $key)
+                  and (.branch_bump.to | covers($a.patched)) ) ) ]
           | first ) as $pr
       | $a + { covering_pr: (if $pr then {number: $pr.number, url: $pr.url, branch: $pr.headRefName} else null end) } ]
   ) as $alerts
@@ -162,10 +194,10 @@ def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": 
           max_severity_rank: ( [ $g[].severity | sevrank ] | max ),
           manifests: ( [ $g[].manifests[] ] | unique ),
           existing_sweep_pr: ( [ $prs[]
-              | select((.headRefName | norm) | startswith("security-sweep-" + ($eco | norm)))
-              | {number, branch: .headRefName, url} ] | first ),
+              | select(.headRefName | test("^security-sweep/" + ($eco | norm) + "-[0-9]{8}$"))
+              | {number, branch: .headRefName, url, author: (.author.login // null)} ] | first ),
           verify_against_prs: ( [ $grouped[]
-              | select(.slug == null or .slug == ($eco | ecoslug))
+              | select(.slug == ($eco | ecoslug))
               | .number ] ),
           fixes: ( $g | sort_by(- (.severity | sevrank)) ) } ],
     covered: $covered,

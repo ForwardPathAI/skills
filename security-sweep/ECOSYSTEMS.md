@@ -7,12 +7,13 @@ Every section answers the same four questions:
 - **Detect** — which package manager the repo actually uses.
 - **Bump** — the package is declared in a manifest (`fixes[].manifests` is non-empty).
 - **Transitive** — the package is in no manifest; something else pulls it in.
-- **Verify** — the query that proves the *resolved* version is at or above `target`.
+- **Verify** — the query that proves the *resolved* version is at or above `target`, or exactly `target` for a pin.
 
 Two rules hold everywhere:
 
 1. Never hand-edit a lockfile. If the tool can't write it, the batch is needs-human.
 2. An override/resolution pin is the last rung, not the first. Bump the parent that pulls the vulnerable version when you can — a pin outlives the vulnerability and silently freezes a transitive dep.
+3. A pin names `target` exactly. An open range such as `>=<target>` lets the resolver install the newest release, including a new major, that neither the advisory nor a reviewer named.
 
 ## npm (ecosystem `npm`)
 
@@ -42,9 +43,9 @@ bun update <pkg>
 If the resolution is still vulnerable, pin in the **root** `package.json`:
 
 ```json
-{ "pnpm": { "overrides": { "<pkg>": ">=<target>" } } }   // pnpm
-{ "overrides": { "<pkg>": ">=<target>" } }               // npm, bun
-{ "resolutions": { "<pkg>": ">=<target>" } }             // yarn
+{ "pnpm": { "overrides": { "<pkg>": "<target>" } } }   // pnpm
+{ "overrides": { "<pkg>": "<target>" } }               // npm, bun
+{ "resolutions": { "<pkg>": "<target>" } }             // yarn
 ```
 
 **Install + verify**:
@@ -74,7 +75,7 @@ pip-compile requirements.in
 # plain requirements.txt: edit the pin in place
 ```
 
-**Transitive** — uv and poetry resolve it from the constraint alone; for pip-tools add the pin to `requirements.in` as an explicit constraint. Bare `requirements.txt`: add `<pkg>>=<target>` as its own line.
+**Transitive** — uv and poetry resolve it from the constraint alone; for pip-tools add the pin to `requirements.in` as an explicit constraint. Bare `requirements.txt`: add `<pkg>==<target>` as its own line.
 
 **Install + verify**:
 
@@ -181,7 +182,7 @@ Outside the `Gemfile` range: edit the constraint, then `bundle update <gem>`.
 ## composer (ecosystem `composer`)
 
 ```bash
-composer require "<pkg>:>=<target>" -W        # -W updates dependencies as needed
+composer require "<pkg>:^<target>" -W         # -W updates dependencies as needed; ^ stays in target's major
 composer update <pkg> --with-dependencies     # already required, just stale
 ```
 
@@ -196,7 +197,7 @@ No reliable CLI edit — change the declaration:
 - Maven: the `<version>` in `pom.xml`, or the property/`<dependencyManagement>` entry that sets it.
 - Gradle: the version in `build.gradle[.kts]`, or the entry in `gradle/libs.versions.toml`.
 
-**Transitive** — Maven: add a `<dependencyManagement>` entry at `target`. Gradle: a constraint (`implementation("<pkg>") { version { require("<target>") } }`) or a `resolutionStrategy.force`.
+**Transitive** — Maven: add a `<dependencyManagement>` entry at `target`. Gradle: a constraint (`implementation("<pkg>") { version { strictly("<target>") } }`) or a `resolutionStrategy.force` at `target`.
 
 **Verify**:
 

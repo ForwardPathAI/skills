@@ -4,6 +4,12 @@ Agent skills published by [Forward Path](https://forwardpath.ai) for use with Cl
 
 ## Install
 
+To set up a project with the standard Forward Path skill set (our PR, release, and Linear skills plus vetted Effect, Drizzle, Better Auth, and writing skills), install the bootstrap skill and ask your agent to run it:
+
+```bash
+npx skills add forwardpathai/skills -s get-forwardpath-skills -a claude-code cursor codex -y
+```
+
 Install any skill in this repo with the [skills CLI](https://www.skills.sh/docs/cli):
 
 ```bash
@@ -50,6 +56,7 @@ npx skills add forwardpathai/skills/effort-estimate
 npx skills add forwardpathai/skills/eng-report-effort-estimate
 npx skills add forwardpathai/skills/setup-preview-env
 npx skills add forwardpathai/skills/t3-thread-follow
+npx skills add forwardpathai/skills/get-forwardpath-skills
 ```
 
 ## Skills
@@ -93,6 +100,7 @@ npx skills add forwardpathai/skills/t3-thread-follow
 | [eng-report-effort-estimate](./eng-report-effort-estimate) | Generate the combined Engineering Report + Effort Estimate document in Notion for a custom build — understanding check with price levers, gated generation, fixed-price effort estimation with internal QA phase, and a post-generation coverage audit. |
 | [setup-preview-env](./setup-preview-env) | Set up ephemeral per-pull-request Azure preview environments for a containerized app — shared/per-PR Terraform, GitHub Actions deploy/teardown, auth redirects, and runbooks distilled from the ButtconRAG preview lane. |
 | [t3-thread-follow](./t3-thread-follow) | Find T3 Code threads by title, ID, or description, then use their context, build on their work, or wait for a result across providers. |
+| [get-forwardpath-skills](./get-forwardpath-skills) | Install the standard Forward Path skill set into the current project for Claude Code, Cursor, and Codex — open-pr, maintain-pr, release, issue-writer, plus improve, unslop, grill-with-docs, and the Better Auth, Effect, and Drizzle skills. |
 
 ## Authoring
 

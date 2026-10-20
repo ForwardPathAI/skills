@@ -60,8 +60,14 @@ fetch_repo() {
     printf '%s\n' "$repo" >> "$SCRATCH/unreadable.txt"
     printf '[]\n' > "$SCRATCH/alerts-$repo.json"
   fi
-  if ! gh pr list --repo "$ORG/$repo" --state open --limit 200 \
-        --json number,title,headRefName,url,isCrossRepository,author > "$SCRATCH/prs-$repo.json" 2>/dev/null; then
+  # Coverage needs the complete open-PR list. A failed or truncated list makes
+  # the repo unreadable, so none of its alerts are planned from partial data.
+  if ! gh pr list --repo "$ORG/$repo" --state open --limit 1000 \
+        --json number,title,headRefName,url,isCrossRepository,author \
+        > "$SCRATCH/prs-$repo.json" 2> "$SCRATCH/prs-err-$repo.txt" \
+     || [ "$(jq length "$SCRATCH/prs-$repo.json")" -ge 1000 ]; then
+    printf '%s\n' "$repo" >> "$SCRATCH/unreadable.txt"
+    printf '[]\n' > "$SCRATCH/alerts-$repo.json"
     printf '[]\n' > "$SCRATCH/prs-$repo.json"
   fi
 }
@@ -70,12 +76,12 @@ export ORG SCRATCH
 
 xargs -P "$MAX_JOBS" -I{} bash -c 'fetch_repo "$1"' _ {} < "$SCRATCH/repos.txt"
 
-UNREADABLE=$(wc -l < "$SCRATCH/unreadable.txt" | tr -d ' ')
+UNREADABLE=$(sort -u "$SCRATCH/unreadable.txt" | wc -l | tr -d ' ')
 if [ "$UNREADABLE" -eq "$REPO_COUNT" ]; then
-  echo "security-sweep: every repo returned an error for /dependabot/alerts." >&2
+  echo "security-sweep: every repo returned an error for /dependabot/alerts or its open-PR list." >&2
   echo "  Likely a missing token scope. Fix: gh auth refresh -h github.com -s security_events" >&2
   echo "  First error was:" >&2
-  cat "$SCRATCH"/alerts-err-* 2>/dev/null | head -3 >&2
+  cat "$SCRATCH"/alerts-err-* "$SCRATCH"/prs-err-* 2>/dev/null | head -3 >&2
   exit 1
 fi
 
@@ -89,6 +95,9 @@ def covers($patched): plainver and (semver >= ($patched | semver));
 def norm:   ascii_downcase | gsub("[^a-z0-9]+"; "-");
 # Path-aware package key: "@types/node" -> ["types","node"], "g:a" -> ["g-a"].
 def segs:   ascii_downcase | ltrimstr("@") | gsub(":"; "-") | split("/") | map(gsub("[^a-z0-9]+"; "-"));
+# Directory key: "/src/Web/" and "src/web" -> ["src","web"]; root -> [].
+def dirsegs: ascii_downcase | ltrimstr("/") | rtrimstr("/")
+             | if . == "" then [] else split("/") | map(gsub("[^a-z0-9]+"; "-")) end;
 def sevrank: {"critical": 4, "high": 3, "medium": 2, "moderate": 2, "low": 1}[.] // 0;
 # Dependabot's branch/group slug per alert ecosystem.
 def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": "nuget",
@@ -103,7 +112,7 @@ def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": 
 # Open PRs whose head branch lives in this repository. A fork PR never covers an
 # alert, never counts as a previous sweep, and is never handed to the agent.
 # Each PR is annotated with what Dependabot encodes in its title and branch:
-#   title  "bump <pkg> from <old> to <new>"
+#   title  "bump <pkg> from <old> to <new>[ in /<dir>]"
 #   branch "dependabot/<slug>/[dir/]<pkg>-<new>"
 | ( [ .prs[]
       | select(.isCrossRepository == false)
@@ -111,12 +120,13 @@ def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": 
       | ( [ (.title // "" | ascii_downcase
              | match("bump +([^ ]+) +from +[^ ]+ +to +([^ ]+)")
              | {pkg: .captures[0].string, to: .captures[1].string}) ] | first ) as $t
+      | ( [ (.title // "" | ascii_downcase | match(" in +(/[^ ]*)$").captures[0].string) ] | first // "/" ) as $tdir
       | ( [ ($h | match("^dependabot/[^/]+/(.+)-(v?[0-9][^/]*)$")
              | {path: .captures[0].string, to: .captures[1].string}) ] | first ) as $b
       | . + { dependabot: (((.author.login // "") | test("^(app/)?dependabot(\\[bot\\])?$"))
                            and ($h | startswith("dependabot/"))),
               slug:       ( [ ($h | ascii_downcase | match("^dependabot/([^/]+)/").captures[0].string) ] | first ),
-              title_bump:  $t,
+              title_bump:  (if $t then $t + {dir: $tdir} else null end),
               branch_bump: $b } ]
   ) as $prs
 
@@ -145,21 +155,26 @@ def ecoslug: {"npm": "npm_and_yarn", "pip": "pip", "go": "go_modules", "nuget": 
 
 # An open PR covers an alert only when Dependabot opened it from this repository
 # on this ecosystem's branch slug, it names that exact package (title, or the
-# last path segments of the branch, so `next` never matches `next-auth`), and it
-# bumps to at least the alert's patched version.
+# last path segments of the branch, so `next` never matches `next-auth`) in the
+# alert manifest's directory, and it bumps to at least the alert's patched
+# version. A PR for one manifest never covers another manifest's alert.
 | ( [ $alerts[]
       | . as $a
       | ($a.package | segs) as $key
+      | ($a.manifest | split("/") | .[:-1] | join("/") | dirsegs) as $adir
       | ( [ $prs[]
             | select(.dependabot and .slug == ($a.ecosystem | ecoslug) and $a.patched != null)
             | select(
                 ( .title_bump != null
                   and (.title_bump.pkg | segs) == $key
+                  and (.title_bump.dir | dirsegs) == $adir
                   and (.title_bump.to | covers($a.patched)) )
                 or
                 ( .branch_bump != null
                   and ((.branch_bump.path | segs) as $p
-                       | ($p | length) >= ($key | length) and $p[-($key | length):] == $key)
+                       | ($p | length) >= ($key | length)
+                         and $p[-($key | length):] == $key
+                         and $p[:(($p | length) - ($key | length))] == $adir)
                   and (.branch_bump.to | covers($a.patched)) ) ) ]
           | first ) as $pr
       | $a + { covering_pr: (if $pr then {number: $pr.number, url: $pr.url, branch: $pr.headRefName} else null end) } ]
@@ -213,7 +228,7 @@ while read -r repo; do
      -f "$SCRATCH/plan.jq" >> "$SCRATCH/plans.jsonl"
 done < "$SCRATCH/repos.txt"
 
-UNREADABLE_JSON=$(jq -R . < "$SCRATCH/unreadable.txt" | jq -s 'sort')
+UNREADABLE_JSON=$(jq -R . < "$SCRATCH/unreadable.txt" | jq -s 'unique')
 
 jq -s --arg org "$ORG" --argjson unreadable "$UNREADABLE_JSON" '
   {

@@ -9,7 +9,7 @@ Every section answers the same four questions:
 - **Transitive** — the package is in no manifest; something else pulls it in.
 - **Verify** — the query that proves the *resolved* version is at or above `target`, or exactly `target` for a pin.
 
-Two rules hold everywhere:
+Three rules hold everywhere:
 
 1. Never hand-edit a lockfile. If the tool can't write it, the batch is needs-human.
 2. An override/resolution pin is the last rung, not the first. Bump the parent that pulls the vulnerable version when you can — a pin outlives the vulnerability and silently freezes a transitive dep.
@@ -70,19 +70,19 @@ yarn install && yarn why <pkg>
 ```bash
 uv lock --upgrade-package "<pkg>==<target>"     # uv (then uv sync)
 poetry update <pkg>                             # poetry; poetry add "<pkg>@^<target>" to lift the constraint
-# pip-tools: edit the pin in requirements.in, then
-pip-compile requirements.in
-# plain requirements.txt: edit the pin in place
+# pip-tools: edit the pin in the detected <reqs>.in, then
+pip-compile <reqs>.in                           # writes <reqs>.txt
+# plain requirements file: edit the pin in the detected <reqs>.txt in place
 ```
 
-**Transitive** — uv and poetry resolve it from the constraint alone; for pip-tools add the pin to `requirements.in` as an explicit constraint. Bare `requirements.txt`: add `<pkg>==<target>` as its own line.
+**Transitive** — uv and poetry resolve it from the constraint alone; for pip-tools add the pin to the detected `<reqs>.in` as an explicit constraint. Bare requirements file: add `<pkg>==<target>` to the detected `<reqs>.txt` as its own line. `<reqs>` is the manifest path from the plan, such as `requirements-prod`.
 
 **Install + verify**:
 
 ```bash
 uv sync && uv tree --package <pkg>
 poetry install && poetry show <pkg>
-pip install -r requirements.txt && pip show <pkg> | head -2
+pip install -r <reqs>.txt && pip show <pkg> | head -2
 ```
 
 **Checks**: `pytest` / `ruff check` / `mypy` only if the repo already configures them.
@@ -165,7 +165,7 @@ gh api /repos/<owner>/<action>/git/ref/tags/<target> -q .object.sha
 
 **Transitive** — a vulnerable action used by another action can't be fixed here; bump the outer action, or report needs-human.
 
-**Verify**: `grep -rn "<owner>/<action>@" .github/` shows no old pin left. There is no install step; the checks are whatever the workflows themselves run once the PR opens.
+**Verify**: `grep -rnE "uses: *<owner>/<action>@" .github/` lists every reference; each must name the planned tag or SHA, and a search for the old ref (`<owner>/<action>@<old>`) must find nothing. There is no install step; the checks are whatever the workflows themselves run once the PR opens.
 
 ## rubygems (ecosystem `rubygems`)
 

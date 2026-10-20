@@ -56,7 +56,7 @@ What the plan already decided, so you don't re-decide it:
 | `batches[].verify_against_prs` | Grouped Dependabot PRs ("Bump the npm_and_yarn group with 3 updates") for this ecosystem, opened by Dependabot from this repository, that name no package. Read their diffs before fixing — they may already cover part of the batch. |
 | `covered[]` | Alerts an open Dependabot PR from this repository bumps to at least the patched version. Skip them silently; they belong in the report only. |
 | `no_fix[]` | Alerts with no patched version. No PR is possible. Report them. |
-| `repos_unreadable[]` | Alerts API errored (disabled, or no permission). Report them — an unreadable repo is not a clean repo. |
+| `repos_unreadable[]` | The alerts API errored (disabled, or no permission), or the open-PR list failed or reached 1000 PRs, so coverage can't be decided. Report them — an unreadable repo is not a clean repo. |
 
 **Done when** every repo the script scanned lands in exactly one bucket: has batches, clean, unreadable, or its alerts are all in `covered`/`no_fix`. Reconcile the counts against `repos_scanned` before moving on.
 
@@ -64,7 +64,7 @@ What the plan already decided, so you don't re-decide it:
 
 Take `batches` in plan order (severity first). Then apply one split:
 
-**A major-version bump gets its own batch.** Compare `target` against the version in the manifest after cloning. A major jump can break the build, and batching it with safe patches means one breakage buries five good fixes. Split it onto its own branch — `security-sweep-major/<ecosystem>-<pkg>-<date>`, a different prefix so a later sweep never appends safe bumps to it — and mark the PR title `[breaking risk]`.
+**A major-version bump gets its own batch.** Compare `target` against the version in the manifest after cloning. A major jump can break the build, and batching it with safe patches means one breakage buries five good fixes. Split it onto its own branch — `security-sweep-major/<ecosystem>-<pkg>-<date>`, a different prefix so a later sweep never appends safe bumps to it — and mark the PR title `[breaking risk]`. A major batch never uses the standard batch's `existing_sweep_pr`.
 
 Rails for the whole sweep:
 
@@ -120,7 +120,7 @@ Read and follow [pr-open](../pr-open/SKILL.md) with this handoff:
 |---|---|
 | Mode / tracking | `prepared` / `none`; this sweep does not require Linear. |
 | Repository / base | The batch's repository and its default branch. |
-| Branch / existing PR | The checked-out `security-sweep/*` or `security-sweep-major/*` branch, plus `existing_sweep_pr` when present. |
+| Branch / existing PR | The checked-out `security-sweep/*` or `security-sweep-major/*` branch. Pass an existing PR only when its head is that branch: `existing_sweep_pr` for a standard batch. A major-version batch never reuses a `security-sweep/*` PR; reuse only an open same-repo PR on a `security-sweep-major/<ecosystem>-<pkg>-*` branch, after the Step 3 check. |
 | Allowed paths | Only the batch's manifests, lockfiles, and lock artifacts; for an `actions` batch, also the workflow and composite action files whose `uses:` lines it changed. |
 | Verification | Step 4 results, including package-resolution evidence and any documented pre-existing baseline failure. |
 | Title / commit message | `fix(deps): patch <N> vulnerable <ecosystem> dependencies`; retain `[breaking risk]` in the title for major-version batches. |

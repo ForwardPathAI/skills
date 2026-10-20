@@ -38,7 +38,7 @@ In stacked mode, capture the parent before creating the child. Commits already o
 
 Identify the exact paths and commits that belong to this request. Leave unrelated work alone. If there is no work to submit, stop without creating an issue or branch; when the current branch has an open PR, return its URL. Preserve a caller's explicit batch boundary, such as one dependency ecosystem.
 
-Check for an existing open PR for the intended head and base before creating anything. A supplied PR takes precedence after validation. An existing PR with a different base requires resolving that mismatch, not silently retargeting it or opening another one.
+Check for an existing open PR for the intended head and base before creating anything. A supplied PR takes precedence after validation. An existing PR with a different base than the user named requires resolving that mismatch: stop and ask whether to retarget the PR or open a new branch and PR. Do not silently do either.
 
 Complete when scope, mode, base, tracking policy, and any existing issue/PR are known.
 

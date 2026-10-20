@@ -24,7 +24,7 @@ Work one PR at a time. Check out its branch, stage only that PR's files or hunks
 
 ## After a parent merges
 
-Retarget the child to the parent's base (`gh pr edit <child> --base <new-base>`) and bring it up to date with that base. Prefer merging the new base into the child. If the parent was squash-merged and the child must be rebased (`git rebase --onto origin/<new-base> <old-parent-tip>`), that rewrites a published branch: push only with explicit authorization and `--force-with-lease` on the verified remote head. maintain-pr handles this upkeep.
+Rebase the child onto the new base (after a squash merge, `git rebase --onto origin/<new-base> <old-parent-tip>`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). This is the one place this workflow rewrites a published branch: lease against the child's verified remote head, and never force-push the default branch. maintain-pr handles later upkeep.
 
 ## Prepared
 

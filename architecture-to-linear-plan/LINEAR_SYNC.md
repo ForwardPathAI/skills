@@ -69,7 +69,7 @@ Once every issue exists, call issue-writer in `update` mode with its ID and only
 
 The skill must be safe to run twice:
 
-- Match against the `list_*` results before creating: projects by name and team, milestones by name within the project, and issues by title within the team and project. If found, `save_*` with the existing `id` to update; never create a second copy. If more than one matches, stop and ask which to use.
+- Match against the `list_*` results before creating: projects by name and team, milestones by name within the project, and issues by title within the team and project. If found, update it by its `id`: `save_project` or `save_milestone`, or issue-writer `update` for an issue (never `save_issue`). Never create a second copy. If more than one matches, stop and ask which to use.
 - Relations and `links` are append-only in the MCP — don't re-add ones already present.
 - If a partial run failed midway, re-running resumes: existing entities are updated, missing ones created.
 

@@ -103,14 +103,21 @@ docker run --rm -v "$SWEEP/<REPO>-box:/work" -w /work <toolchain-image> \
   GH_CONFIG_DIR=/tmp/no-gh <command>
 ```
 
-The host clone's `.git` never enters the sandbox, so a script can't plant hooks or Git config that run when the host commits or pushes. After the install, copy back only the batch's allowed paths that changed. Copy file contents only: a host-side copy follows symlinks, so a symlink planted in the copy could pull a host file into the repo, and a mode copy could make a file executable. For each path:
+The host clone's `.git` never enters the sandbox, so a script can't plant hooks or Git config that run when the host commits or pushes. After the container exits, copy back only the batch's allowed paths. Write them to `$SWEEP/<REPO>.paths`, one per line relative to the repo root, with a file-write tool rather than a shell command, so the shell never parses a repo-controlled name. Then copy file contents only. A host-side copy follows symlinks, so a symlink planted anywhere in a path could pull a host file into the repo, and a mode copy could make a file executable:
 
 ```bash
-src="$SWEEP/<REPO>-box/<path>" dst="$SWEEP/<REPO>/<path>"
-if [ -f "$src" ] && [ ! -L "$src" ] && [ ! -L "$dst" ]; then cat "$src" > "$dst"; else echo "REJECT <path>"; fi
+box=$(cd "$SWEEP/<REPO>-box" && pwd -P); repo=$(cd "$SWEEP/<REPO>" && pwd -P)
+while IFS= read -r p; do
+  case "$p" in ''|/*|..|../*|*/..|*/../*) echo "REJECT $p"; continue ;; esac
+  src="$box/$p" dst="$repo/$p"; dir=$(dirname "$dst")
+  if [ -f "$src" ] && [ "$(realpath "$src")" = "$src" ] &&
+     [ "$(realpath "$dir")" = "$dir" ] && [ ! -L "$dst" ]; then
+    cat "$src" > "$dst"
+  else echo "REJECT $p"; fi
+done < "$SWEEP/<REPO>.paths"
 ```
 
-A `REJECT` drops the batch to needs-human. Then confirm on the host that `git status --short` lists nothing else and `git diff --summary` shows no mode or type change.
+`realpath` resolves every component, so a path that differs from its resolved form has a symlink, `.`, or `..` in it. Any `REJECT` drops the batch to needs-human. Then confirm on the host that `git status --short` lists nothing else and `git diff --summary` shows no mode or type change.
 
 That `env -u … GH_CONFIG_DIR=…` prefix is `no_gh`, kept as defense in depth. The container supplies the isolation; `no_gh` only keeps a stray token out of the command's environment.
 

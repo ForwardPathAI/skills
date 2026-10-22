@@ -1,15 +1,15 @@
 ---
 name: execute
-description: Take one task (an improve plan, a Linear issue, or a written brief) from spec to merged PR. A cheaper executor subagent writes the code in an isolated worktree; you review its diff as tech lead, run code-review then simplify, open the PR with open-pr, and land it with auto-pilot-pr.
+description: Run one written spec (an improve plan, a Linear issue, or a GitHub issue) through to a merged PR. A cheaper executor subagent writes the code in an isolated worktree; you review its diff as tech lead, run code-review then simplify, open the PR with open-pr, and land it with auto-pilot-pr.
 disable-model-invocation: true
 ---
 
 # Execute
 
-You are the **tech lead**. A cheaper executor writes the code in its own worktree. You write the spec, review the diff, run the quality gates, and ship.
+You are the **tech lead**. The spec is already written. A cheaper executor writes the code in its own worktree; you check the spec, review the diff, run the quality gates, and ship.
 
 ```
-- [ ] Step 1: Write the spec
+- [ ] Step 1: Load the spec
 - [ ] Step 2: Dispatch the executor
 - [ ] Step 3: Review and give a verdict
 - [ ] Step 4: Land the diff
@@ -46,28 +46,28 @@ code-review and simplify ship with Claude Code; resolve them by name. Name every
 - The current branch has no open PR (`gh pr view` finds none). Otherwise open-pr would add this work to that PR and auto-pilot-pr would merge it. If one exists, stop and ask.
 - Record the base (user-named, else the repo default branch) and the start commit (`git rev-parse HEAD`).
 
-## Step 1: Write the spec
+## Step 1: Load the spec
 
-The executor has not seen this conversation. Everything it needs goes in one self-contained spec.
+This skill runs a spec someone already wrote; it doesn't write one. Load it whole. The executor gets only the spec, never this conversation.
 
-| Input | Spec source |
+| Input | Load with |
 |---|---|
-| Plan file (e.g. `plans/003-*.md` from improve) | The plan itself. If a dependency in `plans/README.md` isn't DONE, stop and name it. Then run its drift check; if in-scope files changed since `Planned at`, refresh the plan first. |
+| Plan file (e.g. `plans/003-*.md` from improve) | Read the file. If a dependency in `plans/README.md` isn't DONE, stop and name it. |
 | Linear issue (`FOR-123`) | Linear MCP `get_issue`. Keep the identifier: Step 7 links this issue instead of filing a new one. |
 | GitHub issue | `gh issue view`. |
-| Written brief | Investigate the codebase and write the spec yourself. |
 
-The spec must hold:
+Then check it is ready to run. It must hold:
 
 - The goal and why it matters.
 - In-scope files, plus files that look related but are out of scope.
-- The repo's build, test, lint, and typecheck commands, read from its config and CI.
 - **Done criteria**: commands with expected results, not prose.
 - STOP conditions: what should make the executor stop and report instead of improvising.
 
-Fill gaps from the codebase first. Ask the user only what's left, one question at a time, each with a recommended answer.
+If the spec stamps a commit (`Planned at`, `Written against`), run its drift check (`git diff --stat <sha> HEAD -- <in-scope files>`). If in-scope files changed since then, the spec is stale.
 
-**Done when** every done criterion is a command with an expected result and the spec lists its in-scope files.
+If anything is missing or stale, stop. Name each gap and point to the skill that fixes it: improve `review-plan` or `reconcile` for a plan, ticket-refiner for a Linear issue, its author for a GitHub issue. Don't patch the spec yourself; a spec you rewrite is a spec no one reviewed.
+
+**Done when** the spec has every item above and passes its drift check.
 
 ## Step 2: Dispatch the executor
 

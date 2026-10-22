@@ -1,0 +1,39 @@
+# Spec drift
+
+The lead reconciles drift before dispatch and whenever the executor reports a mismatch. A changed file is a reason to inspect its behavior. Reconciliation updates references and accounts for existing work while preserving the requested outcome.
+
+This procedure replaces generic stale-code, excerpt-mismatch, and path-whitelist stops in older specs only for verified equivalents. Explicit exclusions and task-specific STOP conditions remain binding.
+
+## Verify the current equivalents
+
+Read the original goal, requirements, done criteria, and exclusions. Use relevant diffs, rename history, symbol searches, callers, and tests to establish where each referenced responsibility lives now. Read the current implementation before accepting a proposed mapping.
+
+- Map moved files, renamed symbols, and extracted code to their current owners. Include only the successor files needed for the original task. An explicitly excluded file stays excluded even if it now owns that responsibility.
+- Treat edits to an existing file as compatible only after checking that the original change still applies to its current contracts and behavior.
+- Replace an obsolete verification command only when the current command exercises the same required behavior and retains the original expected result and coverage. A passing narrower test is insufficient.
+- Verify already-implemented requirements against the task's start commit and the done criteria. Distinguish existing behavior from the executor's new changes. Record satisfied criteria, execute the remaining work, and rerun all criteria after implementation. If all criteria held before this task's implementation, report ALREADY SATISFIED instead of creating a duplicate change or PR.
+
+**Done when:** each affected reference has a verified current equivalent, and each acceptance criterion is accounted for as already satisfied or remaining. Unproven equivalence is an unresolved gap.
+
+## Record the amendment
+
+Append a reconciliation amendment to the execution brief, preserving the original spec. Record:
+
+- The reviewed commit and original spec identifier or path, including its stamped commit when present.
+- Old-to-current file, symbol, and command mappings, with code/history/test evidence for each. Record compatible edits even when the path stayed the same.
+- The complete resolved in-scope file list. Keep explicit exclusions intact.
+- Any generic stale-reference STOP condition superseded by a verified mapping, so the executor can apply the amendment alongside the original spec.
+- Every done criterion, its current verification command and expected result, and evidence for anything already satisfied.
+- Remaining implementation work and a statement that the goal, contracts, acceptance meaning, and task-specific STOP conditions are unchanged.
+
+For example: `src/orders.ts` was split into `orders/service.ts` and `orders/routes.ts`; the requested validation now belongs in `orders/service.ts`. Cite the extraction commit and current caller/test evidence, then list the resolved files and verification commands.
+
+Continue autonomously once those claims are verified. Include the original spec and amendment in the executor's context, and summarize the amendment in the PR and final report. A later amendment replaces its earlier mapping while preserving the evidence trail. Executor resumption uses Step 3's existing revision budget.
+
+**Done when:** the brief contains a complete, evidence-backed scope and verification mapping that the executor and reviewer can use without this conversation.
+
+## Escalate unresolved changes
+
+Block and name the exact decision when proceeding would require a new product behavior, a changed contract, weaker acceptance criteria, work beyond verified successors, or crossing an explicit exclusion. Also block when the available code and history cannot establish an unambiguous mapping, or a task-specific STOP condition holds.
+
+Preserve completed work and report the affected requirement, observed evidence, and smallest clarification needed. Reconciliation does not authorize the lead to rewrite the source ticket or plan, alter its intended outcome, or remove an acceptance criterion.

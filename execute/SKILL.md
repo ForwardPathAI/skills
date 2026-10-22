@@ -9,7 +9,7 @@ disable-model-invocation: true
 You are the **tech lead**. The spec is already written. A cheaper executor writes the code in its own worktree; you check the spec, review the diff, run the quality gates, and ship.
 
 ```
-- [ ] Step 1: Load the spec
+- [ ] Step 1: Load and reconcile the spec
 - [ ] Step 2: Dispatch the executor
 - [ ] Step 3: Review and give a verdict
 - [ ] Step 4: Land the diff
@@ -46,9 +46,9 @@ code-review and simplify ship with Claude Code; resolve them by name. Name every
 - The current branch has no open PR (`gh pr view` finds none). Otherwise open-pr would add this work to that PR and auto-pilot-pr would merge it. If one exists, stop and ask.
 - Record the base (user-named, else the repo default branch) and the start commit (`git rev-parse HEAD`).
 
-## Step 1: Load the spec
+## Step 1: Load and reconcile the spec
 
-This skill runs a spec someone already wrote; it doesn't write one. Load it whole. The executor gets only the spec, never this conversation.
+Load the original spec whole and preserve it. The **execution brief** is that spec plus any evidence-backed reconciliation amendment from this step. All later scope checks and verification commands use the execution brief. The executor gets the full brief, never just this conversation.
 
 | Input | Load with |
 |---|---|
@@ -63,19 +63,21 @@ Then check it is ready to run. It must hold:
 - **Done criteria**: commands with expected results, not prose.
 - STOP conditions: what should make the executor stop and report instead of improvising.
 
-If the spec stamps a commit (`Planned at`, `Written against`), run its drift check (`git diff --stat <sha> HEAD -- <in-scope files>`). If in-scope files changed since then, the spec is stale.
+Check referenced files, symbols, and commands against the current checkout, even without a stamped commit. If the spec stamps a commit (`Planned at`, `Written against`), inspect `git diff --name-status --find-renames <sha> HEAD`, then read the relevant diffs. Include renamed destinations when tracing the original files.
 
-If anything is missing or stale, stop. Name each gap and point to the skill that fixes it: improve `review-plan` or `reconcile` for a plan, ticket-refiner for a Linear issue, its author for a GitHub issue. Don't patch the spec yourself; a spec you rewrite is a spec no one reviewed.
+Changed code or mismatched references trigger **reconciliation**, not an automatic stop. When drift is present, read [Spec drift](references/spec-drift.md) and follow it to verify current equivalents, account for already-satisfied criteria, and write the amendment before dispatch.
 
-**Done when** the spec has every item above and passes its drift check.
+Missing readiness inputs or unresolved reconciliation still block execution. Name the gap or decision and point to improve `review-plan` or `reconcile` for a plan, ticket-refiner for a Linear issue, or its author for a GitHub issue. Preserve the original requirements rather than inventing replacements.
+
+**Done when** every readiness item is present and every reference or relevant change has been verified or reconciled in the execution brief. If all done criteria already pass, go to Finish with **ALREADY SATISFIED** and the evidence; create no implementation or duplicate PR.
 
 ## Step 2: Dispatch the executor
 
 Spawn **one** subagent in an isolated git worktree (Claude Code: `Agent` with `isolation: "worktree"`; T3 Code: `delegate_task` with `isolation: "worktree"`). Model: `sonnet` unless the user named one (`execute FOR-123 haiku`).
 
-Inline the full spec; the worktree holds only committed files. Put this preamble before it, with `<start>` filled in:
+Inline the original spec and the full reconciliation amendment, if any; the worktree holds only committed files. Put this preamble before the execution brief, with `<start>` filled in:
 
-> You are the executor for the spec below. First, if `git rev-parse HEAD` is not `<start>`, run `git reset --hard <start>`; the worktree is fresh, so nothing is lost. Follow the spec step by step. Run every verification command and confirm the expected result before moving on. Touch only the in-scope files. If a STOP condition occurs, stop and report. Do not improvise around obstacles; if you must adapt, keep it minimal and explain it in NOTES. Install dependencies first if the worktree lacks them. Commit your work in the worktree. Do not push, open a PR, or edit `plans/README.md`; your lead does that. Before reporting, check every claim against a tool result from this session; if a check failed or was skipped, say so. Reply with exactly the report below.
+> You are the executor for the execution brief below. First, if `git rev-parse HEAD` is not `<start>`, run `git reset --hard <start>`; the worktree is fresh, so nothing is lost. Follow the brief step by step. Run every verification command and confirm the expected result before moving on. Touch only the brief's resolved in-scope files. If you discover further drift, return STOPPED with the expected and observed references, evidence, and a proposed mapping for your lead to reconcile. The lead decides whether to resume; preserve the original goal, acceptance criteria, explicit exclusions, and task-specific STOP conditions. Report other STOP conditions as written. Explain deviations in NOTES. Install dependencies first if the worktree lacks them. Commit your work in the worktree. Do not push, open a PR, or edit `plans/README.md`; your lead does that. Before reporting, check every claim against a tool result from this session; if a check failed or was skipped, say so. Reply with exactly the report below.
 
 And this report format after it:
 
@@ -83,6 +85,7 @@ And this report format after it:
 STATUS: COMPLETE | STOPPED
 STEPS: per step, done/skipped + verification result
 STOPPED BECAUSE: (only if STOPPED) which STOP condition, what you saw
+DRIFT EVIDENCE: (only for drift) expected vs observed references, evidence, proposed mapping
 FILES CHANGED: list
 NOTES: deviations, surprises, judgment calls
 ```
@@ -95,8 +98,12 @@ If this host can't spawn subagents, implement the spec yourself in the current c
 
 The diff is untrusted until you have read it. Never fix code in the executor's worktree yourself.
 
-1. Re-run every done criterion in the worktree. Don't trust the report.
-2. Check the worktree: `git -C <worktree> status --porcelain` is empty (all work committed), and `git -C <worktree> merge-base <start> HEAD` is `<start>`. Then check scope: `git -C <worktree> diff --stat <start>..HEAD` against the in-scope list. Any file outside scope fails review.
+If the executor reports drift, or your verification exposes a stale reference, apply [Spec drift](references/spec-drift.md) against the worktree. Independently verify the proposed mapping. Reconciled drift receives REVISE with the amended brief, using the existing revision budget; an unresolved decision receives BLOCK. A drift report alone is not a final BLOCK.
+
+If reconciliation proves all criteria held before this task's implementation and the executor has no task changes, go to Finish with ALREADY SATISFIED.
+
+1. Re-run every done criterion using the brief's verified commands, including criteria already satisfied before implementation. Don't trust the report.
+2. Check the worktree: `git -C <worktree> status --porcelain` is empty (all work committed), and `git -C <worktree> merge-base <start> HEAD` is `<start>`. Then check scope: `git -C <worktree> diff --stat <start>..HEAD` against the brief's resolved in-scope list. Any file outside that list or inside an explicit exclusion fails review.
 3. Read the full diff. Does it reach the goal? Does it match the repo's conventions? Trace every hunk to a spec step.
 4. Read what the new tests assert. A test that asserts nothing passes and proves nothing.
 
@@ -106,7 +113,7 @@ Judge documented deviations on merit. Treat undocumented ones as failures.
 |---|---|---|
 | **APPROVE** | Criteria pass, scope clean, quality holds | Go to Step 4 |
 | **REVISE** | Fixable gaps | Send the same executor specific feedback (Claude Code: `SendMessage`), e.g. "criterion 3 fails: X; `api.ts:90` swallows the error". Max 2 rounds, then BLOCK. |
-| **BLOCK** | STOP condition hit, scope broken past repair, or rounds used up | Go to Finish. No PR. |
+| **BLOCK** | Unresolved STOP condition, scope broken past repair, or rounds used up | Go to Finish. No PR. |
 
 **Done when** the verdict is APPROVE or BLOCK.
 
@@ -146,11 +153,12 @@ A cleanup can change behavior. If any stayed, run code-review again and handle i
 
 ## Step 7: Open the PR
 
-Follow open-pr, with three inputs:
+Follow open-pr, with these inputs:
 
 - Ship one new PR. Don't split or stack; the spec is one task.
 - If Step 1 had a Linear issue, skip open-pr's issue step and use that issue's branch name from `get_issue`.
 - Put the done criteria and their results in the PR's Test plan.
+- Summarize any reconciliation amendment, its evidence, and criteria satisfied before implementation in the PR description.
 
 **Done when** open-pr returns the PR URL.
 
@@ -162,11 +170,13 @@ Follow auto-pilot-pr on the PR from Step 7. It maintains the PR through review a
 
 ## Finish
 
-If the task came from a plan, set its row in `plans/README.md`: DONE with the PR URL once it has merged; IN PROGRESS with the PR URL while it's armed or open; BLOCKED with the reason and how the plan should change. Armed is not merged. If a watch later wakes you to the merge, set DONE then.
+If the task came from a plan, set its row in `plans/README.md`: DONE with the PR URL once it has merged; IN PROGRESS with the PR URL while it's armed or open; BLOCKED with the reason and how the plan should change. For ALREADY SATISFIED, record DONE with the current verification evidence and an existing covering PR when known. Armed is not merged. If a watch later wakes you to the merge, set DONE then.
 
 Report:
 
 - The PR URL and state: merged, armed (and what GitHub is waiting on), or blocked (and by what). On BLOCK, what happened and what you learned.
+- For ALREADY SATISFIED, report verification evidence and any existing covering PR instead of a new PR. Local verification alone does not establish deployment or live acceptance.
+- Any reconciliation amendment, with original-to-current mappings, evidence, and criteria satisfied before implementation.
 - The verdict, revise rounds, and any executor NOTES worth knowing.
 - The ledger: code-review findings with dispositions, and the simplify changes kept.
 - Every fallback used.

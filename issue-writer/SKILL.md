@@ -11,7 +11,7 @@ Three properties make an issue executable:
 
 1. **Self-contained context** — everything needed is in the issue: paths, code excerpts, conventions, commands. If it references "the pattern we discussed," it is broken.
 2. **Verification gates** — requirements and done criteria are commands with expected results, never judgments ("works correctly").
-3. **Hard boundaries and escape hatches** — an explicit out-of-scope list, and STOP conditions so the executor reports back instead of improvising when reality doesn't match the issue.
+3. **Hard boundaries and escape hatches** — explicit exclusions and STOP conditions for unresolved decisions, with evidence-backed reconciliation for references that moved.
 
 ## Hard rules
 
@@ -76,12 +76,21 @@ enough that the executor can confirm it's looking at the right thing.
 
 ## Scope
 
-**In scope** (the only files to modify):
+**In scope** (these files or verified successors recorded under Drift reconciliation):
 - `src/orders/api.ts`
 - `src/orders/api.test.ts` (create)
 
 **Out of scope** (do NOT touch, even though they look related):
 - [File or change, with one line on why it's excluded]
+
+## Drift reconciliation
+Before implementation, verify the referenced files, symbols, commands, and current behavior. Use code, history, callers, and tests to map moved or extracted responsibilities and confirm compatible edits. A changed path or excerpt alone calls for reconciliation.
+
+Record an amendment with the reviewed commit, old-to-current mappings and evidence, resolved in-scope files, and verification commands. Preserve this issue's goal, contracts, acceptance meaning, explicit exclusions, and task-specific STOP conditions. Replacement commands must retain the required behavior, expected result, and coverage.
+
+When a lead is coordinating execution, return newly discovered drift with evidence and a proposed mapping for the lead to verify and resume. When working alone, apply the same checks before continuing. Verified reconciliation needs no routine user confirmation. Explicitly excluded files remain excluded even when code moved into them.
+
+Verify already-satisfied criteria and implement only the remaining work. Rerun all criteria after implementation. If all criteria already pass, report the evidence instead of producing a duplicate change or PR. Include amendments in the execution handoff and PR description when a PR is opened.
 
 ## Requirements
 - [ ] [Specific, testable thing the executor must do — exact files and symbols]
@@ -96,14 +105,14 @@ enough that the executor can confirm it's looking at the right thing.
 Machine-checkable. ALL must hold:
 - [ ] `<test command>` exits 0, including N new tests
 - [ ] `<typecheck/lint command>` exits 0, no new errors
-- [ ] No files outside the in-scope list are modified (`git status`)
+- [ ] All changed files are in the resolved in-scope list, with any successor mappings documented; no explicit exclusions are touched (`git status`)
 
 ## STOP conditions
 Stop and comment on this issue instead of improvising if:
-- The code at the "Current state" locations doesn't match the excerpts
-  (the repo has drifted since this issue was written).
+- Current code and history cannot establish an unambiguous equivalent for a referenced responsibility or verification command.
+- Proceeding requires changing the goal, a contract, or acceptance meaning, or weakening verification coverage.
 - A verification command fails twice after a reasonable fix attempt.
-- The fix appears to require touching an out-of-scope file.
+- The fix requires a file beyond the listed scope and verified successors, or touches an explicit exclusion.
 - [Any assumption specific to this issue that, if false, invalidates the approach]
 
 ## Dependencies
@@ -131,7 +140,7 @@ If you can't satisfy all four in one issue, split (see [Splitting large work](sp
 - Could an executor that has never seen this repo start with only the issue and the repo? Any knowledge from this session must be inlined.
 - Is every acceptance check a command with an expected result, not a judgment ("make sure it works")?
 - Does every requirement name exact files and symbols, not "the relevant module"?
-- Are the STOP conditions specific to this issue's actual risks, not boilerplate?
+- Does the issue permit evidence-backed drift reconciliation while reserving STOP conditions for unresolved mappings, changed requirements, explicit exclusions, and task-specific risks?
 - **Bugs** include reproduction — error, steps, expected vs actual.
 - Team, priority, and labels are set in Linear; project follows the placement rules and may be absent; dependencies stated or "None".
 - No secret values anywhere in the issue — locations and credential types only.

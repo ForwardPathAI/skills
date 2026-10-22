@@ -1,6 +1,6 @@
 ---
 name: execute
-description: Run one written spec (an improve plan, a Linear issue, or a GitHub issue) through to a merged PR. A cheaper executor subagent writes the code in an isolated worktree; you review its diff as tech lead, run code-review then simplify, open the PR with open-pr, and land it with auto-pilot-pr.
+description: Run one written spec (an improve plan, a Linear issue, or a GitHub issue) through to a PR that has merged or is armed to merge. A cheaper executor subagent writes the code in an isolated worktree; you review its diff as tech lead, run code-review then simplify, open the PR with open-pr, and land it with auto-pilot-pr.
 disable-model-invocation: true
 ---
 
@@ -40,7 +40,7 @@ code-review and simplify ship with Claude Code; resolve them by name. Name every
 
 ## Preflight
 
-- The repo has a GitHub remote and `gh auth status` passes.
+- `git remote get-url origin` points at GitHub (open-pr pushes to `origin`) and `gh auth status` passes.
 - open-pr's prerequisites hold (Linear MCP, issue-writer), unless the user said "no PR".
 - The working tree is clean. Step 4 lands the executor's work as uncommitted changes, so unrelated edits would ride into the PR. If dirty, stop and ask.
 - The current branch has no open PR (`gh pr view` finds none). Otherwise open-pr would add this work to that PR and auto-pilot-pr would merge it. If one exists, stop and ask.
@@ -138,9 +138,11 @@ After each batch of fixes, re-run the done criteria, then run code-review again.
 
 ## Step 6: simplify gate
 
-Stage everything first (`git add -A`), so `git diff` afterwards shows only simplify's edits. Run simplify on the current diff; it applies its own cleanups. Then re-run the done criteria and check `git status`. Revert any cleanup that breaks a criterion or touches a file outside scope (`git restore <file>` or `git restore -p`). Log what stayed in the ledger.
+Stage everything first (`git add -A`), so `git diff` then shows only simplify's edits. Run simplify on the current diff; it applies its own cleanups. Then re-run the done criteria and check `git status`. Revert any cleanup that breaks a criterion or touches a file outside scope (`git restore <file>` or `git restore -p`). Log what stayed in the ledger.
 
-**Done when** the done criteria pass on the post-simplify tree and every changed file is in scope.
+A cleanup can change behavior. If any stayed, run code-review again and handle its findings as in Step 5. If a finding traces to a cleanup, revert that cleanup rather than fix around it.
+
+**Done when** the done criteria pass on the post-simplify tree, code-review raises no new valid findings on it, and every changed file is in scope.
 
 ## Step 7: Open the PR
 
@@ -160,7 +162,7 @@ Follow auto-pilot-pr on the PR from Step 7. It maintains the PR through review a
 
 ## Finish
 
-If the task came from a plan, set its row in `plans/README.md`: DONE with the PR URL, or BLOCKED with the reason and how the plan should change.
+If the task came from a plan, set its row in `plans/README.md`: DONE with the PR URL once it has merged; IN PROGRESS with the PR URL while it's armed or open; BLOCKED with the reason and how the plan should change. Armed is not merged. If a watch later wakes you to the merge, set DONE then.
 
 Report:
 

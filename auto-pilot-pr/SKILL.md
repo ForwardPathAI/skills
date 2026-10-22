@@ -48,7 +48,7 @@ Anything that changes the PR while armed (new feedback, a failed check, auto-mer
 Finish when the PR has merged, is blocked, or is armed with no way to watch it. Remove any watch you registered, then report one state:
 
 - **Merged**: merge commit SHA and method.
-- **Armed**: head SHA, method, what GitHub is waiting on (whose approval, which checks), and that nothing will answer new feedback.
+- **Armed**: head SHA, method, what GitHub is waiting on (whose approval, which checks), and, with no watch, that nothing will answer new feedback and a push by anyone with write access can merge without a new pass. Tell the user `gh pr merge <pr> --disable-auto` turns it off.
 - **Blocked**: maintain-pr's blocker, or why auto-merge couldn't be armed.
 
 Include maintain-pr's report: feedback dispositions, validation, and Greptile status. "Armed" is not "ready to merge"; say which one you mean.

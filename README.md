@@ -24,6 +24,8 @@ npx skills add forwardpathai/skills/open-pr
 npx skills add forwardpathai/skills/open-pr-with-screenshots
 npx skills add forwardpathai/skills/release
 npx skills add forwardpathai/skills/maintain-pr
+npx skills add forwardpathai/skills/auto-pilot-pr
+npx skills add forwardpathai/skills/execute
 npx skills add forwardpathai/skills/cloud-agent-pr-stats
 npx skills add forwardpathai/skills/cloud-agent-triage
 npx skills add forwardpathai/skills/backlog-hygiene
@@ -67,6 +69,8 @@ npx skills add forwardpathai/skills/get-forwardpath-skills
 | [open-pr-with-screenshots](./open-pr-with-screenshots) | Extend normal, stacked, or existing PR work with verified screenshots of the actual UI changes, embedded in the PR description. Install with `open-pr`. |
 | [release](./release) | Cut a production GitHub release from the default branch — semver tag, release notes, breaking-change gate, and CI watch. |
 | [maintain-pr](./maintain-pr) | Maintain an open GitHub PR through Greptile and human review feedback, merge conflicts, and CI failures — triage every finding, fix, validate, push, reply/resolve, and recheck the latest head until it is ready or concretely blocked. |
+| [auto-pilot-pr](./auto-pilot-pr) | Run maintain-pr until the latest head is ready, then arm GitHub auto-merge on it. Disarms before each of its own pushes, so its unverified heads never merge. Install with `maintain-pr`. |
+| [execute](./execute) | Take one task (improve plan, Linear issue, or brief) to a merged PR: an executor subagent builds it in a worktree, the lead agent reviews the diff, then runs code-review, simplify, open-pr, and auto-pilot-pr. Install with `open-pr`, `issue-writer`, `maintain-pr`, and `auto-pilot-pr`. |
 | [cloud-agent-pr-stats](./cloud-agent-pr-stats) | Count PRs opened by cloud coding agents (Cursor, Codex, Devin, Claude, Copilot) across a GitHub org, by branch-name prefix. |
 | [cloud-agent-triage](./cloud-agent-triage) | Evaluate whether Linear tickets suit autonomous Cursor cloud agents (why yes / why not), triage a repo's backlog honoring blockers, and optionally delegate the ready ones to Cursor. |
 | [backlog-hygiene](./backlog-hygiene) | Scan a Linear project's backlog for relevance — flag stale, already-shipped, or duplicated issues using update age, code/PR evidence, and ticket similarity — then apply confirmed actions one at a time. |

@@ -25,7 +25,7 @@ When existing infra conflicts with these conventions, identify the conflict and 
 
 Pattern: **`<type>-<app>-<env>[-<component>]`**, lowercase, hyphen-separated, with [CAF abbreviations](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations) for `<type>`. Examples below use app `orbit` for client `acme`.
 
-- **`<app>`** — short product slug, 10 characters or fewer (`orbit`, not `orbit-insights-platform`). Prefix the client only when the slug alone is ambiguous (`acme-orbit`).
+- **`<app>`** — short product slug, 10 characters or fewer (`orbit`, not `orbit-insights-platform`). Prefix the client only when the slug alone is ambiguous (`acme-orbit`). Storage accounts use `<stapp>`: the same slug with hyphens removed (`acme-orbit` → `acmeorbit`).
 - **`<env>`** — `dev`, `staging`, or `prod` in Azure names. GitHub environments and Terraform folders keep `production`; only Azure names shorten it, because of the Key Vault length limit.
 - **`<component>`** — `web`, `api`, `jobs`, `migrate`, or a sidecar name (`gateway`). Omit it when the stack has one app.
 - **Region** — omit by default. Add a short code (`eus2`, `cac`) only when one app/env runs in more than one region.
@@ -43,13 +43,13 @@ Pattern: **`<type>-<app>-<env>[-<component>]`**, lowercase, hyphen-separated, wi
 | Postgres Flexible Server | `psql-<app>-<env>` (globally unique) | `psql-orbit-dev` |
 | Redis | `redis-<app>-<env>` | `redis-orbit-dev` |
 | Azure OpenAI / AI Services | `oai-<app>-<env>` | `oai-orbit-dev` |
-| Storage account | `st<app><env><suffix>` (3–24 chars, lowercase alphanumeric, globally unique) | `storbitdev4f2a1c` |
+| Storage account | `st<stapp><env><suffix>` (3–24 chars, lowercase alphanumeric, globally unique; shorten the suffix to fit) | `storbitdev4f2a1c` |
 | App Service plan / web app | `asp-<app>-<env>` / `app-<app>-<env>-<component>` | `app-orbit-dev-api` |
-| Terraform state | `rg-<app>-tfstate`, `st<app>tfstate<suffix>` | `rg-orbit-tfstate` |
+| Terraform state | `rg-<app>-tfstate`, `st<stapp>tfstate<suffix>` (24-char limit applies) | `rg-orbit-tfstate` |
 
 Every resource group carries these tags: `application = <app>`, `environment = <env>`, `managed_by = terraform` (or `bicep`).
 
-**Image repositories** in `forwardpathai`: `<client>/<app>-<component>`, e.g. `forwardpathai.azurecr.io/acme/orbit-api`.
+**Image repositories** in `forwardpathai`: `<client>/<app>-<component>` for release images, e.g. `forwardpathai.azurecr.io/acme/orbit-api`. When the registry runs in ABAC mode, new setups publish dev images to a separate `<client>/dev/<app>-<component>` repository so dev publishers cannot write release repositories (see [SECURITY.md](SECURITY.md#app-registration-and-rbac)). Under legacy RBAC mode the split gives no isolation, so dev and release share one repository.
 
 **Hostnames**: `[<env>.]<component>.<app>.<client>.forwardpath.ai`; production drops the env prefix. Examples: `dev.app.orbit.acme.forwardpath.ai`, `app.orbit.acme.forwardpath.ai`.
 
@@ -111,7 +111,7 @@ Before finishing infra or a deploy workflow, confirm:
 
 ```
 - [ ] Names follow the Naming table; tags application / environment / managed_by set on every resource group
-- [ ] Images use existing shared ACR `forwardpathai` at `<client>/<app>-<component>`; no new registry or shared-registry ownership in app state
+- [ ] Images use existing shared ACR `forwardpathai` at `<client>/<app>-<component>` (dev at `<client>/dev/<app>-<component>` under ABAC); no new registry or shared-registry ownership in app state
 - [ ] Every push/promotion/retry uses OIDC through registry login; no stored publishing credentials or password fallback
 - [ ] Forward Path runtime pulls use a pre-created user-assigned identity; customer tokens are per-customer/app and repository-scoped read-only
 - [ ] No admin credentials, anonymous pull, or registry/firewall bypasses

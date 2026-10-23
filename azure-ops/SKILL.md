@@ -26,10 +26,10 @@ For symptom-driven debugging (failed revision, crash loop, 502, database or Key 
 The user names an app and an environment; find its subscription and resource group across every subscription with Resource Graph:
 
 ```bash
-az graph query -q "resources | where name contains '<app>' | project name, type, resourceGroup, subscriptionId" --first 100 -o table
+az graph query -q "resources | where name contains '<app>' and name contains '<env>' | project name, type, resourceGroup, subscriptionId" --first 1000 -o table
 ```
 
-Then pin the subscription for the rest of the session with `az account set --subscription <id>`, or pass `--subscription` to each command.
+If the result fills the page, pass the returned `skip_token` back with `--skip-token` until none remains, or narrow the filter. Then pin the subscription for the rest of the session with `az account set --subscription <id>`, or pass `--subscription` to each command.
 
 _Done when:_ you have the subscription, resource group, and the exact name of every resource in scope.
 
@@ -42,7 +42,7 @@ _Done when:_ you have the subscription, resource group, and the exact name of ev
 | Current state, image, ingress | `az containerapp show -n <ca> -g <rg> --query "{state:properties.runningStatus, image:properties.template.containers[].image, fqdn:properties.configuration.ingress.fqdn, port:properties.configuration.ingress.targetPort, latest:properties.latestRevisionName, ready:properties.latestReadyRevisionName}"` |
 | Revisions and health | `az containerapp revision list -n <ca> -g <rg> --query "[].{name:name, active:properties.active, health:properties.healthState, state:properties.runningState, replicas:properties.replicas, traffic:properties.trafficWeight, created:properties.createdTime}" -o table` |
 | Replicas | `az containerapp replica list -n <ca> -g <rg> [--revision <rev>] -o table` |
-| Env vars (names, plain values, secret refs) | `az containerapp show -n <ca> -g <rg> --query "properties.template.containers[].env"` |
+| Env var names and secret refs | `az containerapp show -n <ca> -g <rg> --query "properties.template.containers[].env[].{name:name, secretRef:secretRef}" -o table` |
 | Secret wiring (names, Key Vault URLs, identity) | `az containerapp secret list -n <ca> -g <rg>` (no `--show-values`) |
 | Registry identity | `az containerapp show -n <ca> -g <rg> --query properties.configuration.registries` |
 | Jobs | `az containerapp job execution list -n <job> -g <rg> -o table` |

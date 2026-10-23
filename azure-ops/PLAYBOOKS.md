@@ -11,7 +11,7 @@ Symptom → checks, in order. Commands are in [SKILL.md](SKILL.md#inspect). Stop
    - `ContainerCrashing`, `ContainerTerminated`, `BackOff` → **crash loop** below.
    - `ProbeFailed` → **probes** below.
 2. **Image pull.**
-   - The tag or digest exists in `forwardpathai` (`show-tags`)?
+   - The image exists in `forwardpathai`: for a tag reference, `show-tags`; for an `@sha256:` reference, `az acr manifest show-metadata -r forwardpathai -n <repo>@<digest>`?
    - The app's registry entry uses an identity, and that identity is attached to the app?
    - The identity holds `AcrPull` or `Container Registry Repository Reader` on the registry (`role assignment list`)?
    - Customer-tenant apps: the pull token's scope map lists this repository and the token has not expired.

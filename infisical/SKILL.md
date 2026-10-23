@@ -59,7 +59,7 @@ Use this for a new repo, or to move an existing repo off `.env` files.
    }
    ```
 
-   Wrap the outermost command (`infisical sm run --env=local -- docker compose up`, `infisical sm run --env=local -- turbo dev`) so child processes inherit the env. Remove `dotenv` imports, `--env-file` flags, and Compose `env_file:` entries that point at `.env` files.
+   Wrap the outermost command (`infisical sm run --env=local -- docker compose up`, `infisical sm run --env=local -- turbo dev`) so child processes inherit the env. Remove `dotenv` imports, `--env-file` flags, and Compose `env_file:` entries that point at `.env` files. Compose passes only the names a service lists into its container, so list each secret the service needs under its `environment:` (`- DATABASE_URL`, with no value, forwards the host's value). Confirm the containers start without printing their env.
 5. Keep `.env.example` as the list of names with a one-line comment each and **no values**. Make `.gitignore` ignore every other env file:
 
    ```gitignore
@@ -106,7 +106,7 @@ Create one Azure Key Vault Secret Sync per deployed environment, targeting that 
 Rules that come with it:
 
 - **Names change.** Key Vault forbids underscores, so the sync writes `DATABASE_URL` as `DATABASE-URL`. Infra references the hyphenated vault name; the app's env var keeps the underscore. Two Infisical names that map to one vault name (`FOO_BAR` and `FOO-BAR`) stop the sync, so keep names unique after the swap.
-- **Infisical owns the vault's values.** Terraform/Bicep creates the vault, RBAC, and references, but never `azurerm_key_vault_secret` resources or secret values for synced names. Engineers rotate in Infisical, not the portal. A vault secret that must stay outside Infisical (such as a customer ACR pull password set by another process) needs Disable Secret Deletion on that sync; prefer moving it into Infisical instead.
+- **Infisical owns the vault's values.** Terraform/Bicep creates the vault, RBAC, and references, but never `azurerm_key_vault_secret` resources or secret values for synced names. Engineers rotate in Infisical, not the portal. A secret that must stay outside Infisical (such as a customer ACR pull password set by another process) belongs in a separate vault the sync never targets. Disable Secret Deletion does not keep it out: the initial import copies every vault secret into Infisical.
 - **Least privilege.** The Infisical Azure connection needs `secrets/list`, `get`, `set`, and `recover`: assign `Key Vault Secrets Officer` on each synced vault only, never the resource group or subscription. Use a separate connection or assignment per environment so the dev sync cannot write the prod vault.
 - **Reference without a version.** Use `https://<vault>.vault.azure.net/secrets/<NAME>` with no version suffix. Container Apps then picks up a rotated value within 30 minutes and restarts active revisions that read it as an env var. A pinned version never sees the rotation.
 - **Customer tenants are out of scope.** Customer-deployed apps use the customer's own vault and values, per [customer-deployment-package](../customer-deployment-package/SKILL.md). Never sync Forward Path's Infisical into a customer vault.
@@ -115,7 +115,7 @@ _Done when_ each deployed environment has an enabled Key Vault sync whose last r
 
 ## Add or rotate a secret
 
-1. Add a new name to the app's startup env validation, so a missing value fails fast, and to `.env.example` with a one-line comment.
+1. Add a name the app reads to its startup env validation, so a missing value fails fast. Leave workflow-only names (in `/ci-cd` alone) out of it. Add every new name to `.env.example` with a one-line comment.
 2. Tell the user where it belongs: `local` `/` for local dev, each deployed environment's `/` for runtime, `/ci-cd` for workflows. The user enters or rotates the value in Infisical. Auto-sync pushes it.
 3. For a new runtime secret, add the unversioned Key Vault reference (hyphenated name) and env var wiring in infra. A rotation reaches running Container Apps within 30 minutes; restart the revision to apply it sooner.
 

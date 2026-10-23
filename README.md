@@ -34,6 +34,7 @@ npx skills add forwardpathai/skills/backlog-hygiene
 npx skills add forwardpathai/skills/ticket-refiner
 npx skills add forwardpathai/skills/azure-conventions
 npx skills add forwardpathai/skills/azure-ops
+npx skills add forwardpathai/skills/infisical
 npx skills add forwardpathai/skills/engineering-projects-on-track
 npx skills add forwardpathai/skills/mobile-ui
 npx skills add forwardpathai/skills/mobile-ui-implement
@@ -82,6 +83,7 @@ npx skills add forwardpathai/skills/get-forwardpath-skills
 | [engineering-projects-on-track](./engineering-projects-on-track) | On-track % for ForwardPath Engineering Linear projects in In Progress or UAT, from the latest project status update. |
 | [azure-conventions](./azure-conventions) | Forward Path Azure conventions — resource naming, environments, regions, Container Apps, shared ACR, OIDC/RBAC, Key Vault, and known gotchas. |
 | [azure-ops](./azure-ops) | Inspect and operate live Azure apps with the `az` CLI — locate resources, stream and query logs, check revisions, images, identities, and secrets, and follow symptom playbooks for failed deploys, 5xx errors, and database or Key Vault failures. |
+| [infisical](./infisical) | Forward Path's app and CI/CD secrets rules — Infisical as the single source of truth, no local `.env` files, and Secret Syncs into GitHub and Azure Key Vault. |
 | [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini or OpenRouter, with a consent-gated on-device Apple-Silicon fallback when no cloud key is available). |
 | [mobile-ui-implement](./mobile-ui-implement) | Turn mobile UI mockups (PNG screens or a PDF deck) into per-screen implementation blueprints, then build them in an Expo Go-compatible app — decomposing each screen into layers, components, states, and animations a weaker model can build one at a time. |
 | [web-ui](./web-ui) | Turn a SOW and/or a real Next.js + Tailwind codebase into a grounded web screen spec and consistent desktop mockups (via Google Gemini or OpenRouter, with a consent-gated on-device Apple-Silicon fallback when no cloud key is available) — anchored by a brand style board and a persistent app-shell (nav/sidebar) so every screen looks like one credible product. |

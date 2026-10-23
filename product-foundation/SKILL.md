@@ -35,7 +35,7 @@ The reference implementation is the `PRS-Walmart-PRIME` monorepo; this skill dis
 | Auth | — | **Better Auth** + Microsoft SSO + org RBAC |
 | Jobs | — | **BullMQ** + Redis (`apps/jobs`) |
 | AI | — | Vercel AI SDK (`packages/ai`) |
-| Secrets | **Infisical** (dev) → Azure Key Vault (prod) | — |
+| Secrets | **Infisical**, synced to GitHub and Azure Key Vault | — |
 | Deploy | **Azure Container Apps** via **Terraform** + ACR | — |
 
 Exact major versions and the update rule are in [STACK.md](STACK.md).

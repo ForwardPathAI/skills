@@ -89,7 +89,7 @@ Configure GitHub environment deployment restrictions for the intended branches/t
 | Store connection strings, API keys, passwords, signing keys in **Key Vault** | Commit secrets to git, `terraform.tfvars`, or CI vars for prod |
 | Use Container Apps Key Vault-backed secrets and env `secretRef`; use `@Microsoft.KeyVault` for App Service | Retrieve secret values into Terraform or inline them into app configuration |
 
-Engineers create and rotate Key Vault secrets through the portal or secure CLI input. Keep values out of command arguments, shell history, logs, and agent transcripts. Infrastructure code should **wire references only** (secret name, URI, RBAC for the app identity to `get`).
+For Forward Path-hosted apps, Infisical owns Key Vault values: engineers set and rotate them in Infisical, and an Infisical Key Vault Secret Sync pushes them into each environment's vault. Follow the [infisical](../infisical/SKILL.md) skill for the sync, hyphenated vault names, and the sync's vault-scoped role. Customer-tenant vaults hold customer-entered values instead. Keep values out of command arguments, shell history, logs, and agent transcripts. Infrastructure code should **wire references only** (secret name, URI, RBAC for the app identity to `get`) and never create secret resources for synced names.
 
 Document required secret **names** in README or Terraform variable descriptions — not the values.
 

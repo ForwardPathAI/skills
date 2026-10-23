@@ -28,7 +28,7 @@ Append a reconciliation amendment to the execution brief, preserving the origina
 
 For example: `src/orders.ts` was split into `orders/service.ts` and `orders/routes.ts`; the requested validation now belongs in `orders/service.ts`. Cite the extraction commit and current caller/test evidence, then list the resolved files and verification commands.
 
-Continue autonomously once those claims are verified. Include the original spec and amendment in the executor's context, and summarize the amendment in the PR and final report. A later amendment replaces its earlier mapping while preserving the evidence trail. Executor resumption uses Step 3's existing revision budget.
+Continue autonomously once those claims are verified. Include the original spec and amendment in the executor's context, and summarize the amendment in the PR and final report. A later amendment replaces its earlier mapping while preserving the evidence trail. Executor resumption is a Step 3 REVISE round.
 
 **Done when:** the brief contains a complete, evidence-backed scope and verification mapping that the executor and reviewer can use without this conversation.
 

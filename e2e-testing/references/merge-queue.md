@@ -28,6 +28,8 @@ Implement these project scripts before using it:
 
 Inject only environment variables the scripts/config actually read. Model credentials are needed for live agent calls, including unrecorded steps under strict cache mode. Scope secrets to execution steps or an appropriate test environment, leaving the PR acknowledgement without them.
 
+Expose credentials only to queued changes the repository trusts. Code from the combined queue commit can read secrets available to its execution steps; step scoping does not protect credentials from that code. For queues admitting untrusted changes, use a secret-free suite or require explicit trusted approval before credentialed execution, with disposable, narrowly scoped credentials. Apply the same trust requirement to manual dispatches on a selected ref.
+
 ```yaml
 name: E2E
 on:
@@ -92,7 +94,8 @@ jobs:
             .e2e/report.json
             .e2e/junit.xml
             .e2e/results/
-          if-no-files-found: warn
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 7
 
       - name: Clean up test resources

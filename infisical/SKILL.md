@@ -23,9 +23,9 @@ Agents and engineers handle secret **names**, never values. Engineers enter valu
 
 ## CLI
 
-Install with `brew install infisical/get-cli/infisical` (or `npm install -g @infisical/cli`), then `infisical login` once per machine. `infisical init` at the repo root links the Infisical project; commit the file it writes (`.infisical.yaml`, or `.infisical.json` on older CLIs). It holds the project ID only.
+Install with `brew install infisical/get-cli/infisical` (or `npm install -g @infisical/cli`), then `infisical login` once per machine. `infisical init` at the repo root links the Infisical project; commit the file it writes (`.infisical.yaml`, or `.infisical.json` on older CLIs). It holds the project ID and can also set a `domain`, which the CLI then sends logins and secrets to. Before you run `infisical login` in a repo, check that its config names no `domain` other than Forward Path's Infisical instance.
 
-Current CLIs group secret commands under `sm` (`infisical sm run`). CLIs at 0.43.145 or earlier lack `sm` and use `infisical run`. Check the flags your installed version accepts with `infisical sm run --help` before you write a script.
+Current CLIs group secret commands under `sm` (`infisical sm run`). CLIs at 0.43.145 or earlier lack `sm` and use `infisical run`. Check the flags your installed version accepts before you write a script: `infisical sm run --help`, or `infisical run --help` on those older CLIs.
 
 ## Project layout
 
@@ -93,7 +93,7 @@ _Done when_ each deployed environment has an enabled GitHub sync whose last run 
 
 ## Key Vault sync (deployed runtime)
 
-Create one Azure Key Vault Secret Sync per deployed environment, targeting that environment's own vault:
+Create one Azure Key Vault Secret Sync per deployed environment, targeting that environment's own vault. Infisical must reach the vault: if it sits behind a private endpoint with public access off, set the Azure connection to use an Infisical Gateway running inside an allowed network first, or every sync run fails.
 
 | Setting | Value |
 |---------|-------|

@@ -33,6 +33,7 @@ npx skills add forwardpathai/skills/cloud-agent-triage
 npx skills add forwardpathai/skills/backlog-hygiene
 npx skills add forwardpathai/skills/ticket-refiner
 npx skills add forwardpathai/skills/azure-infra-setup
+npx skills add forwardpathai/skills/infisical
 npx skills add forwardpathai/skills/engineering-projects-on-track
 npx skills add forwardpathai/skills/mobile-ui
 npx skills add forwardpathai/skills/mobile-ui-implement
@@ -81,6 +82,7 @@ npx skills add forwardpathai/skills/get-forwardpath-skills
 | [ticket-refiner](./ticket-refiner) | Interview the person who knows why a Linear ticket exists and rewrite it to pass issue-writer's agent-ready bar; the gap-driven interview step neither backlog-hygiene nor cloud-agent-triage has. |
 | [engineering-projects-on-track](./engineering-projects-on-track) | On-track % for ForwardPath Engineering Linear projects in In Progress or UAT, from the latest project status update. |
 | [azure-infra-setup](./azure-infra-setup) | Author Forward Path Azure infrastructure (Terraform/Bicep) — shared ACR, OIDC/RBAC, environments, Key Vault, Container Apps. |
+| [infisical](./infisical) | Forward Path's app and CI/CD secrets rules — Infisical as the single source of truth, no local `.env` files, and Secret Syncs into GitHub and Azure Key Vault. |
 | [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini or OpenRouter, with a consent-gated on-device Apple-Silicon fallback when no cloud key is available). |
 | [mobile-ui-implement](./mobile-ui-implement) | Turn mobile UI mockups (PNG screens or a PDF deck) into per-screen implementation blueprints, then build them in an Expo Go-compatible app — decomposing each screen into layers, components, states, and animations a weaker model can build one at a time. |
 | [web-ui](./web-ui) | Turn a SOW and/or a real Next.js + Tailwind codebase into a grounded web screen spec and consistent desktop mockups (via Google Gemini or OpenRouter, with a consent-gated on-device Apple-Silicon fallback when no cloud key is available) — anchored by a brand style board and a persistent app-shell (nav/sidebar) so every screen looks like one credible product. |

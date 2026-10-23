@@ -32,7 +32,7 @@ Present in every project from the first commit.
 | API typing | Hono + `hc<AppType>` RPC + `@hono/zod-validator` | Hono 4.x |
 | Lint | oxlint | 1.x |
 | Test | `bun test` (built-in runner) | — |
-| Secrets (dev) | Infisical | — |
+| Secrets | Infisical (synced to GitHub and Key Vault) | — |
 | Deploy | Azure Container Apps + Terraform + ACR | — |
 
 **Package manager + runtime.** Bun does install, scripts, the API/jobs runtime, and tests. Never Node, npm, pnpm, or Vite. Docker images use `oven/bun` base. Pin the Bun version in CI (e.g. `BUN_VERSION`).

@@ -140,8 +140,8 @@ import { test, expect } from 'bun:test'
 
 ## Env & secrets
 
-- Bun auto-loads `.env` from the workspace root; document every var in `.env.example`.
-- **Infisical** wraps dev commands (`infisical run --env=dev -- ...`); production injects Azure Key Vault references into Container Apps.
+- Follow the [infisical](../infisical/SKILL.md) skill: **Infisical** wraps dev commands (`infisical sm run --env=dev -- ...`), no `.env` file holds values, and Secret Syncs push CI secrets into GitHub and runtime secrets into Azure Key Vault. Container Apps read them through Key Vault references.
+- Document every var name, without values, in `.env.example`.
 - Validate required secrets at app startup (fail fast on missing `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `ENCRYPTION_KEY`, etc.).
 
 ## Lint & format

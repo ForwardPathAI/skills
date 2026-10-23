@@ -112,7 +112,7 @@ Judge documented deviations on merit. Treat undocumented ones as failures.
 | Verdict | When | Action |
 |---|---|---|
 | **APPROVE** | Criteria pass, scope clean, quality holds | Go to Step 4 |
-| **REVISE** | Fixable gaps | Send the same executor specific feedback (Claude Code: `SendMessage`), e.g. "criterion 3 fails: X; `api.ts:90` swallows the error". Repeat while each round closes gaps. |
+| **REVISE** | Fixable gaps | Send the same executor specific feedback (Claude Code: `SendMessage`), e.g. "criterion 3 fails: X; `api.ts:90` swallows the error". Repeat until no gaps remain. |
 | **BLOCK** | Unresolved STOP condition, scope broken past repair, or the loop stalls: the same gap survives three rounds | Go to Finish. No PR. |
 
 **Done when** the verdict is APPROVE or BLOCK.
@@ -139,9 +139,9 @@ Findings are leads, not facts. Check each against the current code:
 - **Wrong or by design**: record why, with `file:line` evidence.
 - **Needs a product decision**: stop and ask.
 
-After each batch of fixes, re-run the done criteria, then run code-review again. Repeat while runs raise new valid findings. If the loop stalls (the same finding survives three fix attempts, or a fix brings back one already fixed), stop and go to Finish. No PR.
+After each batch of fixes, re-run the done criteria, then run code-review again. Repeat while the latest run raises any valid finding, new or repeated. If the loop stalls (the same finding survives three fix attempts, or a fix brings back one already fixed), stop and go to Finish. No PR.
 
-**Done when** the latest code-review run raises no new valid findings and every ledger entry has a disposition.
+**Done when** the latest code-review run raises no valid findings and every ledger entry has a disposition.
 
 ## Step 6: simplify gate
 
@@ -149,7 +149,7 @@ Stage everything first (`git add -A`), so `git diff` then shows only simplify's 
 
 A cleanup can change behavior. If any stayed, run code-review again and handle its findings as in Step 5. If a finding traces to a cleanup, revert that cleanup rather than fix around it.
 
-**Done when** the done criteria pass on the post-simplify tree, code-review raises no new valid findings on it, and every changed file is in scope.
+**Done when** the done criteria pass on the post-simplify tree, code-review raises no valid findings on it, and every changed file is in scope.
 
 ## Step 7: Open the PR
 

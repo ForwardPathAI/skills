@@ -172,7 +172,7 @@ Only the modules chosen in Step 1.
 ## Step 7: Infra, secrets, README
 
 1. **Secrets:** set up the repo per the [infisical](../infisical/SKILL.md) skill — Infisical config, wrapped scripts, `.env.example` with names only, GitHub and Key Vault syncs. Validate required secrets at startup.
-2. **Infra:** use the [azure-infra-setup](../azure-infra-setup/SKILL.md) skill — Terraform → Azure Container Apps, ACR, Key Vault, GitHub OIDC. Multi-stage Bun Dockerfile per app (`turbo prune`, `oven/bun` base).
+2. **Infra:** use the [azure-conventions](../azure-conventions/SKILL.md) skill — Terraform → Azure Container Apps, ACR, Key Vault, GitHub OIDC. Multi-stage Bun Dockerfile per app (`turbo prune`, `oven/bun` base).
 3. **CI:** GitHub Actions — lint (`oxlint`), typecheck, `bun test --coverage` (Postgres + Redis services), build, `bun pm audit`.
 4. **README:** plain-language, per the collaboration section of [SKILL.md](SKILL.md) — a non-engineer can follow setup.
 5. **First commit** with everything above; ship via [open-pr](../open-pr/SKILL.md).

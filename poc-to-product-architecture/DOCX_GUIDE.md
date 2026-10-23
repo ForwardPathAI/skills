@@ -19,7 +19,7 @@ The DOCX is a **reading** deliverable. It must **not** contain literal Bicep or 
 | Bicep skeleton | code block (section 6) | **omitted** — reference the next-step skills instead |
 | Mermaid source | code block | **omitted** — only the rendered image appears |
 
-The bundled generator [assets/build_docx.py](assets/build_docx.py) ships **no code-block helper** on purpose, so it is structurally hard to violate this rule. If a stakeholder needs the Bicep/mermaid source, point them at the canvas or the repo `.mmd` / `azure-infra-setup` output — not the DOCX.
+The bundled generator [assets/build_docx.py](assets/build_docx.py) ships **no code-block helper** on purpose, so it is structurally hard to violate this rule. If a stakeholder needs the Bicep/mermaid source, point them at the canvas or the repo `.mmd` / `azure-conventions` output — not the DOCX.
 
 ## Prerequisites
 

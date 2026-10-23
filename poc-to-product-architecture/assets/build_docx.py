@@ -517,7 +517,7 @@ def build():
 
     add_heading(doc, "Next-step skills", level=2)
     add_body(doc, [
-        ("azure-infra-setup", {"bold": True, "color": "2B2B2B"}),
+        ("azure-conventions", {"bold": True, "color": "2B2B2B"}),
         (" — full Bicep / Terraform authoring and CI/CD wiring.   ", {}),
         ("customer-deployment-package", {"bold": True, "color": "2B2B2B"}),
         (" — customer-facing external Bicep variant and deployment handoff.", {}),

@@ -32,7 +32,8 @@ npx skills add forwardpathai/skills/cloud-agent-pr-stats
 npx skills add forwardpathai/skills/cloud-agent-triage
 npx skills add forwardpathai/skills/backlog-hygiene
 npx skills add forwardpathai/skills/ticket-refiner
-npx skills add forwardpathai/skills/azure-infra-setup
+npx skills add forwardpathai/skills/azure-conventions
+npx skills add forwardpathai/skills/azure-ops
 npx skills add forwardpathai/skills/infisical
 npx skills add forwardpathai/skills/engineering-projects-on-track
 npx skills add forwardpathai/skills/mobile-ui
@@ -40,7 +41,6 @@ npx skills add forwardpathai/skills/mobile-ui-implement
 npx skills add forwardpathai/skills/web-ui
 npx skills add forwardpathai/skills/customer-deployment-package
 npx skills add forwardpathai/skills/review-mp4
-npx skills add forwardpathai/skills/azure-hibernate
 npx skills add forwardpathai/skills/qa-test-plan
 npx skills add forwardpathai/skills/qa-test-plan-setup
 npx skills add forwardpathai/skills/teach-web-actions
@@ -81,14 +81,14 @@ npx skills add forwardpathai/skills/get-forwardpath-skills
 | [backlog-hygiene](./backlog-hygiene) | Scan a Linear project's backlog for relevance — flag stale, already-shipped, or duplicated issues using update age, code/PR evidence, and ticket similarity — then apply confirmed actions one at a time. |
 | [ticket-refiner](./ticket-refiner) | Interview the person who knows why a Linear ticket exists and rewrite it to pass issue-writer's agent-ready bar; the gap-driven interview step neither backlog-hygiene nor cloud-agent-triage has. |
 | [engineering-projects-on-track](./engineering-projects-on-track) | On-track % for ForwardPath Engineering Linear projects in In Progress or UAT, from the latest project status update. |
-| [azure-infra-setup](./azure-infra-setup) | Author Forward Path Azure infrastructure (Terraform/Bicep) — shared ACR, OIDC/RBAC, environments, Key Vault, Container Apps. |
+| [azure-conventions](./azure-conventions) | Forward Path Azure conventions — resource naming, environments, regions, Container Apps, shared ACR, OIDC/RBAC, Key Vault, and known gotchas. |
+| [azure-ops](./azure-ops) | Inspect and operate live Azure apps with the `az` CLI — locate resources, stream and query logs, check revisions, images, identities, and secrets, and follow symptom playbooks for failed deploys, 5xx errors, and database or Key Vault failures. |
 | [infisical](./infisical) | Forward Path's app and CI/CD secrets rules — Infisical as the single source of truth, no local `.env` files, and Secret Syncs into GitHub and Azure Key Vault. |
 | [mobile-ui](./mobile-ui) | Turn a SOW into a grounded Expo SDK 54 screen spec and premium portrait UI mockups (via Google Gemini or OpenRouter, with a consent-gated on-device Apple-Silicon fallback when no cloud key is available). |
 | [mobile-ui-implement](./mobile-ui-implement) | Turn mobile UI mockups (PNG screens or a PDF deck) into per-screen implementation blueprints, then build them in an Expo Go-compatible app — decomposing each screen into layers, components, states, and animations a weaker model can build one at a time. |
 | [web-ui](./web-ui) | Turn a SOW and/or a real Next.js + Tailwind codebase into a grounded web screen spec and consistent desktop mockups (via Google Gemini or OpenRouter, with a consent-gated on-device Apple-Silicon fallback when no cloud key is available) — anchored by a brand style board and a persistent app-shell (nav/sidebar) so every screen looks like one credible product. |
 | [customer-deployment-package](./customer-deployment-package) | Build a customer-facing deployment handoff — external Terraform/Bicep, setup instructions filled into the Notion template and saved to the deployments DB, then exported and zipped with a Windows-safe name. |
 | [review-mp4](./review-mp4) | Understand an mp4 (local or URL): extract frames with ffmpeg, pick the sharpest in-focus frame per window via variance-of-Laplacian blur detection (Python or Node), then read them to answer questions. |
-| [azure-hibernate](./azure-hibernate) | Hibernate a live client project's Azure resource group to minimum cost (scale/stop App Service Plans, web apps, SQL, Redis, databases via the `az` CLI) and wake it for retesting — reversibly, recording state before every change. |
 | [qa-test-plan](./qa-test-plan) | Add QA test cases to the Notion QA Test Plan database — generate candidates from a feature change or the whole app, get QA approval, then append rows QA works through during full regression runs. |
 | [qa-test-plan-setup](./qa-test-plan-setup) | Per-project one-time creation of a `<Project> — QA Test Plan` Notion database with the fixed Forward Path schema (test case, feature, steps, expected result, category, priority, status). |
 | [teach-web-actions](./teach-web-actions) | Learn a website by recording a user-driven Chrome session (HAR + UI steps) via Playwright codegen, distill it into a reusable lesson (endpoints, payloads, parameter knobs, auth), then replay a variation with new parameters as an API call or as UI navigation captured to mp4. |
@@ -98,7 +98,7 @@ npx skills add forwardpathai/skills/get-forwardpath-skills
 | [plan-refiner](./plan-refiner) | Harden an existing Cursor plan so a weaker executor model can implement it without judgment calls — hunt unknowns, resolve them via codebase/web research or a one-gap-at-a-time user interview, anticipate non-obvious scenarios, and rewrite the plan file in place as unambiguous, verifiable statements. |
 | [plan-context-imager](./plan-context-imager) | Gather the codebase context a plan depends on, render it into dense PNG pages via pxpipe's `renderTextToImages`, and embed the images plus a per-page index into the plan so the executor reads them instead of re-grepping the codebase each step. |
 | [speclang-writer](./speclang-writer) | Turn a plan into a SpecLang specification — a structured, natural-language Markdown document (the single source of truth) that captures a system's behavior and its pinned implementation details so an AI toolchain or executor can generate the code from the spec. |
-| [poc-from-sow](./poc-from-sow) | Turn a SOW into a customer-validatable, continuation-ready POC codebase on the Forward Path stack — buildable, runnable, demo-deployable, with an agent-ready handoff pack — by orchestrating web-ui / mobile-ui / product-foundation / azure-infra-setup, then closing with a poc-to-product-architecture canvas + DOCX. |
+| [poc-from-sow](./poc-from-sow) | Turn a SOW into a customer-validatable, continuation-ready POC codebase on the Forward Path stack — buildable, runnable, demo-deployable, with an agent-ready handoff pack — by orchestrating web-ui / mobile-ui / product-foundation / azure-conventions, then closing with a poc-to-product-architecture canvas + DOCX. |
 | [poc-to-product-architecture](./poc-to-product-architecture) | Turn a SOW and POC repo into a production system-design canvas — architecture, gap audit, Azure resource map, Bicep skeleton, security/reliability, and cost estimate, constrained to the Forward Path stack and customer-deployable Bicep. |
 | [architecture-to-linear-plan](./architecture-to-linear-plan) | Turn the poc-to-product-architecture deliverable (canvas + DOCX) and any web-ui/mobile-ui mockups into a delivery plan — Linear milestones with proposed timelines and executable functional + design tickets — then, once approved, create the project, milestones, and issues in Linear via the Linear MCP. |
 | [standup-report](./standup-report) | Generate a narratable daily standup (yesterday / today / blockers) for yourself or a named user from Linear issues, GitHub merged/open PRs, and local Cursor chat transcripts. |

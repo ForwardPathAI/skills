@@ -9,7 +9,7 @@ Forward Path keeps every app and CI/CD secret in **Infisical**. Infisical is the
 
 - **Local dev:** wrap commands in the Infisical CLI, so secrets reach the process as env vars. No `.env`, `.env.local`, or `.env.development` file holds a value on disk.
 - **CI/CD:** a **GitHub Secret Sync** pushes each environment's `/ci-cd` folder into the repo's GitHub secrets. Workflows read `${{ secrets.NAME }}` as normal.
-- **Deployed runtime:** an **Azure Key Vault Secret Sync** pushes each environment's runtime secrets into that environment's vault. Apps read them through Key Vault references, per [azure-infra-setup](../azure-infra-setup/SKILL.md).
+- **Deployed runtime:** an **Azure Key Vault Secret Sync** pushes each environment's runtime secrets into that environment's vault. Apps read them through Key Vault references, per [azure-conventions](../azure-conventions/SECURITY.md).
 
 Nobody edits a synced secret in GitHub or Key Vault. The next sync overwrites it.
 
@@ -29,7 +29,7 @@ Current CLIs group secret commands under `sm` (`infisical sm run`). CLIs at 0.43
 
 ## Project layout
 
-One Infisical project per repo. Besides the deploy targets in [azure-infra-setup](../azure-infra-setup/SKILL.md) (`dev`, `prod`, and `staging` when the repo has it), add a `local` environment: local values (a Docker Postgres URL, localhost callbacks) differ from deployed dev, and each deployed environment's root syncs to its vault.
+One Infisical project per repo. Besides the deploy targets in [azure-conventions](../azure-conventions/SKILL.md) (`dev`, `prod`, and `staging` when the repo has it), add a `local` environment: local values (a Docker Postgres URL, localhost callbacks) differ from deployed dev, and each deployed environment's root syncs to its vault.
 
 | Environment and path | Holds | Reaches |
 |----------------------|-------|---------|

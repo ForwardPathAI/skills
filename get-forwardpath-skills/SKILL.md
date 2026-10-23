@@ -1,6 +1,6 @@
 ---
 name: get-forwardpath-skills
-description: Install the standard Forward Path skill set into the current project for Claude Code, Cursor, and Codex — Forward Path PR, release, and Linear skills plus vetted outside skills for Effect, Drizzle/Postgres, Better Auth, codebase audits, and writing. Use when the user asks to set up, install, bootstrap, restore, or update Forward Path skills in a repo, or says "get forward path skills".
+description: Install the standard Forward Path skill set into the current project for Claude Code, Cursor, and Codex. Includes execution, PRs, reviews, releases, Linear, Azure, secrets, and vetted outside skills for Effect, Drizzle/Postgres, Better Auth, codebase audits, and writing. Use when the user asks to set up, install, bootstrap, restore, or update Forward Path skills in a repo, or says "get forward path skills".
 ---
 
 # Get Forward Path Skills
@@ -14,8 +14,15 @@ Install the standard skill set into the current repo, at project scope, for Clau
 | get-forwardpath-skills | `forwardpathai/skills` | This skill, so teammates can rerun or update the set |
 | open-pr | `forwardpathai/skills` | Open a PR via a Linear issue and Linear's branch |
 | maintain-pr | `forwardpathai/skills` | Drive an open PR through review, conflicts, and CI |
+| auto-pilot-pr | `forwardpathai/skills` | Run maintain-pr and arm auto-merge on the verified head (manual call only) |
+| code-review | `forwardpathai/skills` | Review changes for correctness bugs and regressions |
+| security-review | `forwardpathai/skills` | Review changes for vulnerabilities with verified attack paths |
+| execute | `forwardpathai/skills` | Take a written spec through implementation, review, and PR delivery (manual call only) |
 | release | `forwardpathai/skills` | Cut a production GitHub release (manual call only) |
 | issue-writer | `forwardpathai/skills` | Write agent-ready Linear issues |
+| azure-conventions | `forwardpathai/skills` | Author and review Azure infrastructure using Forward Path conventions |
+| azure-ops | `forwardpathai/skills` | Inspect and operate live Azure apps, logs, revisions, and deployments |
+| infisical | `forwardpathai/skills` | Manage app and CI/CD secrets through Infisical and Secret Syncs |
 | improve | `shadcn/improve` | Read-only codebase audit that writes handoff plans |
 | unslop | `cursor/plugins` | Cut AI tells from writing (manual call only) |
 | grill-with-docs | `mattpocock/skills` | Interview to sharpen a plan; writes ADRs and a glossary as it goes (manual call only) |
@@ -57,7 +64,7 @@ If this fails, the user is not in a git repo. Ask which project to install into.
 Run each command on its own. If one fails, keep going and report it in Step 4. Never add `-g`: this set installs at project scope.
 
 ```bash
-npx -y skills add forwardpathai/skills -s get-forwardpath-skills open-pr maintain-pr release issue-writer -a claude-code cursor codex -y
+npx -y skills add forwardpathai/skills -s get-forwardpath-skills open-pr maintain-pr auto-pilot-pr code-review security-review execute release issue-writer azure-conventions azure-ops infisical -a claude-code cursor codex -y
 npx -y skills add shadcn/improve -s improve -a claude-code cursor codex -y
 npx -y skills add cursor/plugins -s unslop -a claude-code cursor codex -y
 npx -y skills add mattpocock/skills -s grill-with-docs grilling domain-modeling -a claude-code cursor codex -y
@@ -74,7 +81,7 @@ The CLI writes each skill to `.agents/skills/<name>/` (read by Cursor and Codex)
 npx -y skills list
 ```
 
-Check that all 16 skills from [The set](#the-set) appear. Rerun the command for any missing skill once; if it still fails, note the error.
+Check that all 23 skills from [The set](#the-set) appear. Rerun the command for any missing skill once; if it still fails, note the error.
 
 ### Step 4: Report
 

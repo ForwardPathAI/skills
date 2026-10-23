@@ -1,11 +1,11 @@
 ---
 name: open-pr
-description: Open GitHub pull requests from local changes by filing a Linear issue first, using Linear's git branch, committing, and creating the PR with gh. Decides whether the work ships as one PR, several independent PRs, or a stack of dependent PRs. Use when the user asks to open a PR, ship changes, or put work up for review — including "stack a PR", "stacked PR", "open a dependent PR", "stack this on top", "split this into PRs", or "branch on top of this".
+description: Open GitHub pull requests from local changes by filing a Linear issue first, using Linear's git branch, committing, and creating the PR with gh, with screenshots when the diff changes UI. Decides whether the work ships as one PR, several independent PRs, or a stack of dependent PRs. Use when the user asks to open a PR, ship changes, or put work up for review — including "stack a PR", "stacked PR", "open a dependent PR", "stack this on top", "split this into PRs", or "branch on top of this".
 ---
 
 # Open Pull Request
 
-Turn local work into reviewable PRs: analyze all changes, decide the PR shape (one, split, or stacked), then for each PR file a Linear issue, branch from Linear's suggested name, commit, and open the PR with `gh`.
+Turn local work into reviewable PRs: analyze all changes, decide the PR shape (one, split, or stacked), then for each PR file a Linear issue, branch from Linear's suggested name, commit, capture screenshots if it changes UI, and open the PR with `gh`.
 
 ## Prerequisites
 
@@ -26,10 +26,11 @@ Copy this checklist and track progress:
 - [ ] Step 3: Create Linear issue(s) (issue-writer)
 - [ ] Step 4: Checkout Linear git branch
 - [ ] Step 5: Commit with descriptive message
-- [ ] Step 6: Push and open PR with gh
+- [ ] Step 6: Capture screenshots (UI changes only)
+- [ ] Step 7: Push and open PR with gh
 ```
 
-For a split or a stack, run Steps 4–6 once per PR, bottom layer first.
+For a split or a stack, run Steps 4–7 once per PR, bottom layer first.
 
 If the work is already committed on the correct Linear branch and the user only wants the PR, skip Steps 4–5 — but still create and link a Linear issue (Step 3) if one is missing.
 
@@ -55,12 +56,13 @@ Review **both** staged and unstaged diffs. Also check untracked files.
 - **No changes** (clean tree, no untracked files, and no commits ahead of `<compare>`): stop — nothing to PR. If the current branch has an open PR, return its URL.
 - If the current branch has an open PR, the new work is either more of that PR or a stack on top of it. Decide in Step 2.
 - Note real file paths, patterns, line counts, and acceptance criteria — feed these into Step 2 and the Linear issues.
+- Mark the diff as a **UI change** when it alters what a user sees or does: pages, routes, components, styles, themes, layout, responsive behavior, user-facing copy, empty/loading/error states, or client-side interactions. When unsure, treat it as one. Backend logic, data and migrations, infra, CI, tests, docs, and refactors that leave rendered output alone are not UI changes. For a split or stack, mark each PR on its own.
 
 ### Step 2: Choose PR shape and base
 
 Pick one shape. Explicit user words win ("stack this" → stack; "one PR" → one PR).
 
-If the new work belongs in the current branch's open PR, don't open another one. Skip Step 4 and keep the current branch. Check the PR body and branch name for a Linear issue: if one is linked, skip Step 3; if not, create one (Step 3) and add it to the PR body. Then commit (Step 5), push, and update that PR's body with `gh pr edit` if the summary changed.
+If the new work belongs in the current branch's open PR, don't open another one. Skip Step 4 and keep the current branch. Check the PR body and branch name for a Linear issue: if one is linked, skip Step 3; if not, create one (Step 3) and add it to the PR body. Then commit (Step 5), capture screenshots (Step 6), push, and update that PR's body with `gh pr edit` if the summary or screenshots changed.
 
 | Shape | Use when | Base |
 |-------|----------|------|
@@ -190,7 +192,13 @@ EOF
 - If hooks modify files, fix and make a **new** commit (do not amend a failed commit)
 - In a stack, each layer must build and pass the repo's checks on its own. Run them before pushing the layer.
 
-### Step 6: Push and open PR
+### Step 6: Capture screenshots (UI changes only)
+
+Skip this step when Step 1 found no UI change, or the user asked for no screenshots. If the diff touches UI code with no visible effect, say so in one line of the PR body instead.
+
+Otherwise, after the repo's checks pass, read [screenshots.md](screenshots.md) and capture the changed views. A capture failure blocks only the screenshots, not the PR; report it.
+
+### Step 7: Push and open PR
 
 If the base has no remote branch yet, push it first: `git push -u origin <base>`.
 
@@ -205,6 +213,9 @@ gh pr create --base <base> --title "<title aligned with Linear issue>" --body "$
 ## Summary
 <1-3 bullets from the change>
 
+## Screenshots
+<UI changes only, per screenshots.md. Omit this section otherwise.>
+
 ## Stacked on
 <stacked PRs only: #<parent PR> (`<base>`) — merge that first. Omit this section otherwise.>
 
@@ -217,9 +228,11 @@ EOF
 )"
 ```
 
+For a UI change, attach the Step 6 screenshots to the PR and check they render, per [screenshots.md](screenshots.md).
+
 For a stack, once all layers are open, add a short list of the whole stack (bottom to top, with PR links) to each PR body via `gh pr edit` so reviewers can see where each one sits.
 
-Return every PR URL to the user. For a stack, give the merge order (bottom first). After a parent merges, check out `<child-branch>`, fetch both refs (`git fetch origin <new-base> <child-branch>`), and fast-forward the child (`git merge --ff-only origin/<child-branch>`); stop and ask if it has diverged. Then rebase the child onto the new base (with squash merges, `git rebase --onto origin/<new-base> <old-parent-tip>`, where `<old-parent-tip>` is the parent's last head: `gh pr view <parent> --json headRefOid -q .headRefOid`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). Use maintain-pr for ongoing upkeep.
+Return every PR URL to the user, with its screenshots for UI changes. For a stack, give the merge order (bottom first). After a parent merges, check out `<child-branch>`, fetch both refs (`git fetch origin <new-base> <child-branch>`), and fast-forward the child (`git merge --ff-only origin/<child-branch>`); stop and ask if it has diverged. Then rebase the child onto the new base (with squash merges, `git rebase --onto origin/<new-base> <old-parent-tip>`, where `<old-parent-tip>` is the parent's last head: `gh pr view <parent> --json headRefOid -q .headRefOid`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). Use maintain-pr for ongoing upkeep.
 
 ## Anti-patterns
 
@@ -235,9 +248,11 @@ Return every PR URL to the user. For a stack, give the merge order (bottom first
 - Using a hand-rolled branch name instead of Linear's `get_issue` branch
 - `git push --force` to main/master
 - Committing secret files
+- Opening a UI-change PR with no screenshots and no stated reason
 
 ## Additional resources
 
 - Linear issue quality: [issue-writer/SKILL.md](../issue-writer/SKILL.md)
 - Splitting work into issues: [issue-writer/splitting.md](../issue-writer/splitting.md)
+- Capturing and attaching UI screenshots: [screenshots.md](screenshots.md)
 - Linear MCP: `save_issue`, `get_issue`, `list_projects`, `list_issue_labels`

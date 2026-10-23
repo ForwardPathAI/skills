@@ -21,7 +21,6 @@ Or install a single skill by name:
 ```bash
 npx skills add forwardpathai/skills/issue-writer
 npx skills add forwardpathai/skills/open-pr
-npx skills add forwardpathai/skills/open-pr-with-screenshots
 npx skills add forwardpathai/skills/release
 npx skills add forwardpathai/skills/maintain-pr
 npx skills add forwardpathai/skills/auto-pilot-pr
@@ -69,8 +68,7 @@ npx skills add forwardpathai/skills/get-forwardpath-skills
 | Skill | Description |
 |-------|-------------|
 | [issue-writer](./issue-writer) | Write Linear issues an AI coding agent can execute without follow-up questions. |
-| [open-pr](./open-pr) | Open GitHub PRs from local changes via a Linear issue, Linear's git branch, commit, and `gh` — and decide whether to ship one PR, split it, or stack dependent PRs. |
-| [open-pr-with-screenshots](./open-pr-with-screenshots) | Extend normal, stacked, or existing PR work with verified screenshots of the actual UI changes, embedded in the PR description. Install with `open-pr`. |
+| [open-pr](./open-pr) | Open GitHub PRs from local changes via a Linear issue, Linear's git branch, commit, and `gh` — decide whether to ship one PR, split it, or stack dependent PRs, and attach verified screenshots when the diff changes UI. |
 | [release](./release) | Cut a production GitHub release from the default branch — semver tag, release notes, breaking-change gate, and CI watch. |
 | [maintain-pr](./maintain-pr) | Maintain an open GitHub PR through Greptile and human review feedback, merge conflicts, and CI failures — triage every finding, fix, validate, push, reply/resolve, and recheck the latest head until it is ready or concretely blocked. |
 | [auto-pilot-pr](./auto-pilot-pr) | Run maintain-pr until the latest head is ready, then arm GitHub auto-merge on it. Disarms before each of its own pushes, so its unverified heads never merge. Install with `maintain-pr`. |

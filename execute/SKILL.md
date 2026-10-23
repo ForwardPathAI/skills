@@ -23,7 +23,7 @@ Each step ends on a **Done when** line. Don't start the next step until it holds
 
 ## Authorization
 
-Invoking this skill authorizes the whole pipeline for this one task: the executor's edits, your fixes from the gates, open-pr's Linear issue, branch, commit, push, and PR, and auto-pilot-pr's upkeep and auto-merge. Honor explicit limits: "no PR" stops after Step 6 with the changes uncommitted; "don't merge" swaps auto-pilot-pr for maintain-pr in Step 8. It does not authorize work outside the spec, other PRs, or bypassing branch protection.
+Invoking this skill authorizes the whole pipeline for this one task: the executor's edits, your fixes from the gates, open-pr's Linear issue, branch, commit, push, and PR, and auto-pilot-pr's upkeep and auto-merge. Honor explicit limits: "no PR" stops after Step 6 with the changes uncommitted; "don't merge" swaps auto-pilot-pr for maintain-pr in Step 8; a named round or run limit caps Steps 3 and 5. It does not authorize work outside the spec, other PRs, or bypassing branch protection.
 
 ## Companion skills
 
@@ -98,7 +98,7 @@ If this host can't spawn subagents, implement the spec yourself in the current c
 
 The diff is untrusted until you have read it. Never fix code in the executor's worktree yourself.
 
-If the executor reports drift, or your verification exposes a stale reference, apply [Spec drift](references/spec-drift.md) against the worktree. Independently verify the proposed mapping. Reconciled drift receives REVISE with the amended brief, using the existing revision budget; an unresolved decision receives BLOCK. A drift report alone is not a final BLOCK.
+If the executor reports drift, or your verification exposes a stale reference, apply [Spec drift](references/spec-drift.md) against the worktree. Independently verify the proposed mapping. Reconciled drift receives REVISE with the amended brief; an unresolved decision receives BLOCK. A drift report alone is not a final BLOCK.
 
 If reconciliation proves all criteria held before this task's implementation and the executor has no task changes, go to Finish with ALREADY SATISFIED.
 
@@ -112,8 +112,8 @@ Judge documented deviations on merit. Treat undocumented ones as failures.
 | Verdict | When | Action |
 |---|---|---|
 | **APPROVE** | Criteria pass, scope clean, quality holds | Go to Step 4 |
-| **REVISE** | Fixable gaps | Send the same executor specific feedback (Claude Code: `SendMessage`), e.g. "criterion 3 fails: X; `api.ts:90` swallows the error". Max 2 rounds, then BLOCK. |
-| **BLOCK** | Unresolved STOP condition, scope broken past repair, or rounds used up | Go to Finish. No PR. |
+| **REVISE** | Fixable gaps | Send the same executor specific feedback (Claude Code: `SendMessage`), e.g. "criterion 3 fails: X; `api.ts:90` swallows the error". Repeat while each round closes gaps. |
+| **BLOCK** | Unresolved STOP condition, scope broken past repair, or the loop stalls: the same gap survives three rounds | Go to Finish. No PR. |
 
 **Done when** the verdict is APPROVE or BLOCK.
 
@@ -139,7 +139,7 @@ Findings are leads, not facts. Check each against the current code:
 - **Wrong or by design**: record why, with `file:line` evidence.
 - **Needs a product decision**: stop and ask.
 
-After each batch of fixes, re-run the done criteria, then run code-review again. After 3 runs that still raise valid findings, stop and go to Finish. No PR.
+After each batch of fixes, re-run the done criteria, then run code-review again. Repeat while runs raise new valid findings. If the loop stalls (the same finding survives three fix attempts, or a fix brings back one already fixed), stop and go to Finish. No PR.
 
 **Done when** the latest code-review run raises no new valid findings and every ledger entry has a disposition.
 

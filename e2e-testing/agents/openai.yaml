@@ -1,0 +1,3 @@
+interface:
+  display_name: "E2E testing"
+  short_description: "Build E2E tests with merge queue CI gates"

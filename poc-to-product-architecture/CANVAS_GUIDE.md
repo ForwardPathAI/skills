@@ -110,4 +110,4 @@ In the Step 5 report, include:
 - File paths: the canvas (managed copy as a clickable canvas link using its full absolute path) and, when produced, the generated DOCX report (see [DOCX_GUIDE.md](DOCX_GUIDE.md)).
 - Deviations from product-foundation (if any).
 - Top risks from section 10.
-- Next-step skills: [azure-infra-setup](../azure-infra-setup/SKILL.md) for full Bicep authoring, [customer-deployment-package](../customer-deployment-package/SKILL.md) for the customer handoff.
+- Next-step skills: [azure-conventions](../azure-conventions/SKILL.md) for full Bicep authoring, [customer-deployment-package](../customer-deployment-package/SKILL.md) for the customer handoff.

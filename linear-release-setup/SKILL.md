@@ -12,7 +12,7 @@ Reference implementation: `PRS-Walmart-PRIME` uses `.github/workflows/linear-rel
 
 ## Wrapped Release Work
 
-If the repo does not already build and publish release containers, first use [azure-infra-setup](../azure-infra-setup/SKILL.md) to understand or create the Azure container publishing path. Return here once a published GitHub Release can produce the customer release artifacts; this skill adds the Linear scheduled-release layer around that release.
+If the repo does not already build and publish release containers, first use [azure-conventions](../azure-conventions/SKILL.md) to understand or create the Azure container publishing path. Return here once a published GitHub Release can produce the customer release artifacts; this skill adds the Linear scheduled-release layer around that release.
 
 ## Discovery
 

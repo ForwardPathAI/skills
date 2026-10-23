@@ -41,7 +41,7 @@ The post-approval build plan: an **ordered** list of work items to go POC → pr
 
 - Replace each `*-mock.ts` adapter with its real implementation (list them, from `POC_NOTES.md`).
 - Harden auth (real Entra SSO, org RBAC, remove the dev credentials login).
-- Real infra via [poc-to-product-architecture](../poc-to-product-architecture/SKILL.md) → [azure-infra-setup](../azure-infra-setup/SKILL.md) → [customer-deployment-package](../customer-deployment-package/SKILL.md).
+- Real infra via [poc-to-product-architecture](../poc-to-product-architecture/SKILL.md) → [azure-conventions](../azure-conventions/SKILL.md) → [customer-deployment-package](../customer-deployment-package/SKILL.md).
 - Add the test suite beyond smoke.
 - Build out `designed-only` screens into functional ones.
 

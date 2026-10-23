@@ -13,7 +13,7 @@ Read the architecture **canvas** (source of truth) and, when present, the design
 | §2 SOW traceability (`new` / `deferred` / `covered by POC`) | The master requirement list — every `new`/`deferred` item needs at least one ticket; `covered by POC` items may still need a hardening ticket. |
 | §3 POC gap audit (`demo-grade` / `missing` / `reusable`) | `demo-grade` → a "replace for production" ticket; `missing` → a build ticket; `reusable` → no ticket (note as carried over). |
 | §4 Architecture layers (web / api / data / jobs / auth / ai) | Foundation tickets: Drizzle schema + migrations, auth wiring, each API surface, jobs workers, AI module. |
-| §5–6 Azure resource map + Bicep skeleton | Infra tickets (hand off to [azure-infra-setup](../azure-infra-setup/SKILL.md)): Bicep template, ACR/OIDC, Key Vault, Container Apps, Postgres, Redis/storage. |
+| §5–6 Azure resource map + Bicep skeleton | Infra tickets (hand off to [azure-conventions](../azure-conventions/SKILL.md)): Bicep template, ACR/OIDC, Key Vault, Container Apps, Postgres, Redis/storage. |
 | §7 Security & reliability | Hardening tickets: authz, secrets, backups, health/liveness, logging/metrics. |
 | §9 Phased migration path | **Milestone candidates** — one milestone per phase. |
 | §10 Risks & open questions | Either a spike/ticket (if actionable) or a plan-level assumption/risk (if a decision the user must make). |

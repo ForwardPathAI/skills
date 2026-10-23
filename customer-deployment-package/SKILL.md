@@ -14,7 +14,7 @@ Customers are usually **Azure** customers and usually on **Windows**, so the fin
 - Run from the **application repo** (the one with the internal `infra/` or `infrastructure/` folder).
 - **Notion MCP** connected. Inspect available tools/params under the MCP descriptors before calling (search, retrieve page, create page in a database, etc.). Stop and tell the user if no Notion MCP is available.
 - **1Password** share link for the Forward Path-provided ACR image pull credentials only (username/password for pulling images). Do not put secret values in the zip or in git.
-- **azure-infra-setup** skill available — read [azure-infra-setup/SKILL.md](../azure-infra-setup/SKILL.md) for Forward Path Azure conventions (shared ACR, OIDC/RBAC, Key Vault, regions, Container Apps) when shaping the external infra.
+- **azure-conventions** skill available — read [azure-conventions/SKILL.md](../azure-conventions/SKILL.md) for Forward Path Azure conventions (shared ACR, OIDC/RBAC, Key Vault, regions, Container Apps) when shaping the external infra.
 
 Stop and report anything missing before proceeding.
 
@@ -65,7 +65,7 @@ Complete this step when the source infra has been found and the app's resources,
 
 Create an external infra set the **customer** can run in their tenant. Keep it in a checked-in deployment handoff folder under `docs/deployments/<Sanitized-Customer>-<Sanitized-App>-Deployment-<YYYY-MM-DD>/infra/`, not mixed into the repo's internal infra and not under ignored build output such as `dist/`.
 
-Include **both Terraform and Bicep** (unless the user scopes to one). Apply [azure-infra-setup](../azure-infra-setup/SKILL.md) conventions for Azure targets.
+Include **both Terraform and Bicep** (unless the user scopes to one). Apply [azure-conventions](../azure-conventions/SKILL.md) conventions for Azure targets.
 
 Sanitize internal-only details — the external variant must **not** leak Forward Path internal state or secrets:
 
@@ -174,6 +174,6 @@ Prefer `-` as the separator. Keep dates as `YYYY-MM-DD` (no `/`).
 
 ## Additional resources
 
-- Forward Path Azure conventions: [azure-infra-setup/SKILL.md](../azure-infra-setup/SKILL.md)
+- Forward Path Azure conventions: [azure-conventions/SKILL.md](../azure-conventions/SKILL.md)
 - Notion sample template page: `36c92ad1579b81819801cfd3276fe396`
 - Notion deployments database: `49466b35ef21421199f5acb7be5bf9e0`

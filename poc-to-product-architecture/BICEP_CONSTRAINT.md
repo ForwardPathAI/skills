@@ -45,7 +45,7 @@ The canvas's Bicep skeleton must present these sections **in order**, with real 
 
 The skeleton in the canvas is an **outline with real resource types and parameter names** — not a complete working template. Full Bicep authoring is deferred to:
 
-- [azure-infra-setup/SKILL.md](../azure-infra-setup/SKILL.md) — internal infra and CI/CD wiring.
+- [azure-conventions/SKILL.md](../azure-conventions/SKILL.md) — internal infra and CI/CD wiring.
 - [customer-deployment-package/SKILL.md](../customer-deployment-package/SKILL.md) — customer-facing external variant and deployment handoff.
 
 Link both as next steps in the Step 5 report.

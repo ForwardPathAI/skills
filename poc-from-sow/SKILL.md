@@ -30,7 +30,7 @@ SOW → POC plan → design (mockups) → scaffold → implement → package + d
   - [product-foundation/SKILL.md](../product-foundation/SKILL.md) — the target stack, conventions, and [SCAFFOLD.md](../product-foundation/SCAFFOLD.md).
   - [web-ui/SKILL.md](../web-ui/SKILL.md) and [mobile-ui/SKILL.md](../mobile-ui/SKILL.md) — screen specs + mockups.
   - [mobile-ui-implement/SKILL.md](../mobile-ui-implement/SKILL.md) — build mobile screens from mockups.
-  - [azure-infra-setup/SKILL.md](../azure-infra-setup/SKILL.md) — the demo-deploy conventions.
+  - [azure-conventions/SKILL.md](../azure-conventions/SKILL.md) — the demo-deploy conventions.
   - [poc-to-product-architecture/SKILL.md](../poc-to-product-architecture/SKILL.md) — the closing architecture deliverable.
 - Bundled references in this skill directory:
   - [POC_BAR.md](POC_BAR.md) — the quality bar every POC must pass (what survives approval, what is never allowed, what may be shortcut).
@@ -118,7 +118,7 @@ The POC must be buildable, runnable, and demo-deployable:
 
 - **Local** — from a fresh clone, `docker compose up` + `bun dev` works following **only** the README; the seed script yields a demo-ready dataset.
 - **Containers** — a Dockerfile per app (web / api / jobs as applicable) so the POC ships as images from `forwardpathai.azurecr.io` — the same shape [poc-to-product-architecture](../poc-to-product-architecture/SKILL.md) later expects.
-- **Demo deploy** — a deliberately thin deploy to one Forward Path Azure dev environment (Container Apps, consumption SKUs, [azure-infra-setup](../azure-infra-setup/SKILL.md) conventions) giving the customer a live URL. Full customer-tenant infra is post-approval work — keep this minimal.
+- **Demo deploy** — a deliberately thin deploy to one Forward Path Azure dev environment (Container Apps, consumption SKUs, [azure-conventions](../azure-conventions/SKILL.md) conventions) giving the customer a live URL. Full customer-tenant infra is post-approval work — keep this minimal.
 - **Demo script** — write `docs/poc/DEMO_SCRIPT.md`: seeded logins per role + the exact click-path through each hero flow.
 
 Complete this step when a fresh clone runs from the README alone, images build, and (when Azure access exists) the live demo URL works.
@@ -177,7 +177,7 @@ Complete this step when the canvas + DOCX exist (or the user opted to skip) and 
 - Web screen spec + mockups: [web-ui/SKILL.md](../web-ui/SKILL.md)
 - Mobile screen spec + mockups: [mobile-ui/SKILL.md](../mobile-ui/SKILL.md)
 - Build mobile screens from mockups: [mobile-ui-implement/SKILL.md](../mobile-ui-implement/SKILL.md)
-- Demo-deploy conventions: [azure-infra-setup/SKILL.md](../azure-infra-setup/SKILL.md)
+- Demo-deploy conventions: [azure-conventions/SKILL.md](../azure-conventions/SKILL.md)
 - Closing architecture deliverable: [poc-to-product-architecture/SKILL.md](../poc-to-product-architecture/SKILL.md)
 - Quality bar: [POC_BAR.md](POC_BAR.md)
 - Web implementation guide: [WEB_IMPLEMENT.md](WEB_IMPLEMENT.md)

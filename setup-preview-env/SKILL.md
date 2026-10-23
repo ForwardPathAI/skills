@@ -12,7 +12,7 @@ This skill authors application support, Terraform, GitHub Actions, scripts, test
 
 Read [REFERENCE.md](REFERENCE.md) before implementation. It records the reusable architecture and the traps found in the ButtconRAG reference.
 
-Apply [azure-infra-setup](../azure-infra-setup/SKILL.md) for the existing shared `forwardpathai` registry, federated publishing, registry-mode-aware RBAC, and secret handling. The reference's direct PR OIDC publishing path is historical and unsupported. A same-repo or non-fork gate alone does not make PR code safe to execute with Azure credentials.
+Apply [azure-conventions](../azure-conventions/SKILL.md) for the existing shared `forwardpathai` registry, federated publishing, registry-mode-aware RBAC, and secret handling. The reference's direct PR OIDC publishing path is historical and unsupported. A same-repo or non-fork gate alone does not make PR code safe to execute with Azure credentials.
 
 ## 1. Establish the preview contract
 
@@ -89,7 +89,7 @@ Requirements:
 - Export stable shared outputs consumed by the per-PR root and CI.
 - Set preview Container Apps to scale to zero where startup latency permits and cap replicas conservatively.
 - Use the Azure control plane to create per-PR managed resources when CI cannot safely reach their data plane.
-- Prefer pre-created managed identity plus Key Vault references and read-only registry permissions matched to the shared registry's RBAC/ABAC mode. Any platform-limitation fallback must follow azure-infra-setup's secret/state rules. A scoped ACR token may be considered for runtime pulls only; publishing always uses federation.
+- Prefer pre-created managed identity plus Key Vault references and read-only registry permissions matched to the shared registry's RBAC/ABAC mode. Any platform-limitation fallback must follow azure-conventions's secret/state rules. A scoped ACR token may be considered for runtime pulls only; publishing always uses federation.
 - Keep secrets out of git, workflow literals, Terraform variables files, logs, and outputs.
 - Generate and commit provider lock files. Never copy `.terraform/`, `*.tfstate`, plan files, certificates, or generated credentials.
 

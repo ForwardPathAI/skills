@@ -1,5 +1,8 @@
 reviews:
   profile: quiet
+  review_status: false
+  review_progress: false
+  commit_status: false
   auto_review:
     enabled: false
   path_instructions:

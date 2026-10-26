@@ -1,0 +1,8 @@
+{
+  "autoReview": [],
+  "statusCheck": false,
+  "statusCommentsEnabled": false,
+  "strictness": 3,
+  "commentTypes": ["logic", "syntax"],
+  "instructions": "When a review is explicitly requested, report only actionable correctness, security, reliability, or compatibility issues introduced by the change. Skip style preferences, speculative risks, and issues without a concrete failure scenario. Keep findings concise and cite the affected code. Do not identify or name other review agents; independent reviewers may be used separately."
+}

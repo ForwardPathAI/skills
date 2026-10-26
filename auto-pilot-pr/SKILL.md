@@ -30,7 +30,7 @@ Merge method: the one the user named, else `gh repo view --json viewerDefaultMer
 
 ## The loop
 
-1. **Disarm before every push.** If auto-merge is armed (`gh pr view <pr> --json autoMergeRequest`), run `gh pr merge <pr> --disable-auto` before you push anything. A new commit is a head you haven't verified, and required checks alone could merge it before Greptile or you see it.
+1. **Disarm before every push.** If auto-merge is armed (`gh pr view <pr> --json autoMergeRequest`), run `gh pr merge <pr> --disable-auto` before you push anything. A new commit is a head you haven't verified, and required checks alone could merge it before you see it.
 2. **Maintain.** Run maintain-pr's loop until it reports the latest head ready, or ready except for human approval. Don't count a head as ready while any human's latest review on the PR is "changes requested". Record the head SHA.
 3. **Arm.**
 
@@ -51,4 +51,4 @@ Finish when the PR has merged, is blocked, or is armed with no way to watch it. 
 - **Armed**: head SHA, method, what GitHub is waiting on (whose approval, which checks), and, with no watch, that nothing will answer new feedback and a push by anyone with write access can merge without a new pass. Tell the user `gh pr merge <pr> --disable-auto` turns it off.
 - **Blocked**: maintain-pr's blocker, or why auto-merge couldn't be armed.
 
-Include maintain-pr's report: feedback dispositions, validation, and Greptile status. "Armed" is not "ready to merge"; say which one you mean.
+Include maintain-pr's report: human and independent review-agent feedback dispositions, plus validation. "Armed" is not "ready to merge"; say which one you mean.

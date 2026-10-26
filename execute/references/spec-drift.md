@@ -2,7 +2,7 @@
 
 The lead reconciles drift before dispatch and whenever the executor reports a mismatch. A changed file is a reason to inspect its behavior. Reconciliation updates references and accounts for existing work while preserving the requested outcome.
 
-This procedure replaces generic stale-code, excerpt-mismatch, and path-whitelist stops in older specs only for verified equivalents. Explicit exclusions and task-specific STOP conditions in the current approved brief remain binding unless an approved spec amendment explicitly supersedes them.
+This procedure replaces generic stale-code, excerpt-mismatch, and path-whitelist stops in the current approved brief only for verified equivalents, regardless of when the source spec was written. Explicit exclusions and task-specific STOP conditions in the current approved brief remain binding unless an approved spec amendment explicitly supersedes them.
 
 ## Verify the current equivalents
 

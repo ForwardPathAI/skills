@@ -33,14 +33,14 @@ When execution cannot continue under the current brief, ask the user before goin
 
 - What changed, with expected vs observed behavior and code, history, or command evidence.
 - The requirement, exclusion, dependency, acceptance criterion, or STOP condition that prevents continuation.
-- The exact proposed edit to the source ticket or plan, showing before and after text. State what it adds, drops, or weakens and name each original restriction it supersedes. If no justified edit would resolve the blocker, explain what external action or decision is needed.
+- The complete proposed source patch to the ticket or plan, showing before and after text for both the affected sections and the amendment record. Include the date, reason, evidence, superseded requirements, and original wording in the proposed record. Mark the approval field for verbatim completion from the user's response. State what it adds, drops, or weakens and name each original restriction it supersedes. If no justified edit would resolve the blocker, explain what external action or decision is needed.
 
 Offer approval of the edit and continued execution, approval with edits, or stop. An edited proposal needs approval of its final wording unless the user's answer already specifies and authorizes that wording. Approval covers only the named change; retain all other requirements and explicit execution limits. An earlier approval remains valid for the same change.
 
 On approval:
 
 1. Re-read the source. If intervening edits conflict with the proposal, reconcile them and seek approval for any materially changed proposal. Preserve unrelated content.
-2. Update the affected sections of the original Linear issue, GitHub issue, or plan file using its supported editing tool. Append a short amendment record with the date, reason, evidence, user's approval, and superseded requirements. Preserve the original wording in that record. Approval authorizes this edit without another permission check.
+2. Apply only the approved source patch to the original Linear issue, GitHub issue, or plan file using its supported editing tool, including the approved amendment record. Fill its marked approval field verbatim from the user's response. Approval authorizes this edit without another permission check.
 3. Read back the source to confirm the update. Rebuild the execution brief from the revised spec, its amendment record, and any still-valid reconciliation mappings. The revised spec is authoritative; the approved amendment supersedes only the original items it names.
 4. Resume at the blocked step, using Step 2 for an initial dispatch or a Step 3 REVISE round for executor work. Give the executor and reviewers the full refreshed brief. Re-run affected scope checks and all done criteria, and report the amendment in the PR description and final report.
 

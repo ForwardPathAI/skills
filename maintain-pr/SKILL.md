@@ -7,7 +7,7 @@ description: Maintain a GitHub PR through FP Code and human review feedback, con
 
 Own the identified PR through validation, feedback, and approval. Continue authorized fixes without repeated prompting. Honor local-only, draft-only, no-push, and no-Linear limits. Maintain every PR created or updated within the task, preserving stack bases and unrelated work.
 
-This skill does not authorize merging, changing branch protection, dismissing reviews, using another identity, deploying, or installing automation. [Auto-pilot-pr](../auto-pilot-pr/SKILL.md) supplies merge authority when invoked or authorized by the user's standing workflow.
+This skill does not authorize merging, changing branch protection, dismissing reviews, using another identity, deploying, or installing automation. [Auto-pilot-pr](../auto-pilot-pr/SKILL.md) supplies merge authority when invoked by the user or authorized by the user's standing workflow.
 
 ## Establish the target
 

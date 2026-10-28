@@ -11,7 +11,7 @@ The rule that keeps this safe: auto-merge stays armed only on a head you have ve
 
 ## Authorization
 
-Invoking this skill, or explicit standing instructions to use it for the task, authorizes everything maintain-pr does on this PR, plus arming auto-merge or merging at once when all readiness gates pass. For this PR only, it overrides maintain-pr's limits on merging and enabling auto-merge. If the repo requires no approval, the PR merges as soon as required checks pass, with no human review; say so when you arm it.
+A user's invocation of this skill, or explicit standing instructions to use it for the task, authorizes everything maintain-pr does on this PR, plus arming auto-merge or merging at once when all readiness gates pass. For this PR only, it overrides maintain-pr's limits on merging and enabling auto-merge. If the repo requires no approval, the PR merges as soon as required checks pass, with no human review; say so when you arm it.
 
 It does not authorize `--admin` merges or any other branch-protection bypass, approving the PR, dismissing reviews, changing repo settings, or merging other PRs.
 

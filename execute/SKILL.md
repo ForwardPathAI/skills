@@ -23,7 +23,7 @@ Each step ends on a **Done when** line. Don't start the next step until it holds
 
 ## Authorization
 
-Invoking this skill authorizes the whole pipeline for this one task: the executor's edits, your fixes from the gates, open-pr's Linear issue, branch, commit, push, and PR, and auto-pilot-pr's upkeep and auto-merge. Honor explicit limits: "no PR" stops after Step 6 with the changes uncommitted; "don't merge" swaps auto-pilot-pr for maintain-pr in Step 8; a named round or run limit caps Steps 3 and 5. It does not authorize work outside the spec, other PRs, or bypassing branch protection; only an approved spec amendment changes its requirements and authorizes the corresponding source ticket or plan edit.
+Invoking this skill authorizes the whole pipeline for this one task: the executor's edits, your fixes from the gates, open-pr's branch, commit, push, and PR, with an issue only when issue tracking is enabled, and auto-pilot-pr's upkeep and auto-merge. Honor explicit limits: "no PR" stops after Step 6 with the changes uncommitted; "don't merge" swaps auto-pilot-pr for maintain-pr in Step 8; a named round or run limit caps Steps 3 and 5. It does not authorize work outside the spec, other PRs, or bypassing branch protection; only an approved spec amendment changes its requirements and authorizes the corresponding source ticket or plan edit.
 
 ## Propose and approve a spec amendment
 
@@ -66,7 +66,7 @@ code-review and simplify ship with Claude Code; resolve them by name. Name every
 ## Preflight
 
 - `git remote get-url origin` points at GitHub (open-pr pushes to `origin`) and `gh auth status` passes.
-- open-pr's prerequisites hold (Linear MCP, issue-writer), unless the user said "no PR".
+- open-pr's prerequisites hold unless the user said "no PR". In a no-Linear workflow, skip Linear access, issue-writer, issue creation, and Linear branch naming.
 - The working tree is clean. Step 4 lands the executor's work as uncommitted changes, so unrelated edits would ride into the PR. If dirty, stop and ask.
 - The current branch has no open PR (`gh pr view` finds none). Otherwise open-pr would add this work to that PR and auto-pilot-pr would merge it. If one exists, stop and ask.
 - Record the base (user-named, else the repo default branch) and the start commit (`git rev-parse HEAD`).
@@ -181,7 +181,7 @@ A cleanup can change behavior. If any stayed, run code-review again and handle i
 Follow open-pr, with these inputs:
 
 - Ship one new PR. Don't split or stack; the spec is one task.
-- If Step 1 had a Linear issue, skip open-pr's issue step and use that issue's branch name from `get_issue`.
+- Preserve a supplied issue link. In a no-Linear workflow, make no Linear calls and use repository branch conventions. Otherwise reuse an existing Linear issue and its returned branch name.
 - Put the done criteria and their results in the PR's Test plan.
 - Summarize any reconciliation or approved spec amendment, its evidence, and criteria satisfied before implementation in the PR description.
 

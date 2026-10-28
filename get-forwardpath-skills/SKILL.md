@@ -12,9 +12,9 @@ Install the standard skill set into the current repo, at project scope, for Clau
 | Skill | Source | Use |
 |-------|--------|-----|
 | get-forwardpath-skills | `forwardpathai/skills` | This skill, so teammates can rerun or update the set |
-| open-pr | `forwardpathai/skills` | Open a PR via a Linear issue and Linear's branch |
+| open-pr | `forwardpathai/skills` | Open a PR, honoring no-Linear workflows |
 | maintain-pr | `forwardpathai/skills` | Drive an open PR through review, conflicts, and CI |
-| auto-pilot-pr | `forwardpathai/skills` | Run maintain-pr and arm auto-merge on the verified head (manual call only) |
+| auto-pilot-pr | `forwardpathai/skills` | Run maintain-pr and merge the verified head when authorized |
 | code-review | `forwardpathai/skills` | Review changes for correctness bugs and regressions |
 | security-review | `forwardpathai/skills` | Review changes for vulnerabilities with verified attack paths |
 | execute | `forwardpathai/skills` | Take a written spec through implementation, review, and PR delivery (manual call only) |

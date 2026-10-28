@@ -69,9 +69,9 @@ npx skills add forwardpathai/skills/get-forwardpath-skills
 | Skill | Description |
 |-------|-------------|
 | [issue-writer](./issue-writer) | Write Linear issues an AI coding agent can execute without follow-up questions. |
-| [open-pr](./open-pr) | Open GitHub PRs from local changes via a Linear issue, Linear's git branch, commit, and `gh` — decide whether to ship one PR, split it, or stack dependent PRs, and attach verified screenshots when the diff changes UI. |
+| [open-pr](./open-pr) | Open GitHub PRs from local changes with optional Linear tracking, commits, and `gh` — decide whether to ship one PR, split it, or stack dependent PRs, and attach verified screenshots when the diff changes UI. |
 | [release](./release) | Cut a production GitHub release from the default branch — semver tag, release notes, breaking-change gate, and CI watch. |
-| [maintain-pr](./maintain-pr) | Maintain an open GitHub PR through human and independent review-agent feedback, merge conflicts, and CI failures — triage findings, fix, validate, push, reply/resolve, and recheck the latest head until it is ready or concretely blocked. |
+| [maintain-pr](./maintain-pr) | Maintain an open GitHub PR through FP Code and human feedback, merge conflicts, and CI failures — triage findings, fix, validate, push, reply/resolve, and recheck the latest head until it is ready or concretely blocked. |
 | [auto-pilot-pr](./auto-pilot-pr) | Run maintain-pr until the latest head is ready, then arm GitHub auto-merge on it. Disarms before each of its own pushes, so its unverified heads never merge. Install with `maintain-pr`. |
 | [execute](./execute) | Run one written spec (improve plan, Linear issue, or GitHub issue) through to a PR that has merged or is armed to merge: an executor subagent builds it in a worktree, the lead agent reviews the diff, then runs code-review, simplify, open-pr, and auto-pilot-pr. Install with `open-pr`, `issue-writer`, `maintain-pr`, and `auto-pilot-pr`. |
 | [code-review](./code-review) | Review a working-tree diff, branch, or specified PR for evidence-backed correctness bugs and regressions. |

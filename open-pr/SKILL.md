@@ -1,258 +1,58 @@
 ---
 name: open-pr
-description: Open GitHub pull requests from local changes by filing a Linear issue first, using Linear's git branch, committing, and creating the PR with gh, with screenshots when the diff changes UI. Decides whether the work ships as one PR, several independent PRs, or a stack of dependent PRs. Use when the user asks to open a PR, ship changes, or put work up for review — including "stack a PR", "stacked PR", "open a dependent PR", "stack this on top", "split this into PRs", or "branch on top of this".
+description: Open or update GitHub PRs from local changes, with screenshots for UI changes and support for independent or stacked PRs. Honors no-Linear workflows and existing issue links. Use when asked to open, split, stack, or submit a PR.
 ---
 
-# Open Pull Request
+# Open pull request
 
-Turn local work into reviewable PRs: analyze all changes, decide the PR shape (one, split, or stacked), then for each PR file a Linear issue, branch from Linear's suggested name, commit, capture screenshots if it changes UI, and open the PR with `gh`.
+Publish the requested work as reviewable PRs. Honor explicit limits such as no pushing, draft-only, a named base, or no Linear. A request to open a PR includes the relevant commits and pushes. It does not authorize merging; use [auto-pilot-pr](../auto-pilot-pr/SKILL.md) when merging is authorized.
 
-## Prerequisites
+## Inspect the work
 
-- Run from the target git repository (not the skills repo unless that is the project).
-- `gh` authenticated (`gh auth status`).
-- Linear MCP available (plugin or user server).
-- **issue-writer** skill available at `issue-writer/SKILL.md` in the skills install path, or bundled in this repo — read and follow it when creating Linear issues.
+Read repository instructions. Inspect the remote, current branch, worktrees, staged and unstaged changes, untracked files, and commits ahead of the intended base. Verify GitHub access through an available connector or authenticated `gh`.
 
-Stop and tell the user what is missing if any prerequisite fails.
+Resolve the actual base from the user's request, an existing PR, or the repository default branch. Fetch it before comparing committed work. Preserve a matching existing PR and its base. If a named base conflicts with that PR, resolve whether the work belongs in another PR before changing its target.
 
-## Workflow
+Preserve unrelated work. Reuse the correct feature branch; otherwise create a branch from the fetched base and transfer only relevant changes and commits. Prefer an isolated checkout when switching would disturb other work. Never blindly cherry-pick every ahead commit, indiscriminately stash or stage files, or force-push by default. Verify the head remote for fork PRs and respect push permissions.
 
-Copy this checklist and track progress:
+If there are no relevant changes or commits, return the existing PR URL or report that there is nothing to submit.
 
-```
-- [ ] Step 1: Analyze all local changes
-- [ ] Step 2: Choose PR shape (one / split / stack) and base
-- [ ] Step 3: Create Linear issue(s) (issue-writer)
-- [ ] Step 4: Checkout Linear git branch
-- [ ] Step 5: Commit with descriptive message
-- [ ] Step 6: Capture screenshots (UI changes only)
-- [ ] Step 7: Push and open PR with gh
-```
+## Choose the PR shape
 
-For a split or a stack, run Steps 4–7 once per PR, bottom layer first.
+Explicit user choices take precedence. Keep one coherent change together, including migrations and callers that must ship together. Split unrelated concerns into independent PRs. Stack dependent changes only when each layer builds and is safe to merge alone.
 
-If the work is already committed on the correct Linear branch and the user only wants the PR, skip Steps 4–5 — but still create and link a Linear issue (Step 3) if one is missing.
+For a split or stack, show each PR's scope and base and obtain agreement unless the user already authorized that shape. Keep stacks shallow. A new child uses the current feature branch or named parent as its base, not the default branch. Record the parent's head before any rewrite. Every base must exist on the verified remote before opening its PR.
 
-### Step 1: Analyze all local changes
+Process each PR once, bottom layer first. Reuse an existing matching PR rather than creating a duplicate.
 
-Resolve the compare base first: a user-named base (e.g. `develop`) when they name one, otherwise the repo default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Note the current branch: `git rev-parse --abbrev-ref HEAD`. Check that the base is on the remote (`git ls-remote --exit-code --heads origin <base>`). If it exists only locally, push it (`git push -u origin <base>`), since every PR base must be on `origin`; if it exists nowhere, stop and ask. Then fetch it: `git fetch origin <base>`. Fetch the current branch only if it exists on the remote (`git ls-remote --exit-code --heads origin <current>`).
+## Resolve issue tracking and branch names
 
-Check whether the current branch already has a PR: `gh pr view --json number,url,state,baseRefName,headRefOid,isCrossRepository`. If it has an open one, compare new work against that PR's head, not the base — its commits are not new work. This skill pushes only to `origin`, so if that PR's head is in another repository (`isCrossRepository` is true, as with a fork), stop and ask before you commit or push anything. If the user named a base, other than the current branch itself, that differs from that PR's `baseRefName`, stop and ask whether to retarget the PR or open a new branch and PR before you commit or push anything.
+**No Linear:** when the user or their standing instructions excludes Linear, skip issue creation, Linear access checks, issue-writer, and Linear branch naming entirely. Missing Linear access never blocks this mode. Preserve supplied issue links without calling Linear. Keep the correct branch or choose a descriptive name following repository conventions.
 
-Run in parallel (`<compare>` is `origin/<base>`, or that open PR's `headRefOid` when the current branch has one; if that commit isn't local, fetch it with `git fetch origin pull/<number>/head`):
+Otherwise, preserve an existing issue. The team's default is one Linear issue per PR unless the user or repository selects another tracking policy. When a new Linear issue is needed, follow [issue-writer](../issue-writer/SKILL.md), create one per PR, and use its returned git branch name. Check Linear access and skill availability only in this mode. Link dependencies for a stack. Do not invent labels or project IDs.
 
-```bash
-git status
-git diff
-git diff --staged
-git log -5 --oneline
-git log <compare>..HEAD --oneline
-git diff --stat <compare>...HEAD
-```
+## Validate and commit
 
-Review **both** staged and unstaged diffs. Also check untracked files.
+Run the repository-required checks and focused verification of the changed behavior. Inspect the final diff and stage only relevant paths. Commit using repository conventions with hooks enabled. If a hook changes files, inspect and validate those changes before retrying. Do not amend an existing commit unless authorized.
 
-- **No changes** (clean tree, no untracked files, and no commits ahead of `<compare>`): stop — nothing to PR. If the current branch has an open PR, return its URL.
-- If the current branch has an open PR, the new work is either more of that PR or a stack on top of it. Decide in Step 2.
-- Note real file paths, patterns, line counts, and acceptance criteria — feed these into Step 2 and the Linear issues.
-- Mark the diff as a **UI change** when it alters what a user sees or does: pages, routes, components, styles, themes, layout, responsive behavior, user-facing copy, empty/loading/error states, or client-side interactions. When unsure, treat it as one. Backend logic, data and migrations, infra, CI, tests, docs, and refactors that leave rendered output alone are not UI changes. For a split or stack, mark each PR on its own.
+FP Code supplies review after publication for repositories using it. Do not add a mandatory local reviewer, duplicate review report, or stamp request. Run extra reviews when the task or repository requires them.
 
-### Step 2: Choose PR shape and base
+## Capture UI evidence
 
-Pick one shape. Explicit user words win ("stack this" → stack; "one PR" → one PR).
+When a PR changes what a user sees or does, read [screenshots.md](screenshots.md). Capture and inspect the affected views from the running app and attach them to the PR. Honor a request for no screenshots. If UI code has no visible effect, explain that briefly.
 
-If the new work belongs in the current branch's open PR, don't open another one. Skip Step 4 and keep the current branch. Check the PR body and branch name for a Linear issue: if one is linked, skip Step 3; if not, create one (Step 3) and add it to the PR body. Then commit (Step 5), capture screenshots (Step 6), push, and update that PR's body with `gh pr edit` if the summary or screenshots changed.
+A capture or upload failure does not block independent PR work. Report the missing evidence. Refresh screenshots after later visible fixes.
 
-| Shape | Use when | Base |
-|-------|----------|------|
-| **One PR** | One concern, a reviewer can read it in one sitting, or the parts only make sense together | default branch (or user-named base) |
-| **Split** (independent PRs) | Two or more concerns with no dependency between them (a feature plus an unrelated fix or drive-by refactor) | each PR on the default branch |
-| **Stack** (dependent PRs) | Parts must land in order, and the whole is too big for one review | each PR on the PR below it |
+## Publish and continue
 
-**Keep it as one PR when:**
+Push to the verified feature branch. If auto-merge is already armed, disable it before pushing so an unverified head cannot merge.
 
-- It is under ~400 changed lines of hand-written code (ignore lockfiles, generated code, snapshots, fixtures).
-- The parts would break `main` if merged alone (a rename and all its callers; a migration and the code that requires it in the same deploy).
-- Splitting would add more review overhead than it saves (tiny prep commits, one-line fixes).
+Create or update the matching PR against its actual base, following its template. Use `gh pr create --base <base> --body-file <file>` or an equivalent connector. Describe the concrete problem, resulting behavior, and checks actually run. Include issue links only when present, screenshots for UI changes, and the parent and merge order for stacks. Preserve unrelated description content when updating.
 
-**Split into independent PRs when:**
+Verify the URL, head, and base. When available, call `link_pull_request` immediately for each PR created or updated. Return every PR URL and show UI evidence in the final response.
 
-- The diff mixes unrelated concerns. Each concern gets its own PR, issue, and branch off the default branch.
-- Pieces can merge in any order. If one piece needs another, that is a stack, not a split.
+Continue through [maintain-pr](../maintain-pr/SKILL.md), or [auto-pilot-pr](../auto-pilot-pr/SKILL.md) when merging is authorized. Do not run maintenance twice because skills compose. Report merged, ready, waiting, or blocked accurately.
 
-**Stack when all of these hold:**
+## After a stack parent merges
 
-- The work is over ~400 lines or spans several layers, and one reviewer pass would be hard.
-- The pieces depend on each other in a clear order. Common layers, bottom to top:
-  1. Prep refactor or mechanical change (rename, move, format) — no behavior change
-  2. Schema, migration, or shared types
-  3. Backend / API
-  4. UI / client
-- Each layer builds, passes tests, and is safe to merge alone. The bottom layer must be shippable to `main` without the layers above it.
-- The user wants review to start before the whole feature is done, or is adding new work on top of a branch whose PR is still open.
-
-**Don't stack when:**
-
-- A layer can't build or pass tests without the one above it — merge those layers or reorder.
-- The stack would go deeper than ~3–4 PRs. Rebases get painful; split by vertical slice instead (see issue-writer [splitting](../issue-writer/splitting.md)).
-- The parent PR is likely to churn a lot in review. Wait for it to settle, or keep the work in one PR.
-
-**Base rules for a stack:**
-
-- On a feature branch and stacking new work on top → base = current branch.
-- On the default branch and the user asks to stack → ask which branch to stack on, or fall back to one PR on the default branch. Do not proceed until they answer.
-- User names a base → use it.
-- The base must exist on `origin`. Push it first if it has no remote branch.
-
-**Confirm before splitting.** For one PR, proceed. For a split or stack, show the user the plan — each PR's title, files, rough size, and base — and wait for approval before filing issues.
-
-### Step 3: Create Linear issue(s)
-
-One issue per PR.
-
-1. **Read** [issue-writer/SKILL.md](../issue-writer/SKILL.md) and follow its workflow (project, priority, labels from MCP, description template, required fields).
-2. If issue-writer is not installed, apply the same rules inline: use the description template, fetch labels/projects via Linear MCP, never invent label names.
-3. Derive issue content from the Step 1 diffs — title in imperative mood, file paths and acceptance criteria from actual changes.
-4. **Create** each issue via Linear MCP `save_issue` (pass `team`, `title`, `description`, `project`, `priority`, `labels`; use literal newlines in markdown, not `\n` escapes).
-5. For a stack, set `blocked by` relations to match the stack order. For a split or stack of three or more, group the issues in a Linear document per issue-writer [splitting](../issue-writer/splitting.md).
-6. **Fetch branch name** via `get_issue` on each new issue id/identifier. Use the **git branch name** returned by Linear (e.g. `user/lin-123-short-title`). If absent, use Linear's branch naming convention for that team or ask the user.
-
-Record each issue URL/identifier for its PR body.
-
-### Step 4: Checkout Linear git branch
-
-From the repo root. `<base>` is the base chosen in Step 2.
-
-**Branch already exists locally** — switch to it (stash first only if checkout would fail):
-
-```bash
-git stash push -u -m "open-pr"    # only when dirty tree blocks checkout
-git checkout <linear-branch-name>
-git stash pop                     # only if you stashed
-```
-
-**Branch exists on the remote only** — fetch it and switch to it (stash first only if checkout would fail):
-
-```bash
-git fetch origin <linear-branch-name>
-git stash push -u -m "open-pr"    # only when dirty tree blocks checkout
-git checkout -b <linear-branch-name> origin/<linear-branch-name>
-git stash pop                     # only if you stashed
-```
-
-**New branch, base = current branch** (stacking on the branch you are on, or the next layer of a stack you are building) — branch from HEAD; uncommitted changes carry over:
-
-```bash
-git checkout -b <linear-branch-name>
-```
-
-Leave the parent's commits on the parent. Do not cherry-pick them; the PR base already has them.
-
-**New branch, base = another branch** (default branch, or a named base) — branch from the **base tip**, not current HEAD, and carry over commits that are ahead (stash first only if checkout would fail):
-
-```bash
-git fetch origin <base>
-open_pr_ahead_commits="$(git rev-list --reverse origin/<base>..HEAD)"
-git stash push -u -m "open-pr"    # only when dirty tree blocks checkout
-git checkout -b <linear-branch-name> origin/<base>
-if [ -n "$open_pr_ahead_commits" ]; then
-  git cherry-pick $open_pr_ahead_commits
-fi
-git stash pop                     # only if you stashed
-```
-
-Only cherry-pick ahead commits that belong in this PR. If you are on a feature branch whose commits belong to its own open PR, you are stacking — use the branch-from-HEAD case instead.
-
-- Do not use bare `git checkout -b <linear-branch-name>` when the base is not the current branch — that branches from whatever HEAD is on, which may not match the PR base.
-- Do not force-checkout or discard unrelated user work without explicit approval.
-
-**Building a split or stack from one pile of changes:** work one PR at a time. Check out its branch, stage only that PR's files or hunks (`git add <paths>` or `git add -p`), commit (Step 5), push and open the PR (Step 6). The remaining uncommitted changes stay in the working tree. For a stack, branch the next layer from HEAD. For a split, branch the next PR from `origin/<default>`, stashing the rest across the checkout if needed.
-
-### Step 5: Commit
-
-Only commit when the user wants changes committed as part of this flow (default for "open a PR"). Follow git safety rules:
-
-1. Run in parallel: `git status`, `git diff`, `git diff --staged`, `git log -5 --oneline`
-2. Stage relevant files (not secrets: `.env`, credentials, etc.)
-3. Draft a **1–2 sentence** commit message focused on **why**, matching recent repo style
-4. Commit with a HEREDOC:
-
-```bash
-git add <paths>
-git commit -m "$(cat <<'EOF'
-<subject line>
-
-<body if needed>
-EOF
-)"
-```
-
-- Never `--no-verify`, never amend unless user rules allow
-- If hooks modify files, fix and make a **new** commit (do not amend a failed commit)
-- In a stack, each layer must build and pass the repo's checks on its own. Run them before pushing the layer.
-
-### Step 6: Capture screenshots (UI changes only)
-
-Skip this step when Step 1 found no UI change, or the user asked for no screenshots. If the diff touches UI code with no visible effect, say so in one line of the PR body instead.
-
-Otherwise, after the repo's checks pass, read [screenshots.md](screenshots.md) and capture the changed views. A capture failure blocks only the screenshots, not the PR; report it.
-
-### Step 7: Push and open PR
-
-If the base has no remote branch yet, push it first: `git push -u origin <base>`.
-
-```bash
-git push -u origin HEAD
-```
-
-If the branch already has an open PR (`gh pr view`), reuse it — update its body with `gh pr edit` if needed. Otherwise create the PR with `gh` against `<base>`:
-
-```bash
-gh pr create --base <base> --title "<title aligned with Linear issue>" --body "$(cat <<'EOF'
-## Summary
-<1-3 bullets from the change>
-
-## Screenshots
-<UI changes only, per screenshots.md. Omit this section otherwise.>
-
-## Stacked on
-<stacked PRs only: #<parent PR> (`<base>`) — merge that first. Omit this section otherwise.>
-
-## Linear
-<issue URL or LIN-123 identifier>
-
-## Test plan
-- [ ] <how to verify>
-EOF
-)"
-```
-
-For a UI change, attach the Step 6 screenshots to the PR and check they render, per [screenshots.md](screenshots.md).
-
-For a stack, once all layers are open, add a short list of the whole stack (bottom to top, with PR links) to each PR body via `gh pr edit` so reviewers can see where each one sits.
-
-Return every PR URL to the user, with its screenshots for UI changes. For a stack, give the merge order (bottom first). After a parent merges, check out `<child-branch>`, fetch both refs (`git fetch origin <new-base> <child-branch>`), and fast-forward the child (`git merge --ff-only origin/<child-branch>`); stop and ask if it has diverged. Then rebase the child onto the new base (with squash merges, `git rebase --onto origin/<new-base> <old-parent-tip>`, where `<old-parent-tip>` is the parent's last head: `gh pr view <parent> --json headRefOid -q .headRefOid`), push it with `git push --force-with-lease origin <child-branch>`, then retarget it (`gh pr edit <child> --base <new-base>`). Use maintain-pr for ongoing upkeep.
-
-## Anti-patterns
-
-- Opening a PR without reading **both** staged and unstaged diffs
-- One giant PR mixing unrelated concerns — split it
-- Stacking layers that can't build or pass tests alone
-- Stacking deeper than ~3–4 PRs instead of slicing vertically
-- Splitting or stacking without showing the user the plan first
-- Cherry-picking a parent's commits onto a stacked branch
-- Basing a stacked PR on the default branch, or a split PR on another feature branch
-- Opening a PR whose base branch isn't on `origin`
-- Inventing Linear labels or skipping project/priority
-- Using a hand-rolled branch name instead of Linear's `get_issue` branch
-- `git push --force` to main/master
-- Committing secret files
-- Opening a UI-change PR with no screenshots and no stated reason
-
-## Additional resources
-
-- Linear issue quality: [issue-writer/SKILL.md](../issue-writer/SKILL.md)
-- Splitting work into issues: [issue-writer/splitting.md](../issue-writer/splitting.md)
-- Capturing and attaching UI screenshots: [screenshots.md](screenshots.md)
-- Linear MCP: `save_issue`, `get_issue`, `list_projects`, `list_issue_labels`
+Only advance children within the authorized task. Fetch the parent and new base, verify the child's remote head, and preserve unrelated work. Rebase the child with `git rebase --onto <new-base> <old-parent-head> <child>` when the parent's commits must be removed, including after a squash merge. Validate, push with an explicit `--force-with-lease=<branch>:<verified-remote-head>`, and retarget the child. Stop on concurrent changes or missing rewrite permission. Maintain and review the new head before it can merge.

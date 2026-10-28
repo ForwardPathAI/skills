@@ -1,7 +1,6 @@
 ---
 name: auto-pilot-pr
 description: Drive an open PR to merge. Runs maintain-pr until the latest head is ready, then arms GitHub auto-merge on that head so the PR merges itself once approval and required checks clear.
-disable-model-invocation: true
 ---
 
 # Auto-pilot PR
@@ -12,7 +11,7 @@ The rule that keeps this safe: auto-merge stays armed only on a head you have ve
 
 ## Authorization
 
-Invoking this skill authorizes everything maintain-pr does on this PR, plus arming auto-merge, or merging at once when GitHub has nothing left to wait for. For this PR only, it overrides maintain-pr's limits on merging and enabling auto-merge. If the repo requires no approval, the PR merges as soon as required checks pass, with no human review; say so when you arm it.
+Invoking this skill, or explicit standing instructions to use it for the task, authorizes everything maintain-pr does on this PR, plus arming auto-merge or merging at once when all readiness gates pass. For this PR only, it overrides maintain-pr's limits on merging and enabling auto-merge. If the repo requires no approval, the PR merges as soon as required checks pass, with no human review; say so when you arm it.
 
 It does not authorize `--admin` merges or any other branch-protection bypass, approving the PR, dismissing reviews, changing repo settings, or merging other PRs.
 
@@ -30,16 +29,18 @@ Merge method: the one the user named, else `gh repo view --json viewerDefaultMer
 
 ## The loop
 
-1. **Disarm before every push.** If auto-merge is armed (`gh pr view <pr> --json autoMergeRequest`), run `gh pr merge <pr> --disable-auto` before you push anything. A new commit is a head you haven't verified, and required checks alone could merge it before you see it.
-2. **Maintain.** Run maintain-pr's loop until it reports the latest head ready, or ready except for human approval. Don't count a head as ready while any human's latest review on the PR is "changes requested". Record the head SHA.
-3. **Arm.**
+1. **Disarm before every push or repair.** If auto-merge is armed (`gh pr view <pr> --json autoMergeRequest`), run `gh pr merge <pr> --disable-auto` before you push anything. A new commit is a head you haven't verified, and required checks alone could merge it before you see it.
+2. **Maintain.** Run maintain-pr's loop until it reports the latest head ready, or ready except for human approval. Do not count a head as ready while any outstanding review requests changes. Required FP Code review and approval must pass maintain-pr's review policy; do not arm while that gate is pending. Record the head SHA.
+3. **Merge or arm.** First read the enforced status checks and the repository's expected CI. If CI or FP Code review is not enforced by GitHub, keep auto-merge off until every expected check, review, and approval passes. Then merge directly with `--match-head-commit <ready-sha>`. Arming while an unenforced gate is pending could merge before that gate finishes. Never add required checks or change repo settings as part of this skill.
+
+   When only GitHub-enforced gates remain, arm:
 
    ```bash
    gh pr merge <pr> --auto --<method> --match-head-commit <ready-sha>
    ```
 
-   `--match-head-commit` refuses to arm if the head moved after you verified it. GitHub does not re-check it later: a push by someone with write access while armed can still merge on required checks alone. Confirm with `gh pr view <pr> --json state,autoMergeRequest,headRefOid`. If GitHub refuses because the PR is already mergeable, run the same command without `--auto`.
-4. **Watch or report.** If the PR merged, go to Finish. If it's armed and the host can wake you on PR activity (T3 Code: `watch_pull_request`), keep a watch, report the armed state, and end the turn. On wake, start again at step 1. If the host can't wake you, go to Finish. Don't poll for a human.
+   `--match-head-commit` refuses to arm if the head moved after you verified it. GitHub does not re-check it later: a push by someone with write access while armed can still merge on required checks alone. Confirm with `gh pr view <pr> --json state,autoMergeRequest,headRefOid`. If the PR is already mergeable and all readiness gates pass, run the same command without `--auto`. Use only merge methods permitted by the effective branch rules; a viewer preference does not override them.
+4. **Watch or report.** If the PR merged, go to Finish. If it's armed and the host can wake you on PR activity (T3 Code: `watch_pull_request`), keep a watch, report the armed state, and end the turn. On wake, freshly inspect the PR. If already merged, go to Finish. Otherwise disable any armed auto-merge before repairs and start another maintenance pass. If the host can't wake you, go to Finish. Don't poll for a human.
 
 Anything that changes the PR while armed (new feedback, a failed check, auto-merge disarmed by GitHub, a base change) means a new pass from step 1.
 
@@ -51,4 +52,4 @@ Finish when the PR has merged, is blocked, or is armed with no way to watch it. 
 - **Armed**: head SHA, method, what GitHub is waiting on (whose approval, which checks), and, with no watch, that nothing will answer new feedback and a push by anyone with write access can merge without a new pass. Tell the user `gh pr merge <pr> --disable-auto` turns it off.
 - **Blocked**: maintain-pr's blocker, or why auto-merge couldn't be armed.
 
-Include maintain-pr's report: human and independent review-agent feedback dispositions, plus validation. "Armed" is not "ready to merge"; say which one you mean.
+Include maintain-pr's report: FP Code and human feedback dispositions, plus validation. "Armed" is not "ready to merge"; say which one you mean.

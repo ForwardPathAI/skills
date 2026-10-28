@@ -1,6 +1,6 @@
 # Screenshots for UI changes
 
-Read this when Step 1 marks the diff as a **UI change**. Screenshots show reviewers the real, running result of the PR: captured from the app, embedded in the PR body, and shown in the final response.
+Read this when the diff changes what a user sees or does. Screenshots show reviewers the real, running result of the PR: captured from the app, embedded in the PR body, and shown in the final response.
 
 ## Capture
 

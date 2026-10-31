@@ -56,7 +56,7 @@ Root `package.json` — Bun workspaces + catalog + Turbo scripts:
     "db:migrate": "turbo run migrate --filter=@prime/database",
     "db:studio": "turbo run studio --filter=@prime/database"
   },
-  "devDependencies": { "turbo": "^2.9.18", "oxlint": "^1.68.0" }
+  "devDependencies": { "turbo": "^2.9.18", "vite-plus": "^1.4.0" }
 }
 ```
 
@@ -81,7 +81,7 @@ Root `tsconfig.json` (strict — full flags in [CONVENTIONS.md](CONVENTIONS.md))
 }
 ```
 
-`.oxlintrc.json` at root (`eqeqeq`, `consistent-type-imports`, `react/jsx-key`). `bunfig.toml` for tests:
+`.oxlintrc.json` at root (`eqeqeq`, `consistent-type-imports`, `react/jsx-key`); each app/package lint script runs `vp lint -c .oxlintrc.json .`. `bunfig.toml` for tests:
 
 ```toml
 [test]
@@ -171,8 +171,8 @@ Only the modules chosen in Step 1.
 
 ## Step 7: Infra, secrets, README
 
-1. **Secrets:** set up the repo per the [infisical](../infisical/SKILL.md) skill — Infisical config, wrapped scripts, `.env.example` with names only, GitHub and Key Vault syncs. Validate required secrets at startup.
-2. **Infra:** use the [azure-conventions](../azure-conventions/SKILL.md) skill — Terraform → Azure Container Apps, ACR, Key Vault, GitHub OIDC. Multi-stage Bun Dockerfile per app (`turbo prune`, `oven/bun` base).
-3. **CI:** GitHub Actions — lint (`oxlint`), typecheck, `bun test --coverage` (Postgres + Redis services), build, `bun pm audit`.
+1. **Secrets:** `.infisical.json` + `.env.example` documenting every var. Validate required secrets at startup.
+2. **Infra:** use the [azure-infra-setup](../azure-infra-setup/SKILL.md) skill — Terraform → Azure Container Apps, ACR, Key Vault, GitHub OIDC. Multi-stage Bun Dockerfile per app (`turbo prune`, `oven/bun` base).
+3. **CI:** GitHub Actions — lint (`bun run lint`, i.e. Vite+ `vp lint`), typecheck, `bun test --coverage` (Postgres + Redis services), build, `bun pm audit`.
 4. **README:** plain-language, per the collaboration section of [SKILL.md](SKILL.md) — a non-engineer can follow setup.
-5. **First commit** with everything above; ship via [open-pr](../open-pr/SKILL.md).
+5. **First commit** with everything above; ship via [pr-open](../pr-open/SKILL.md).

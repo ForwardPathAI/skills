@@ -31,11 +31,11 @@ The reference implementation is the `PRS-Walmart-PRIME` monorepo; this skill dis
 | Database | **Drizzle** + **PostgreSQL** | pgvector (embeddings), MSSQL (`packages/mssql`, external SQL Server) |
 | API typing | **Hono RPC** `hc<AppType>` + `zValidator` (never tRPC) | — |
 | Backend | Next route handlers + server actions | separate **Hono API** app on Bun |
-| Lint / test | **oxlint** + **bun test** | — |
+| Lint / test | **Vite+ (`vp lint`)** + **bun test** | — |
 | Auth | — | **Better Auth** + Microsoft SSO + org RBAC |
 | Jobs | — | **BullMQ** + Redis (`apps/jobs`) |
 | AI | — | Vercel AI SDK (`packages/ai`) |
-| Secrets | **Infisical**, synced to GitHub and Azure Key Vault | — |
+| Secrets | **Infisical** (dev) → Azure Key Vault (prod) | — |
 | Deploy | **Azure Container Apps** via **Terraform** + ACR | — |
 
 Exact major versions and the update rule are in [STACK.md](STACK.md).
@@ -49,7 +49,7 @@ These are settled. Do not reintroduce the alternatives.
 - **Zod at every boundary** — never read `c.req.json()` raw; always `zValidator` + `c.req.valid()`.
 - **Hono RPC** for typed APIs — never tRPC.
 - **TanStack Query** for client data. (PRIME still has legacy SWR; new work does not add SWR.)
-- **oxlint** for linting. (PRIME docs mention Biome/Ultracite; that is stale — do not use them.)
+- **Vite+ `vp lint`** for linting (Oxlint under the hood). Always `vp lint -c .oxlintrc.json`. (PRIME docs mention Biome/Ultracite; that is stale — do not use them.)
 - **Strict TypeScript**, `import type`, `as const` arrays instead of enums, `{ data }` / `{ error }` API responses, route constants over hardcoded paths. Full rules in [CONVENTIONS.md](CONVENTIONS.md).
 
 ## Workflows
@@ -61,7 +61,7 @@ Pick the branch that matches the task.
 1. Confirm which **modules** the project needs (auth, separate API, jobs, AI) before writing anything — this decides the app/package layout.
 2. Follow [SCAFFOLD.md](SCAFFOLD.md) top to bottom: Bun + Turbo monorepo, `apps/web`, `packages/database`, `packages/shared`, config files, then each chosen module.
 3. Apply [CONVENTIONS.md](CONVENTIONS.md) as you create files — get naming, TS config, and the API contract right from the first commit.
-4. Provision infra with the [azure-conventions](../azure-conventions/SKILL.md) skill; ship deploy via Azure Container Apps.
+4. Provision infra with the [azure-infra-setup](../azure-infra-setup/SKILL.md) skill; ship deploy via Azure Container Apps.
 5. Write the plain-language README (see below) as part of the initial commit, not later.
 
 ### Add a module to an existing project
@@ -83,6 +83,6 @@ A Forward Path product is legible to PMs, designers, and clients, not just engin
 
 ## Related skills
 
-- [azure-conventions](../azure-conventions/SKILL.md) — author the Terraform/Bicep infra for the deploy target.
-- [open-pr](../open-pr/SKILL.md) — ship the work as a Linear-linked PR.
+- [azure-infra-setup](../azure-infra-setup/SKILL.md) — author the Terraform/Bicep infra for the deploy target.
+- [pr-open](../pr-open/SKILL.md) — ship the work as a Linear-linked PR.
 - [qa-test-plan](../qa-test-plan/SKILL.md) — generate a customer-shareable QA plan from the app surface.

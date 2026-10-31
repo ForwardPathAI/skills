@@ -140,11 +140,17 @@ import { test, expect } from 'bun:test'
 
 ## Env & secrets
 
-- Follow the [infisical](../infisical/SKILL.md) skill: **Infisical** wraps dev commands (`infisical sm run --env=local -- ...`), no `.env` file holds values, and Secret Syncs push CI secrets into GitHub and runtime secrets into Azure Key Vault. Container Apps read them through Key Vault references.
-- Document every var name, without values, in `.env.example`.
+- Bun auto-loads `.env` from the workspace root; document every var in `.env.example`.
+- **Infisical** wraps dev commands (`infisical run --env=dev -- ...`); production injects Azure Key Vault references into Container Apps.
 - Validate required secrets at app startup (fail fast on missing `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `ENCRYPTION_KEY`, etc.).
 
 ## Lint & format
 
-- **oxlint** is the linter (`bun run lint` → `oxlint .`). Do not add Biome/Ultracite.
+- **Vite+ is the lint toolchain.** `bun run lint` → `vp lint -c .oxlintrc.json`. Oxlint runs under the hood; do not add ESLint, Biome, or Ultracite.
+- Pin `vite-plus` in `devDependencies` (`^1.4.0`). If the repo's vitest is 4.x, Vite+'s optional vitest-5 peer makes npm installs fail — either install with bun/pnpm or run `npx --yes --package vite-plus@1.4.0 vp lint ...` and keep `vite-plus` out of the manifest.
+- **Always pass `-c .oxlintrc.json`.** When a `vite.config.*` exists, `vp lint` only reads a `lint` block from it and silently ignores `.oxlintrc.json`; without `-c` you lint with defaults and think the gate is green.
+- Keep rule config in `.oxlintrc.json` at the lint root. Do not put a `lint` block in `vite.config.*` — it couples app builds (Next/Vite) to the Vite+ package.
+- Set `categories.correctness`/`suspicious` to `warn` when migrating an existing codebase, then promote rules that were previous errors (`no-unused-vars`, `react-hooks/rules-of-hooks`, …) explicitly. Warnings keep CI green without hiding findings.
+- Vue: Oxlint lints SFC `<script>` blocks only. Templates are not linted and `vue/no-parsing-error` / `vue/multi-word-component-names` do not exist in Oxlint — including them makes the config invalid and the run fail.
+- Existing `/* eslint-disable */` directives are honored by Oxlint; do not rewrite them during a migration.
 - Notable rules: `eqeqeq`, `consistent-type-imports`, `react/jsx-key`.

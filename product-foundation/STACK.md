@@ -30,12 +30,12 @@ Present in every project from the first commit.
 | ORM | Drizzle ORM + `drizzle-kit` | 1.x (rc) |
 | Database | PostgreSQL | 16 |
 | API typing | Hono + `hc<AppType>` RPC + `@hono/zod-validator` | Hono 4.x |
-| Lint | oxlint | 1.x |
+| Lint | Vite+ (`vp lint`, Oxlint) | 1.x |
 | Test | `bun test` (built-in runner) | — |
-| Secrets | Infisical (synced to GitHub and Key Vault) | — |
+| Secrets (dev) | Infisical | — |
 | Deploy | Azure Container Apps + Terraform + ACR | — |
 
-**Package manager + runtime.** Bun does install, scripts, the API/jobs runtime, and tests. Never Node, npm, pnpm, or Vite. Docker images use `oven/bun` base. Pin the Bun version in CI (e.g. `BUN_VERSION`).
+**Package manager + runtime.** Bun does install, scripts, the API/jobs runtime, and tests. Never Node, npm, pnpm, or Vite as the app bundler. Vite+ (`vite-plus`) is the one exception: it supplies the lint toolchain (`vp lint`), not the build. Docker images use `oven/bun` base. Pin the Bun version in CI (e.g. `BUN_VERSION`).
 
 **Monorepo.** Standardize on the Turbo monorepo from day one even for a single app, so modules can be added without restructuring:
 

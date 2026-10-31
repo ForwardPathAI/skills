@@ -31,11 +31,11 @@ The reference implementation is the `PRS-Walmart-PRIME` monorepo; this skill dis
 | Database | **Drizzle** + **PostgreSQL** | pgvector (embeddings), MSSQL (`packages/mssql`, external SQL Server) |
 | API typing | **Hono RPC** `hc<AppType>` + `zValidator` (never tRPC) | — |
 | Backend | Next route handlers + server actions | separate **Hono API** app on Bun |
-| Lint / test | **oxlint** + **bun test** | — |
+| Lint / test | **Vite+ (`vp lint`)** + **bun test** | — |
 | Auth | — | **Better Auth** + Microsoft SSO + org RBAC |
 | Jobs | — | **BullMQ** + Redis (`apps/jobs`) |
 | AI | — | Vercel AI SDK (`packages/ai`) |
-| Secrets | **Infisical**, synced to GitHub and Azure Key Vault | — |
+| Secrets | **Infisical** (dev) → Azure Key Vault (prod) | — |
 | Deploy | **Azure Container Apps** via **Terraform** + ACR | — |
 
 Exact major versions and the update rule are in [STACK.md](STACK.md).
@@ -49,7 +49,7 @@ These are settled. Do not reintroduce the alternatives.
 - **Zod at every boundary** — never read `c.req.json()` raw; always `zValidator` + `c.req.valid()`.
 - **Hono RPC** for typed APIs — never tRPC.
 - **TanStack Query** for client data. (PRIME still has legacy SWR; new work does not add SWR.)
-- **oxlint** for linting. (PRIME docs mention Biome/Ultracite; that is stale — do not use them.)
+- **Vite+ `vp lint`** for linting (Oxlint under the hood). Always `vp lint -c .oxlintrc.json`. (PRIME docs mention Biome/Ultracite; that is stale — do not use them.)
 - **Strict TypeScript**, `import type`, `as const` arrays instead of enums, `{ data }` / `{ error }` API responses, route constants over hardcoded paths. Full rules in [CONVENTIONS.md](CONVENTIONS.md).
 
 ## Workflows

@@ -61,7 +61,7 @@ Pick the branch that matches the task.
 1. Confirm which **modules** the project needs (auth, separate API, jobs, AI) before writing anything — this decides the app/package layout.
 2. Follow [SCAFFOLD.md](SCAFFOLD.md) top to bottom: Bun + Turbo monorepo, `apps/web`, `packages/database`, `packages/shared`, config files, then each chosen module.
 3. Apply [CONVENTIONS.md](CONVENTIONS.md) as you create files — get naming, TS config, and the API contract right from the first commit.
-4. Provision infra with the [azure-infra-setup](../azure-infra-setup/SKILL.md) skill; ship deploy via Azure Container Apps.
+4. Provision infra with the [azure-conventions](../azure-conventions/SKILL.md) skill; ship deploy via Azure Container Apps.
 5. Write the plain-language README (see below) as part of the initial commit, not later.
 
 ### Add a module to an existing project
@@ -83,6 +83,6 @@ A Forward Path product is legible to PMs, designers, and clients, not just engin
 
 ## Related skills
 
-- [azure-infra-setup](../azure-infra-setup/SKILL.md) — author the Terraform/Bicep infra for the deploy target.
-- [pr-open](../pr-open/SKILL.md) — ship the work as a Linear-linked PR.
+- [azure-conventions](../azure-conventions/SKILL.md) — author the Terraform/Bicep infra for the deploy target.
+- [open-pr](../open-pr/SKILL.md) — ship the work as a Linear-linked PR.
 - [qa-test-plan](../qa-test-plan/SKILL.md) — generate a customer-shareable QA plan from the app surface.

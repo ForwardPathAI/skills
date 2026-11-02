@@ -55,6 +55,8 @@ Every resource group carries these tags: `application = <app>`, `environment = <
 
 ## CI/CD and image tags
 
+When authoring or changing workflow jobs, apply the [CI naming and reporting contract](../ci-cd/references/naming.md), including required-check migration checks.
+
 Each application lives in its own GitHub repo.
 
 | Trigger | Target | Image tags | Effect |

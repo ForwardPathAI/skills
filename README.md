@@ -64,6 +64,8 @@ npx skills add forwardpathai/skills/t3-thread-follow
 npx skills add forwardpathai/skills/get-forwardpath-skills
 ```
 
+Install `ci-cd` alongside workflow-authoring skills such as `product-foundation`, `azure-conventions`, `e2e-testing`, `setup-preview-env`, and `linear-release-setup`. The standard `get-forwardpath-skills` bootstrap includes it.
+
 ## Skills
 
 | Skill | Description |
@@ -108,7 +110,7 @@ npx skills add forwardpathai/skills/get-forwardpath-skills
 | [eng-report-effort-estimate](./eng-report-effort-estimate) | Generate the combined Engineering Report + Effort Estimate document in Notion for a custom build — understanding check with price levers, gated generation, fixed-price effort estimation with internal QA phase, and a post-generation coverage audit. |
 | [setup-preview-env](./setup-preview-env) | Set up ephemeral per-pull-request Azure preview environments for a containerized app — shared/per-PR Terraform, GitHub Actions deploy/teardown, auth redirects, and runbooks distilled from the ButtconRAG preview lane. |
 | [e2e-testing](./e2e-testing) | Implement tester-army's e2e library, build user-journey coverage, and run the suite in the merge queue without executing E2E tests on every PR. |
-| [ci-cd](./ci-cd) | Set up or review GitHub Actions pipelines with build checks on PRs, full validation in the merge queue, and explicit required-check enforcement. |
+| [ci-cd](./ci-cd) | Set up or review GitHub Actions pipelines with PR builds, full merge-queue validation, required-check enforcement, and canonical job/stage names. Included in the standard bootstrap; [naming and reporting contract](./ci-cd/references/naming.md). |
 | [t3-thread-follow](./t3-thread-follow) | Find T3 Code threads by title, ID, or description, then use their context, build on their work, or wait for a result across providers. |
 | [get-forwardpath-skills](./get-forwardpath-skills) | Install the standard Forward Path skill set into the current project for Claude Code, Cursor, and Codex: execution, PRs, code and security reviews, releases, Linear, Azure conventions and operations, Infisical, plus improve, unslop, grill-with-docs, and the Better Auth, Effect, and Drizzle skills. |
 

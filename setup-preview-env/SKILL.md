@@ -120,6 +120,8 @@ _Done when:_ only trusted protected jobs can authenticate to Azure, PR builds ca
 
 ## 6. Build the deploy workflow
 
+Apply the [CI naming and reporting contract](../ci-cd/references/naming.md) to preview jobs and work steps; preserve required-check identities during any rename.
+
 Separate the PR build workflow from `.github/workflows/deploy-preview.yml`:
 
 1. Trigger isolated builds on `pull_request` `opened`, `synchronize`, `reopened`, and `ready_for_review`. Skip drafts and forks for the preview lane. Check out the exact PR head SHA and build on disposable runners without OIDC, Azure/runtime secrets, write-capable GitHub tokens, or access to dev/production networks. Keep runners and caches separate from privileged jobs.

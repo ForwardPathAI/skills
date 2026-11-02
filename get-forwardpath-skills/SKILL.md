@@ -1,6 +1,6 @@
 ---
 name: get-forwardpath-skills
-description: Install the standard Forward Path skill set into the current project for Claude Code, Cursor, and Codex. Includes execution, PRs, reviews, releases, Linear, Azure, secrets, and vetted outside skills for Effect, Drizzle/Postgres, Better Auth, codebase audits, and writing. Use when the user asks to set up, install, bootstrap, restore, or update Forward Path skills in a repo, or says "get forward path skills".
+description: Install the standard Forward Path skill set into the current project for Claude Code, Cursor, and Codex. Includes execution, PRs, reviews, CI/CD, releases, Linear, Azure, secrets, and vetted outside skills for Effect, Drizzle/Postgres, Better Auth, codebase audits, and writing. Use when the user asks to set up, install, bootstrap, restore, or update Forward Path skills in a repo, or says "get forward path skills".
 ---
 
 # Get Forward Path Skills
@@ -23,6 +23,7 @@ Install the standard skill set into the current repo, at project scope, for Clau
 | azure-conventions | `forwardpathai/skills` | Author and review Azure infrastructure using Forward Path conventions |
 | azure-ops | `forwardpathai/skills` | Inspect and operate live Azure apps, logs, revisions, and deployments |
 | infisical | `forwardpathai/skills` | Manage app and CI/CD secrets through Infisical and Secret Syncs |
+| ci-cd | `forwardpathai/skills` | Set up CI events, required checks, and canonical job/stage naming |
 | improve | `shadcn/improve` | Read-only codebase audit that writes handoff plans |
 | unslop | `cursor/plugins` | Cut AI tells from writing (manual call only) |
 | grill-with-docs | `mattpocock/skills` | Interview to sharpen a plan; writes ADRs and a glossary as it goes (manual call only) |
@@ -64,7 +65,7 @@ If this fails, the user is not in a git repo. Ask which project to install into.
 Run each command on its own. If one fails, keep going and report it in Step 4. Never add `-g`: this set installs at project scope.
 
 ```bash
-npx -y skills add forwardpathai/skills -s get-forwardpath-skills open-pr maintain-pr auto-pilot-pr code-review security-review execute release issue-writer azure-conventions azure-ops infisical -a claude-code cursor codex -y
+npx -y skills add forwardpathai/skills -s get-forwardpath-skills open-pr maintain-pr auto-pilot-pr code-review security-review execute release issue-writer azure-conventions azure-ops infisical ci-cd -a claude-code cursor codex -y
 npx -y skills add shadcn/improve -s improve -a claude-code cursor codex -y
 npx -y skills add cursor/plugins -s unslop -a claude-code cursor codex -y
 npx -y skills add mattpocock/skills -s grill-with-docs grilling domain-modeling -a claude-code cursor codex -y
@@ -81,7 +82,7 @@ The CLI writes each skill to `.agents/skills/<name>/` (read by Cursor and Codex)
 npx -y skills list
 ```
 
-Check that all 23 skills from [The set](#the-set) appear. Rerun the command for any missing skill once; if it still fails, note the error.
+Check that all 24 skills from [The set](#the-set) appear. Rerun the command for any missing skill once; if it still fails, note the error.
 
 ### Step 4: Report
 

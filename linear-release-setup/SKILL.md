@@ -23,6 +23,8 @@ If the repo does not already build and publish release containers, first use [az
 
 ## Implementation
 
+Apply the [CI naming and reporting contract](../ci-cd/references/naming.md) to new or changed release jobs and work steps. Preserve existing required-check identities until their replacements are verified.
+
 1. Add `.github/workflows/linear-release-main.yml` to sync every push to `main` into the current scheduled Linear release. Use `fetch-depth: 0`, `LINEAR_ACCESS_KEY`, no `command`, and no `version`.
 2. In the GitHub Release workflow, add a Linear job after release artifacts build and publish successfully. Checkout the release tag with full history, then sync the release with `name: ${{ github.event.release.tag_name }}` and links to the GitHub Release plus CI run.
 3. Complete only production releases. Prereleases should sync and attach links, but must leave the Linear release in progress.

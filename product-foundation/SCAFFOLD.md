@@ -173,6 +173,6 @@ Only the modules chosen in Step 1.
 
 1. **Secrets:** `.infisical.json` + `.env.example` documenting every var. Validate required secrets at startup.
 2. **Infra:** use the [azure-conventions](../azure-conventions/SKILL.md) skill — Terraform → Azure Container Apps, ACR, Key Vault, GitHub OIDC. Multi-stage Bun Dockerfile per app (`turbo prune`, `oven/bun` base).
-3. **CI:** GitHub Actions — lint (`bun run lint`, i.e. Vite+ `vp lint`), typecheck, `bun test --coverage` (Postgres + Redis services), build, `bun pm audit`.
+3. **CI:** apply [ci-cd](../ci-cd/SKILL.md), including its naming/reporting contract and PR-build/full-merge-queue policy. Map the project's lint (`bun run lint`, i.e. Vite+ `vp lint`), typecheck, tests with required Postgres/Redis services, build, and security commands to that policy.
 4. **README:** plain-language, per the collaboration section of [SKILL.md](SKILL.md) — a non-engineer can follow setup.
 5. **First commit** with everything above; ship via [open-pr](../open-pr/SKILL.md).

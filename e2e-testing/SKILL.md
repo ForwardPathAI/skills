@@ -15,6 +15,8 @@ GitHub Actions queue execution uses `merge_group` with `checks_requested`, testi
 
 Read [references/merge-queue.md](references/merge-queue.md) whenever adding or changing CI. It covers required-check coupling, the PR acknowledgement, environment identity, and verification.
 
+Apply the [CI naming and reporting contract](../ci-cd/references/naming.md) to changed jobs and steps. Keep the gate's PR acknowledgement classified as automation and actual test execution classified as `test` with suite `e2e`.
+
 ## 1. Establish the application contract
 
 Read repository guidance, package scripts and lockfile, existing tests, authentication, service dependencies, and workflows. Resolve:

@@ -18,7 +18,7 @@ Size the runner to the slowest suite instead of capping workers to fit a small r
 
 ## Fast checks
 
-- **Typecheck with `bun check`.** Bun 1.4.4 and later type-check with every core and report the same errors as `tsc`; fp-os checks 16 workspaces in under a second, against about 12s for one app under `tsc`. Set each package's `typecheck` script to `bun check` and `engines.bun` to `>=1.4.4`. Like `tsc`, it ignores tsconfig language-service plugins.
+- **Typecheck with `bun check`.** Bun 1.4.4 and later type-check with every core and report the same errors as `tsc`; fp-os checks 16 workspaces in under a second, against about 12s for one app under `tsc`. Set each package's `typecheck` script to `bun check --no-script` and `engines.bun` to `>=1.4.4`. Without `--no-script`, `bun check` runs the package's own `check` script if one exists and never type-checks, so the gate passes on broken types. Like `tsc`, it ignores tsconfig language-service plugins.
 - **Put type-aware rules in the linter, not a checker script.** For Effect, `@effect/tsgo` patches oxlint so the Effect language service rules run as type-aware lint rules. Run the patch inside the lint script, `effect-tsgo patch --no-typescript --oxlint --log-level error && vp lint --type-aware -c .oxlintrc.json`, so `--ignore-scripts` installs still enforce it; it skips files already patched. Add `effecttsgo` to `plugins` and set each enforced rule to `error`: the plugin turns on its other default rules as warnings, so set those to `off` until you adopt them. The patch supports only matching oxlint and `oxlint-tsgolint` versions, so upgrade `@effect/tsgo` with oxlint or Vite+.
 
 ## Turbo task cache

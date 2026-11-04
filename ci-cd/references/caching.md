@@ -12,6 +12,15 @@ Run `bun install --frozen-lockfile` with no dependency cache step: no `actions/c
 
 Run each check as its own single-stage job, in parallel. Each job checks out, calls one shared composite setup action (Bun, install, remote cache), and runs one command. Jobs then cost one setup each instead of serial step time, and wall-clock time becomes the slowest job. Aggregate them in the gate the enforcement contract describes.
 
+A gate blocks merges only when a branch ruleset requires it. Read the rulesets (`gh api repos/<owner>/<repo>/rulesets`) before you rely on it; fp-os's ruleset required no status checks, so its gate blocked nothing.
+
+Size the runner to the slowest suite instead of capping workers to fit a small runner. fp-os runs unit tests on a 4-vCPU runner with `turbo run test --concurrency=2` and lets Vitest size its own worker pool; Turbo's default concurrency of 10 would start ten Vitest pools at once. Leave tests of repo tooling (scripts, checkers, release helpers) out of CI: they test the repo, not the product, and run locally through `bun run test`.
+
+## Fast checks
+
+- **Typecheck with `bun check`.** Bun 1.4.4 and later type-check with every core and report the same errors as `tsc`; fp-os checks 16 workspaces in under a second, against about 12s for one app under `tsc`. Set each package's `typecheck` script to `bun check` and `engines.bun` to `>=1.4.4`. Like `tsc`, it ignores tsconfig language-service plugins.
+- **Put type-aware rules in the linter, not a checker script.** For Effect, `@effect/tsgo` patches oxlint so the Effect language service rules run as type-aware lint rules. Run the patch inside the lint script, `effect-tsgo patch --no-typescript --oxlint --log-level error && vp lint --type-aware -c .oxlintrc.json`, so `--ignore-scripts` installs still enforce it; it skips files already patched. Add `effecttsgo` to `plugins` and set each enforced rule to `error`: the plugin turns on its other default rules as warnings, so set those to `off` until you adopt them. The patch supports only matching oxlint and `oxlint-tsgolint` versions, so upgrade `@effect/tsgo` with oxlint or Vite+.
+
 ## Turbo task cache
 
 Turbo replays a task when its hash matches: the package's tracked files, its `dependsOn` task hashes, `globalDependencies`, declared `env`, and pass-through args. Selection by cache replaces `--affected`, changed-file scripts, and canaries that prove the selector works: a cache skip only happens when inputs match, while a broken selector skips work and still reports green.
@@ -20,9 +29,8 @@ Turbo replays a task when its hash matches: the package's tracked files, its `de
 - **Hash internal dependencies with a transit node.** `"transit": { "dependsOn": ["^transit"] }`, then `"dependsOn": ["transit"]` on typecheck, test, and other checks. A dependent's hash then changes when a package it imports changes, while the tasks still run in parallel. A check with no `^` dependency stays green on a stale hash after an internal package changes.
 - **List shared root config in `globalDependencies`**: the base tsconfig, the root test config, `bunfig.toml`.
 - **Declare every env var that changes a task's result** in that task's `env`. Keep `"envMode": "loose"` until the CI environment is enumerated: strict mode removes undeclared vars from the task's environment and can break it.
-- **Give repo-wide suites a root task** (`"//#test:scripts"` plus a root script) with default inputs, which are every tracked file. Use `$TURBO_ROOT$/…` globs only for narrow additions: explicit globs skip `.gitignore`, so local-only files enter the hash and laptop and CI hashes diverge.
-- **Split repo-wide checkers into per-package tasks.** Give each package a script that runs the checker on its own project (for example `--project tsconfig.json`), and add the checker's sources to that task's inputs: `"$TURBO_DEFAULT$", "$TURBO_ROOT$/scripts/<checker>/**"`. Add a test asserting every package with a `tsconfig.json` defines the script, since Turbo skips a package that lacks it without error.
-- **Pass args in their own invocation.** Args after `--` reach every task in that `turbo run` and enter the hash, so `turbo run test -- --maxWorkers=2` runs alone. CI-only args make CI and laptop hashes differ; move shared flags into the tool's config to share entries.
+- **Run checks per package.** A root task (`"//#name"`) hashes every tracked file, so any change misses its cache. When a check must read repo files, add narrow `$TURBO_ROOT$/…` globs to `inputs`; explicit globs skip `.gitignore`, so broad ones pull local-only files into the hash and laptop and CI hashes diverge. Turbo skips a package that lacks the task's script without error, so a test should assert every package defines it.
+- **Pass args in their own invocation.** Args after `--` reach every task in that `turbo run` and enter the hash, so `turbo run test -- --testTimeout=30000` runs alone. CI-only args make CI and laptop hashes differ; move shared flags into the tool's config to share entries.
 - **Commit or opt out of Turbo's agent block.** Turbo 2.x writes a managed block into `AGENTS.md` when it detects an agent. Commit it, or set `"agentGuidance": false` in `turbo.json`.
 
 Read the installed version's docs before changing Turbo config: resolve `turbo/package.json` from a workspace that depends on it and open `docs/` beside it.

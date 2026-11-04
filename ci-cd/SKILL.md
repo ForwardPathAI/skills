@@ -15,7 +15,7 @@ description: Configure or review GitHub Actions pipelines with PR builds, full m
 
 1. Inspect workflows, called actions/workflows, package scripts, and effective branch rules. Map every existing check to its event and command. Trace build/install hooks for hidden validation so deferred suites do not still run on PRs.
 2. Apply [the CI naming and reporting contract](references/naming.md) to new or changed jobs and work steps. Classify from commands, called workflows/actions, and package scripts. Preserve raw identities and distinguish bundled checks, gate acknowledgements, and affected/full execution.
-3. Apply [the caching reference](references/caching.md) to install steps, dependency or Turbo caches, and job parallelism.
+3. Apply [the caching reference](references/caching.md) to install steps, dependency or Turbo caches, job parallelism, runner sizes, and typecheck and lint tooling.
 4. Relocate checks without losing coverage. Use existing tools and commands; report missing suites as gaps. Build and test the event SHA, including any deployed E2E target, rather than a PR preview or latest main.
 5. Wire the required checks using the enforcement contract below. Preserve existing protections until the replacement works. If queue availability or settings access blocks enforcement, report the exact remaining setup.
 6. Validate workflow syntax and changed commands. Account for every changed job's stage, target, test suite, execution scope, and required-check impact. Verify PR build-only behavior, full queue execution, failure propagation, and effective queue rules. Separate static validation from observed GitHub runs and live enforcement in the report.

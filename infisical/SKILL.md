@@ -36,6 +36,7 @@ One Infisical project per repo. Besides the deploy targets in [azure-conventions
 | `local` `/` | Secrets the app needs on a developer machine | `infisical sm run --env=local` |
 | `dev`, `staging`, `prod` `/` | Runtime secrets for that deployed environment | That environment's Key Vault, via sync |
 | `dev`, `staging`, `prod` `/ci-cd` | Secrets GitHub Actions needs for that environment | The matching GitHub environment, via sync |
+| `prod` `/ci-cd/repository` | Secrets and config every CI job needs, including jobs that declare no GitHub environment (`TURBO_TEAM`) | Repository secrets, via sync |
 
 When a local value matches deployed dev (a third-party API key), use an Infisical secret reference (`${dev.OPENAI_API_KEY}`) instead of copying the value. Put a secret in `/ci-cd` only when a workflow reads it. Azure OIDC client, tenant, and subscription IDs are config, not secrets; they may still live in `/ci-cd` so one place lists everything a workflow needs.
 
@@ -85,7 +86,7 @@ Create one GitHub Secret Sync per deployed environment, in the Infisical project
 | Auto-Sync | On |
 | Key Schema | `{{secretKey}}` |
 
-Environment scope keeps prod secrets behind GitHub environment protection rules, which plain repository secrets skip. Use **Repository** scope only for a secret every job needs and no job can get through an environment. Use **Organization** scope with selected repositories only for a secret shared across repos, synced from one Infisical project that owns it.
+Environment scope keeps prod secrets behind GitHub environment protection rules, which plain repository secrets skip. Use **Repository** scope only for a secret every job needs and no job can get through an environment, such as the Turbo remote cache team that pull request checks read; sync it from `prod` `/ci-cd/repository` with one more sync. Before enabling either sync, confirm the `/ci-cd` sync does not also pick up `/ci-cd/repository`: each sync's destination must list only its own folder's names. Use **Organization** scope with selected repositories only for a secret shared across repos, synced from one Infisical project that owns it.
 
 Overwrite deletes any GitHub secret in that scope that Infisical lacks, and GitHub cannot export secret values back to Infisical. Before enabling a sync on a repo that already has GitHub secrets, list them (`gh secret list --env <name>`, `gh secret list`), and have the user add each still-needed value to Infisical from its original source. Then enable the sync.
 

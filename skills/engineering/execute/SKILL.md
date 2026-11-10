@@ -28,7 +28,7 @@ Each step ends on a **Done when** line. Don't start the next step until it holds
 
 ## Authorization
 
-Invoking this skill authorizes the whole pipeline for each ticket it runs: the executor's edits, your fixes from the gates, open-pr's branch, commit, push, and PR, and auto-pilot-pr's upkeep and auto-merge. Honor explicit limits: "no PR" stops after Step 6 with the changes uncommitted; "don't merge" swaps auto-pilot-pr for maintain-pr in Step 8; a named round or run limit caps Steps 3 and 5. It does not authorize work outside the ticket, other PRs, or bypassing branch protection. Only a user-approved decision changes a ticket's requirements.
+Invoking this skill authorizes the whole pipeline for each ticket it runs: the executor's edits, your fixes from the gates, open-pr's branch, commit, push, and PR, and auto-pilot-pr's invocation, upkeep, and auto-merge. Honor explicit limits: "no PR" stops after Step 6 with the changes uncommitted; "don't merge" swaps auto-pilot-pr for maintain-pr in Step 8; a named round or run limit caps Steps 3 and 5. It does not authorize work outside the ticket, other PRs, or bypassing branch protection. Only a user-approved decision changes a ticket's requirements.
 
 ## Read the ticket for intent
 
@@ -177,7 +177,7 @@ Follow open-pr, with these inputs:
 
 ## Step 8: Land the PR
 
-Follow auto-pilot-pr on the PR from Step 7. It maintains the PR through review and CI, then arms auto-merge.
+Invoke [auto-pilot-pr](../auto-pilot-pr/SKILL.md) on the PR from Step 7. Its authorization to merge comes from this skill's Authorization section, so invoke it rather than reading its file. It maintains the PR through review and CI, then arms auto-merge.
 
 **Done when** auto-pilot-pr reports merged, armed, or blocked.
 

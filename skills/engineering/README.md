@@ -7,7 +7,6 @@ Skills we use for Forward Path engineering and delivery work.
 Reachable only when you type them (`disable-model-invocation: true`).
 
 - **[release](./release/SKILL.md)**: Cut a production GitHub release from the default branch — semver tag, release notes, breaking-change gate, and CI watch.
-- **[auto-pilot-pr](./auto-pilot-pr/SKILL.md)**: Run maintain-pr until the latest head is ready, then arm GitHub auto-merge on it. Disarms before each of its own pushes, so its unverified heads never merge. Install with `maintain-pr`.
 - **[execute](./execute/SKILL.md)**: Run one ticket (Linear issue, GitHub issue, or improve plan) or a whole spec of tickets through to PRs that have merged or are armed to merge: executor subagents build each ticket in a worktree, the lead agent reviews each diff, then runs code-review, simplify, open-pr, and auto-pilot-pr. A spec runs its ticket graph frontier by frontier. Install with `open-pr`, `issue-writer`, `maintain-pr`, and `auto-pilot-pr`.
 - **[ticket-refiner](./ticket-refiner/SKILL.md)**: Interview the person who knows why a Linear ticket exists and rewrite it to pass issue-writer's agent-ready bar.
 - **[qa-test-plan-setup](./qa-test-plan-setup/SKILL.md)**: Per-project one-time creation of a `<Project> — QA Test Plan` Notion database with the fixed Forward Path schema (test case, feature, steps, expected result, category, priority, status).
@@ -20,6 +19,7 @@ The model can reach for these on its own; you can also call them by name.
 - **[issue-writer](./issue-writer/SKILL.md)**: Write Linear issues an AI coding agent can execute without follow-up questions — scoped by behavior, not file lists — or turn a feature into a spec document and tracer-bullet tickets with native blocking relations.
 - **[open-pr](./open-pr/SKILL.md)**: Open GitHub PRs from local changes via a Linear issue, Linear's git branch, commit, and `gh` — decide whether to ship one PR, split it, or stack dependent PRs, and attach verified screenshots when the diff changes UI.
 - **[maintain-pr](./maintain-pr/SKILL.md)**: Maintain an open GitHub PR through human and independent review-agent feedback, merge conflicts, and CI failures — triage findings, fix, validate, push, reply/resolve, and recheck the latest head until it is ready or concretely blocked.
+- **[auto-pilot-pr](./auto-pilot-pr/SKILL.md)**: Drive an open PR to merge — run maintain-pr until the latest head is ready, then arm GitHub auto-merge on it, disarming before each of its own pushes so unverified heads never merge. Invoked when the user asks to merge, land, or ship a PR, or by execute's landing step. Install with `maintain-pr`.
 - **[code-review](./code-review/SKILL.md)**: Review a working-tree diff, branch, or specified PR for evidence-backed correctness bugs and regressions.
 - **[security-review](./security-review/SKILL.md)**: Review a working-tree diff, branch, or specified PR for vulnerabilities with verified attack paths and severity.
 - **[azure-conventions](./azure-conventions/SKILL.md)**: Forward Path Azure conventions — resource naming, environments, regions, Container Apps, shared ACR, OIDC/RBAC, Key Vault, and known gotchas.

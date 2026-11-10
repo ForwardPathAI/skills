@@ -1,7 +1,6 @@
 ---
 name: auto-pilot-pr
-description: Drive an open PR to merge. Runs maintain-pr until the latest head is ready, then arms GitHub auto-merge on that head so the PR merges itself once approval and required checks clear.
-disable-model-invocation: true
+description: Drive an open PR to merge. Runs maintain-pr until the latest head is ready, then arms GitHub auto-merge on that head so the PR merges itself once approval and required checks clear. Use when the user asks to merge, land, or ship an open PR, or when execute reaches its landing step; not for ordinary PR upkeep.
 ---
 
 # Auto-pilot PR
@@ -9,6 +8,10 @@ disable-model-invocation: true
 [maintain-pr](../maintain-pr/SKILL.md) gets a PR ready and stops short of merging. This skill adds the last step: once the latest head is ready, **arm** GitHub auto-merge, so the PR merges itself when what's left (often a human approval) clears.
 
 The rule that keeps this safe: auto-merge stays armed only on a head you have verified as ready.
+
+## When to invoke
+
+This skill merges, so the merge must already be authorized for this PR: the user asked to merge, land, ship, or finish it, or a calling skill whose own authorization covers landing its PR ([execute](../execute/SKILL.md) Step 8). A request to open, maintain, review, or fix a PR is not that authorization — run maintain-pr alone and report readiness instead. If the request is ambiguous, ask before arming.
 
 ## Authorization
 

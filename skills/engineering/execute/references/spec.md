@@ -25,7 +25,7 @@ When several tickets depend on the same unexplored code or docs, dispatch one ex
 ## 3. Run the frontier
 
 1. For each frontier ticket, run Steps 1–3. Run executors in parallel, each in its own worktree from the current base tip, up to 3 at once unless the user named a limit. Run them in the background where the host allows.
-2. Before landing an approved ticket, check whether the base moved since its executor started (another ticket merged). If so, REVISE: have the executor merge the new base tip into its branch and resolve conflicts, then re-run Step 3.
+2. Before landing an approved ticket, check whether the base moved since its executor started (another ticket merged). If so, record the new base tip SHA and REVISE: have the executor merge that SHA into its branch and resolve conflicts. That SHA becomes the ticket's new `<start>` (update the progress file), then re-run Step 3 against it. Step 3 diffs from `<start>`, so keeping the old one would pull the merged ticket's changes into this review and fail its scope check.
 3. Land approved tickets one at a time, since Steps 4–8 use your checkout: run Steps 4–8, then return to a clean base (`git switch <base> && git pull --ff-only`) before landing the next. The Preflight checks hold again at that point; confirm them.
 4. In Step 8, arm the PR. When the host can wake you on PR activity, keep auto-pilot-pr's watch and move on to the next ticket instead of ending the turn. When it can't, note the PR as armed and move on.
 
